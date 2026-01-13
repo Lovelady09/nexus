@@ -484,6 +484,11 @@ jobs:
         if: steps.cache-cargo-bundle.outputs.cache-hit != 'true'
         run: cargo install --git https://github.com/zquestz/cargo-bundle --force
 
+      - name: Configure license-file for Windows installer
+        shell: bash
+        run: |
+          sed -i 's/^license = "MIT"$/license-file = "..\/LICENSE"/' nexus-client/Cargo.toml
+
       - name: Create MSI installer
         working-directory: nexus-client
         run: cargo bundle --target x86_64-pc-windows-msvc --format wxsmsi --release
