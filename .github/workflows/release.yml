@@ -43,18 +43,24 @@ jobs:
         with:
           path: ~/.cargo/registry
           key: linux-${{ matrix.arch }}-client-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            linux-${{ matrix.arch }}-client-cargo-registry-
 
       - name: Cache cargo index
         uses: actions/cache@v4
         with:
           path: ~/.cargo/git
           key: linux-${{ matrix.arch }}-client-cargo-git-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            linux-${{ matrix.arch }}-client-cargo-git-
 
       - name: Cache cargo build
         uses: actions/cache@v4
         with:
           path: target
           key: linux-${{ matrix.arch }}-client-cargo-build-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            linux-${{ matrix.arch }}-client-cargo-build-
 
       - name: Cache cargo-bundle
         id: cache-cargo-bundle
@@ -115,18 +121,24 @@ jobs:
         with:
           path: ~/.cargo/registry
           key: linux-${{ matrix.arch }}-server-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            linux-${{ matrix.arch }}-server-cargo-registry-
 
       - name: Cache cargo index
         uses: actions/cache@v4
         with:
           path: ~/.cargo/git
           key: linux-${{ matrix.arch }}-server-cargo-git-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            linux-${{ matrix.arch }}-server-cargo-git-
 
       - name: Cache cargo build
         uses: actions/cache@v4
         with:
           path: target
           key: linux-${{ matrix.arch }}-server-cargo-build-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            linux-${{ matrix.arch }}-server-cargo-build-
 
       - name: Build server
         run: cargo build --release --package nexus-server
@@ -167,18 +179,24 @@ jobs:
         with:
           path: ~/.cargo/registry
           key: macos-client-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            macos-client-cargo-registry-
 
       - name: Cache cargo index
         uses: actions/cache@v4
         with:
           path: ~/.cargo/git
           key: macos-client-cargo-git-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            macos-client-cargo-git-
 
       - name: Cache cargo build
         uses: actions/cache@v4
         with:
           path: target
           key: macos-client-cargo-build-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            macos-client-cargo-build-
 
       - name: Build client (ARM64)
         run: cargo build --release --package nexus-client --target aarch64-apple-darwin
@@ -261,18 +279,24 @@ jobs:
         with:
           path: ~/.cargo/registry
           key: macos-server-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            macos-server-cargo-registry-
 
       - name: Cache cargo index
         uses: actions/cache@v4
         with:
           path: ~/.cargo/git
           key: macos-server-cargo-git-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            macos-server-cargo-git-
 
       - name: Cache cargo build
         uses: actions/cache@v4
         with:
           path: target
           key: macos-server-cargo-build-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            macos-server-cargo-build-
 
       - name: Build server (ARM64)
         run: cargo build --release --package nexus-server --target aarch64-apple-darwin
@@ -324,18 +348,24 @@ jobs:
         with:
           path: ~/.cargo/registry
           key: windows-client-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            windows-client-cargo-registry-
 
       - name: Cache cargo index
         uses: actions/cache@v4
         with:
           path: ~/.cargo/git
           key: windows-client-cargo-git-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            windows-client-cargo-git-
 
       - name: Cache cargo build
         uses: actions/cache@v4
         with:
           path: target
           key: windows-client-cargo-build-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            windows-client-cargo-build-
 
       - name: Build client
         run: cargo build --release --package nexus-client --target x86_64-pc-windows-msvc
@@ -389,18 +419,24 @@ jobs:
         with:
           path: ~/.cargo/registry
           key: windows-server-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            windows-server-cargo-registry-
 
       - name: Cache cargo index
         uses: actions/cache@v4
         with:
           path: ~/.cargo/git
           key: windows-server-cargo-git-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            windows-server-cargo-git-
 
       - name: Cache cargo build
         uses: actions/cache@v4
         with:
           path: target
           key: windows-server-cargo-build-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            windows-server-cargo-build-
 
       - name: Build server
         run: cargo build --release --package nexus-server

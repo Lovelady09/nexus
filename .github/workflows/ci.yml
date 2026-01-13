@@ -3,8 +3,20 @@ name: CI
 on:
   push:
     branches: [main, master]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'LICENSE'
   pull_request:
     branches: [main, master]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'LICENSE'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
   CARGO_TERM_COLOR: always
@@ -37,18 +49,24 @@ jobs:
         with:
           path: ~/.cargo/registry
           key: ${{ runner.os }}-${{ runner.arch }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-cargo-registry-
 
       - name: Cache cargo index
         uses: actions/cache@v4
         with:
           path: ~/.cargo/git
           key: ${{ runner.os }}-${{ runner.arch }}-cargo-git-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-cargo-git-
 
       - name: Cache cargo build
         uses: actions/cache@v4
         with:
           path: target
           key: ${{ runner.os }}-${{ runner.arch }}-cargo-build-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-cargo-build-
 
       - name: Run tests
         run: cargo test --workspace --verbose
@@ -77,18 +95,24 @@ jobs:
         with:
           path: ~/.cargo/registry
           key: clippy-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            clippy-cargo-registry-
 
       - name: Cache cargo index
         uses: actions/cache@v4
         with:
           path: ~/.cargo/git
           key: clippy-cargo-git-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            clippy-cargo-git-
 
       - name: Cache cargo build
         uses: actions/cache@v4
         with:
           path: target
           key: clippy-cargo-build-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            clippy-cargo-build-
 
       - name: Run clippy
         run: cargo clippy --all-targets --workspace -- -D warnings
@@ -126,18 +150,24 @@ jobs:
         with:
           path: ~/.cargo/registry
           key: macos-universal-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            macos-universal-cargo-registry-
 
       - name: Cache cargo index
         uses: actions/cache@v4
         with:
           path: ~/.cargo/git
           key: macos-universal-cargo-git-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            macos-universal-cargo-git-
 
       - name: Cache cargo build
         uses: actions/cache@v4
         with:
           path: target
           key: macos-universal-cargo-build-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            macos-universal-cargo-build-
 
       - name: Build client (ARM64)
         run: cargo build --release --package nexus-client --target aarch64-apple-darwin
@@ -214,18 +244,24 @@ jobs:
         with:
           path: ~/.cargo/registry
           key: linux-bundle-${{ matrix.arch }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            linux-bundle-${{ matrix.arch }}-cargo-registry-
 
       - name: Cache cargo index
         uses: actions/cache@v4
         with:
           path: ~/.cargo/git
           key: linux-bundle-${{ matrix.arch }}-cargo-git-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            linux-bundle-${{ matrix.arch }}-cargo-git-
 
       - name: Cache cargo build
         uses: actions/cache@v4
         with:
           path: target
           key: linux-bundle-${{ matrix.arch }}-cargo-build-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            linux-bundle-${{ matrix.arch }}-cargo-build-
 
       - name: Cache cargo-bundle
         id: cache-cargo-bundle
@@ -262,18 +298,24 @@ jobs:
         with:
           path: ~/.cargo/registry
           key: windows-bundle-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            windows-bundle-cargo-registry-
 
       - name: Cache cargo index
         uses: actions/cache@v4
         with:
           path: ~/.cargo/git
           key: windows-bundle-cargo-git-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            windows-bundle-cargo-git-
 
       - name: Cache cargo build
         uses: actions/cache@v4
         with:
           path: target
           key: windows-bundle-cargo-build-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            windows-bundle-cargo-build-
 
       - name: Cache cargo-bundle
         id: cache-cargo-bundle
