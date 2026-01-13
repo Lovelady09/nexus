@@ -17,6 +17,16 @@ Pre-built binaries are available for all major platforms on the [GitHub Releases
 
 The universal binary runs natively on both Intel and Apple Silicon Macs.
 
+**Troubleshooting "damaged and can't be opened" error:**
+
+If macOS reports the app is damaged, this is due to Gatekeeper quarantine attributes on unsigned apps. Fix it by running:
+
+```bash
+xattr -cr /Applications/Nexus\ BBS.app
+```
+
+Then launch the app normally.
+
 #### Windows
 
 1. Download `nexus-client-{version}-windows-x64.msi`

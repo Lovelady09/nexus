@@ -343,6 +343,9 @@ jobs:
           chmod +x "target/release/bundle/osx/Nexus BBS.app/Contents/MacOS/Nexus"
           file "target/release/bundle/osx/Nexus BBS.app/Contents/MacOS/Nexus"
 
+      - name: Clear extended attributes
+        run: xattr -cr "target/release/bundle/osx/Nexus BBS.app"
+
       - name: Create DMG
         run: |
           mkdir -p dist
