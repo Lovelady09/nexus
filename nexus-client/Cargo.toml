@@ -9,7 +9,7 @@ description = "Cross-platform BBS client"
 [package.metadata.bundle]
 name = "Nexus BBS"
 identifier = "at.greyh.nexus"
-icon = ["assets/macos/nexus.png", "assets/windows/nexus.ico"]
+icon = ["assets/macos/nexus.png", "assets/macos/nexus.icns", "assets/windows/nexus.ico"]
 category = "public.app-category.social-networking"
 short_description = "Cross-platform BBS client"
 long_description = """

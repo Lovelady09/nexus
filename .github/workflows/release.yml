@@ -336,15 +336,22 @@ jobs:
           # Verify the signature
           codesign --verify --verbose "Nexus BBS.app"
 
+      - name: Install create-dmg
+        run: brew install create-dmg
+
       - name: Create DMG
         run: |
-          mkdir -p dist dmg-contents
-          cp -R "Nexus BBS.app" dmg-contents/
-          ln -s /Applications dmg-contents/Applications
-          hdiutil create -volname "Nexus BBS" \
-            -srcfolder dmg-contents \
-            -ov -format UDZO \
-            "dist/nexus-client-${{ steps.version.outputs.VERSION }}-macos-universal.dmg"
+          mkdir -p dist
+          create-dmg \
+            --volname "Nexus BBS" \
+            --window-pos 200 120 \
+            --window-size 800 400 \
+            --icon-size 100 \
+            --icon "Nexus BBS.app" 200 190 \
+            --hide-extension "Nexus BBS.app" \
+            --app-drop-link 600 185 \
+            "dist/nexus-client-${{ steps.version.outputs.VERSION }}-macos-universal.dmg" \
+            "Nexus BBS.app"
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
