@@ -36,8 +36,11 @@ COPY nexus-common/src nexus-common/src
 COPY nexus-server/src nexus-server/src
 COPY nexus-server/locales nexus-server/locales
 COPY nexus-server/migrations nexus-server/migrations
-# Touch source files to invalidate cargo's cached dummy build
-RUN touch nexus-common/src/lib.rs nexus-server/src/main.rs && \
+# Remove cached dummy build artifacts to force rebuild with real source
+RUN rm -rf target/release/.fingerprint/nexus-* \
+  target/release/deps/nexus* \
+  target/release/deps/libnexus* \
+  target/release/nexusd* && \
   cargo build --release --package nexus-server && \
   strip /build/target/release/nexusd
 
