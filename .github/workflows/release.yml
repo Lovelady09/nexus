@@ -42,17 +42,17 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cargo/registry
-          key: linux-${{ matrix.arch }}-client-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+          key: linux-${{ runner.arch }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
-            linux-${{ matrix.arch }}-client-cargo-registry-
+            linux-${{ runner.arch }}-cargo-registry-
 
       - name: Cache cargo index
         uses: actions/cache@v4
         with:
           path: ~/.cargo/git
-          key: linux-${{ matrix.arch }}-client-cargo-git-${{ hashFiles('**/Cargo.lock') }}
+          key: linux-${{ runner.arch }}-cargo-index-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
-            linux-${{ matrix.arch }}-client-cargo-git-
+            linux-${{ runner.arch }}-cargo-index-
 
       - name: Cache cargo build
         uses: actions/cache@v4
@@ -120,17 +120,17 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cargo/registry
-          key: linux-${{ matrix.arch }}-server-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+          key: linux-${{ runner.arch }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
-            linux-${{ matrix.arch }}-server-cargo-registry-
+            linux-${{ runner.arch }}-cargo-registry-
 
       - name: Cache cargo index
         uses: actions/cache@v4
         with:
           path: ~/.cargo/git
-          key: linux-${{ matrix.arch }}-server-cargo-git-${{ hashFiles('**/Cargo.lock') }}
+          key: linux-${{ runner.arch }}-cargo-index-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
-            linux-${{ matrix.arch }}-server-cargo-git-
+            linux-${{ runner.arch }}-cargo-index-
 
       - name: Cache cargo build
         uses: actions/cache@v4
@@ -177,17 +177,17 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cargo/registry
-          key: macos-arm64-client-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+          key: macos-arm64-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
-            macos-arm64-client-cargo-registry-
+            macos-arm64-cargo-registry-
 
       - name: Cache cargo index
         uses: actions/cache@v4
         with:
           path: ~/.cargo/git
-          key: macos-arm64-client-cargo-git-${{ hashFiles('**/Cargo.lock') }}
+          key: macos-arm64-cargo-index-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
-            macos-arm64-client-cargo-git-
+            macos-arm64-cargo-index-
 
       - name: Cache cargo build
         uses: actions/cache@v4
@@ -223,17 +223,17 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cargo/registry
-          key: macos-x64-client-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+          key: macos-arm64-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
-            macos-x64-client-cargo-registry-
+            macos-arm64-cargo-registry-
 
       - name: Cache cargo index
         uses: actions/cache@v4
         with:
           path: ~/.cargo/git
-          key: macos-x64-client-cargo-git-${{ hashFiles('**/Cargo.lock') }}
+          key: macos-arm64-cargo-index-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
-            macos-x64-client-cargo-git-
+            macos-arm64-cargo-index-
 
       - name: Cache cargo build
         uses: actions/cache@v4
@@ -294,17 +294,17 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cargo/registry
-          key: macos-universal-client-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+          key: macos-arm64-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
-            macos-universal-client-cargo-registry-
+            macos-arm64-cargo-registry-
 
       - name: Cache cargo index
         uses: actions/cache@v4
         with:
           path: ~/.cargo/git
-          key: macos-universal-client-cargo-git-${{ hashFiles('**/Cargo.lock') }}
+          key: macos-arm64-cargo-index-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
-            macos-universal-client-cargo-git-
+            macos-arm64-cargo-index-
 
       - name: Cache cargo build
         uses: actions/cache@v4
@@ -374,17 +374,17 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cargo/registry
-          key: macos-server-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+          key: macos-arm64-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
-            macos-server-cargo-registry-
+            macos-arm64-cargo-registry-
 
       - name: Cache cargo index
         uses: actions/cache@v4
         with:
           path: ~/.cargo/git
-          key: macos-server-cargo-git-${{ hashFiles('**/Cargo.lock') }}
+          key: macos-arm64-cargo-index-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
-            macos-server-cargo-git-
+            macos-arm64-cargo-index-
 
       - name: Cache cargo build
         uses: actions/cache@v4
@@ -443,17 +443,17 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cargo/registry
-          key: windows-client-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+          key: windows-x64-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
-            windows-client-cargo-registry-
+            windows-x64-cargo-registry-
 
       - name: Cache cargo index
         uses: actions/cache@v4
         with:
           path: ~/.cargo/git
-          key: windows-client-cargo-git-${{ hashFiles('**/Cargo.lock') }}
+          key: windows-x64-cargo-index-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
-            windows-client-cargo-git-
+            windows-x64-cargo-index-
 
       - name: Cache cargo build
         uses: actions/cache@v4
@@ -514,17 +514,17 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cargo/registry
-          key: windows-server-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+          key: windows-x64-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
-            windows-server-cargo-registry-
+            windows-x64-cargo-registry-
 
       - name: Cache cargo index
         uses: actions/cache@v4
         with:
           path: ~/.cargo/git
-          key: windows-server-cargo-git-${{ hashFiles('**/Cargo.lock') }}
+          key: windows-x64-cargo-index-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
-            windows-server-cargo-git-
+            windows-x64-cargo-index-
 
       - name: Cache cargo build
         uses: actions/cache@v4
