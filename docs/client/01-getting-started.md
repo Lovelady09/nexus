@@ -17,15 +17,16 @@ Pre-built binaries are available for all major platforms on the [GitHub Releases
 
 The universal binary runs natively on both Intel and Apple Silicon Macs.
 
-**Troubleshooting "damaged and can't be opened" error:**
+**Troubleshooting "app can't be opened" or "unidentified developer" error:**
 
-The app is ad-hoc signed but not notarized with Apple (which requires a $99/year developer account). If macOS reports the app is damaged, run:
+The app is ad-hoc signed but not notarized with Apple (which requires a $99/year developer account). On first launch, macOS will block the app. To allow it:
 
-```bash
-xattr -cr /Applications/Nexus\ BBS.app
-```
+1. Open **System Settings** > **Privacy & Security**
+2. Scroll down to the Security section
+3. You'll see a message about Nexus BBS being blocked — click **Open Anyway**
+4. Confirm by clicking **Open** in the dialog that appears
 
-Then launch the app normally. This clears the quarantine attribute that macOS adds to downloaded files.
+You only need to do this once. Future launches will work normally.
 
 #### Windows
 

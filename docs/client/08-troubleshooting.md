@@ -327,13 +327,17 @@ sudo pacman -S alsa-lib
 2. Check that sound isn't muted at system level
 3. Verify with `aplay -l` that audio devices are detected
 
-### macOS: "App is damaged" error
+### macOS: "App can't be opened" or "unidentified developer" error
 
 **Cause:** macOS Gatekeeper blocking unsigned app.
 
 **Solution:**
-1. Right-click the app and select **Open**
-2. Or run: `xattr -cr /path/to/Nexus.app`
+1. Open **System Settings** > **Privacy & Security**
+2. Scroll down to the Security section
+3. You'll see a message about Nexus BBS being blocked — click **Open Anyway**
+4. Confirm by clicking **Open** in the dialog that appears
+
+You only need to do this once. Future launches will work normally.
 
 ### Windows: Firewall prompt
 
