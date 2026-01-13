@@ -651,6 +651,11 @@ impl NexusApp {
             // Create PM tab entry if it doesn't exist (keyed by display name)
             conn.user_messages.entry(nickname.clone()).or_default();
 
+            // Add to user_message_tabs if not already present (creates the tab in UI)
+            if !conn.user_message_tabs.contains(&nickname) {
+                conn.user_message_tabs.push(nickname.clone());
+            }
+
             // Switch to the PM tab
             let tab = ChatTab::UserMessage(nickname);
             return Task::done(Message::SwitchChatTab(tab));
