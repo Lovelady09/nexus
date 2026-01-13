@@ -346,6 +346,12 @@ jobs:
       - name: Clear extended attributes
         run: xattr -cr "target/release/bundle/osx/Nexus BBS.app"
 
+      # Ad-hoc signing provides a valid signature without an Apple Developer account.
+      # It helps with some Gatekeeper checks but isn't notarized.
+      # For full Gatekeeper bypass, use a Developer ID ($99/year):
+      #   codesign --force --options runtime --sign "Developer ID Application: Name (TEAMID)" ...
+      #   xcrun notarytool submit *.dmg --apple-id "..." --password "..." --team-id "..." --wait
+      #   xcrun stapler staple *.dmg
       - name: Ad-hoc code sign
         run: |
           # Sign all nested components first (inside-out signing)
