@@ -11,6 +11,7 @@ name = "Nexus BBS"
 identifier = "at.greyh.nexus"
 icon = ["assets/macos/nexus.png", "assets/windows/nexus.ico"]
 category = "public.app-category.social-networking"
+license-file = "assets/windows/license.rtf"
 short_description = "Cross-platform BBS client"
 long_description = """
 Nexus is a modern BBS (Bulletin Board System) client supporting chat,
