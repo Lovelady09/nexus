@@ -49,13 +49,20 @@ LABEL org.opencontainers.image.title="Nexus BBS Server" \
   org.opencontainers.image.description="A modern BBS server inspired by Hotline" \
   org.opencontainers.image.licenses="MIT"
 
-RUN useradd --create-home nexus && \
+RUN apt-get update && \
+  apt-get install -y --no-install-recommends netcat-openbsd && \
+  rm -rf /var/lib/apt/lists/* && \
+  useradd --create-home nexus && \
   mkdir -p /home/nexus/.local/share/nexusd && \
   chown -R nexus:nexus /home/nexus/.local
 COPY --from=builder /build/target/release/nexusd /usr/local/bin/
 COPY LICENSE README.md /usr/share/doc/nexusd/
 USER nexus
 EXPOSE 7500 7501
+
+# Health check - verify server is accepting connections
+HEALTHCHECK --interval=5s --timeout=3s --start-period=2s --retries=3 \
+  CMD nc -z localhost ${NEXUS_PORT:-7500} || exit 1
 
 # Environment variables
 ENV NEXUS_BIND=0.0.0.0 \
