@@ -161,9 +161,9 @@ jobs:
           name: linux-server-${{ matrix.arch }}
           path: dist/*.tar.gz
 
-  # Build macOS client (universal binary)
-  build-macos-client:
-    name: Build macOS Client
+  # Build macOS client (ARM64) - native on ARM runner
+  build-macos-client-arm64:
+    name: Build macOS Client (ARM64)
     runs-on: macos-14
     timeout-minutes: 30
     steps:
@@ -171,50 +171,116 @@ jobs:
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: x86_64-apple-darwin,aarch64-apple-darwin
 
       - name: Cache cargo registry
         uses: actions/cache@v4
         with:
           path: ~/.cargo/registry
-          key: macos-client-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+          key: macos-arm64-client-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
-            macos-client-cargo-registry-
+            macos-arm64-client-cargo-registry-
 
       - name: Cache cargo index
         uses: actions/cache@v4
         with:
           path: ~/.cargo/git
-          key: macos-client-cargo-git-${{ hashFiles('**/Cargo.lock') }}
+          key: macos-arm64-client-cargo-git-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
-            macos-client-cargo-git-
+            macos-arm64-client-cargo-git-
 
       - name: Cache cargo build
         uses: actions/cache@v4
         with:
           path: target
-          key: macos-client-cargo-build-${{ hashFiles('**/Cargo.lock') }}
+          key: macos-arm64-client-cargo-build-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
-            macos-client-cargo-build-
+            macos-arm64-client-cargo-build-
 
       - name: Build client (ARM64)
-        run: cargo build --release --package nexus-client --target aarch64-apple-darwin
+        run: cargo build --release --package nexus-client
+
+      - name: Upload binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-client-arm64-binary
+          path: target/release/nexus
+
+  # Build macOS client (x64) - native on Intel runner
+  build-macos-client-x64:
+    name: Build macOS Client (x64)
+    runs-on: macos-13
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo registry
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/registry
+          key: macos-x64-client-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            macos-x64-client-cargo-registry-
+
+      - name: Cache cargo index
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/git
+          key: macos-x64-client-cargo-git-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            macos-x64-client-cargo-git-
+
+      - name: Cache cargo build
+        uses: actions/cache@v4
+        with:
+          path: target
+          key: macos-x64-client-cargo-build-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            macos-x64-client-cargo-build-
 
       - name: Build client (x64)
-        run: cargo build --release --package nexus-client --target x86_64-apple-darwin
+        run: cargo build --release --package nexus-client
+
+      - name: Upload binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-client-x64-binary
+          path: target/release/nexus
+
+  # Merge macOS client binaries into universal binary and create DMG
+  build-macos-client-universal:
+    name: Build macOS Client (Universal)
+    runs-on: macos-14
+    needs: [build-macos-client-arm64, build-macos-client-x64]
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download ARM64 binary
+        uses: actions/download-artifact@v4
+        with:
+          name: macos-client-arm64-binary
+          path: binaries/arm64
+
+      - name: Download x64 binary
+        uses: actions/download-artifact@v4
+        with:
+          name: macos-client-x64-binary
+          path: binaries/x64
 
       - name: Get version from tag
         id: version
         run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
 
-      - name: Create universal client binary
+      - name: Create universal binary
         run: |
           mkdir -p target/release
           lipo -create \
             -output target/release/Nexus \
-            target/aarch64-apple-darwin/release/nexus \
-            target/x86_64-apple-darwin/release/nexus
+            binaries/arm64/nexus \
+            binaries/x64/nexus
           chmod +x target/release/Nexus
           file target/release/Nexus
 
@@ -228,6 +294,9 @@ jobs:
       - name: Install cargo-bundle
         if: steps.cache-cargo-bundle.outputs.cache-hit != 'true'
         run: cargo install --git https://github.com/zquestz/cargo-bundle --force
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
 
       - name: Configure for macOS bundle
         working-directory: nexus-client
@@ -466,7 +535,7 @@ jobs:
     name: Create Release
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    needs: [build-linux-client, build-linux-server, build-macos-client, build-macos-server, build-windows-client, build-windows-server]
+    needs: [build-linux-client, build-linux-server, build-macos-client-universal, build-macos-server, build-windows-client, build-windows-server]
     permissions:
       contents: write
     steps:
@@ -476,10 +545,41 @@ jobs:
         id: version
         run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
 
-      - name: Download all artifacts
+      - name: Download Linux client artifacts
         uses: actions/download-artifact@v4
         with:
           path: artifacts
+          pattern: linux-client-*
+
+      - name: Download Linux server artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          pattern: linux-server-*
+
+      - name: Download macOS artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          pattern: macos-client
+      
+      - name: Download macOS server artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          pattern: macos-server
+
+      - name: Download Windows client artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          pattern: windows-client
+
+      - name: Download Windows server artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          pattern: windows-server
 
       - name: Collect release files
         run: |
