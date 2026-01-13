@@ -205,16 +205,18 @@ jobs:
           name: macos-client-arm64-binary
           path: target/release/nexus
 
-  # Build macOS client (x64) - native on Intel runner
+  # Build macOS client (x64) - cross-compile on ARM runner
   build-macos-client-x64:
     name: Build macOS Client (x64)
-    runs-on: macos-13
+    runs-on: macos-14
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-apple-darwin
 
       - name: Cache cargo registry
         uses: actions/cache@v4
@@ -241,13 +243,13 @@ jobs:
             macos-x64-client-cargo-build-
 
       - name: Build client (x64)
-        run: cargo build --release --package nexus-client
+        run: cargo build --release --package nexus-client --target x86_64-apple-darwin
 
       - name: Upload binary
         uses: actions/upload-artifact@v4
         with:
           name: macos-client-x64-binary
-          path: target/release/nexus
+          path: target/x86_64-apple-darwin/release/nexus
 
   # Merge macOS client binaries into universal binary and create DMG
   build-macos-client-universal:
