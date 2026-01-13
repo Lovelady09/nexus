@@ -197,14 +197,40 @@ jobs:
           restore-keys: |
             macos-arm64-client-cargo-build-
 
-      - name: Build client (arm64)
-        run: cargo build --release --package nexus-client
+      - name: Cache cargo-bundle
+        id: cache-cargo-bundle
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/bin/cargo-bundle
+          key: cargo-bundle-macos-arm64
+
+      - name: Install cargo-bundle
+        if: steps.cache-cargo-bundle.outputs.cache-hit != 'true'
+        run: cargo install --git https://github.com/zquestz/cargo-bundle --force
+
+      - name: Configure for macOS bundle
+        working-directory: nexus-client
+        run: |
+          # Add ICNS icon for macOS builds
+          sed -i '' 's/icon = \["assets\/macos\/nexus.png", "assets\/windows\/nexus.ico"\]/icon = ["assets\/macos\/nexus.png", "assets\/macos\/nexus.icns", "assets\/windows\/nexus.ico"]/' Cargo.toml
+          # Rename binary to Nexus for macOS builds
+          sed -i '' 's/name = "nexus"/name = "Nexus"/' Cargo.toml
+
+      - name: Build app bundle
+        working-directory: nexus-client
+        run: cargo bundle --release
 
       - name: Upload binary
         uses: actions/upload-artifact@v4
         with:
           name: macos-client-arm64-binary
-          path: target/release/nexus
+          path: target/release/Nexus
+
+      - name: Upload app bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-client-app-bundle
+          path: target/release/bundle/osx/Nexus BBS.app
 
   # Build macOS client (x64) - cross-compile on arm runner
   build-macos-client-x64:
@@ -259,7 +285,11 @@ jobs:
     needs: [build-macos-client-arm64, build-macos-client-x64]
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
+      - name: Download app bundle
+        uses: actions/download-artifact@v4
+        with:
+          name: macos-client-app-bundle
+          path: Nexus BBS.app
 
       - name: Download arm64 binary
         uses: actions/download-artifact@v4
@@ -277,74 +307,17 @@ jobs:
         id: version
         run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
 
-      - name: Create universal binary
+      - name: Create universal binary and replace in bundle
         run: |
-          mkdir -p target/release
           lipo -create \
-            -output target/release/Nexus \
-            binaries/arm64/nexus \
+            -output "Nexus BBS.app/Contents/MacOS/Nexus" \
+            binaries/arm64/Nexus \
             binaries/x64/nexus
-          chmod +x target/release/Nexus
-          file target/release/Nexus
-
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Cache cargo registry
-        uses: actions/cache@v4
-        with:
-          path: ~/.cargo/registry
-          key: macos-arm64-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            macos-arm64-cargo-registry-
-
-      - name: Cache cargo index
-        uses: actions/cache@v4
-        with:
-          path: ~/.cargo/git
-          key: macos-arm64-cargo-index-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            macos-arm64-cargo-index-
-
-      - name: Cache cargo build
-        uses: actions/cache@v4
-        with:
-          path: target
-          key: macos-universal-client-cargo-build-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            macos-universal-client-cargo-build-
-
-      - name: Cache cargo-bundle
-        id: cache-cargo-bundle
-        uses: actions/cache@v4
-        with:
-          path: ~/.cargo/bin/cargo-bundle
-          key: cargo-bundle-macos-arm64
-
-      - name: Install cargo-bundle
-        if: steps.cache-cargo-bundle.outputs.cache-hit != 'true'
-        run: cargo install --git https://github.com/zquestz/cargo-bundle --force
-
-      - name: Configure for macOS bundle
-        working-directory: nexus-client
-        run: |
-          # Add ICNS icon for macOS builds
-          sed -i '' 's/icon = \["assets\/macos\/nexus.png", "assets\/windows\/nexus.ico"\]/icon = ["assets\/macos\/nexus.png", "assets\/macos\/nexus.icns", "assets\/windows\/nexus.ico"]/' Cargo.toml
-          # Rename binary to Nexus for macOS builds
-          sed -i '' 's/name = "nexus"/name = "Nexus"/' Cargo.toml
-
-      - name: Create app bundle
-        working-directory: nexus-client
-        run: cargo bundle --release
-
-      - name: Replace binary with universal binary
-        run: |
-          cp target/release/Nexus "target/release/bundle/osx/Nexus BBS.app/Contents/MacOS/Nexus"
-          chmod +x "target/release/bundle/osx/Nexus BBS.app/Contents/MacOS/Nexus"
-          file "target/release/bundle/osx/Nexus BBS.app/Contents/MacOS/Nexus"
+          chmod +x "Nexus BBS.app/Contents/MacOS/Nexus"
+          file "Nexus BBS.app/Contents/MacOS/Nexus"
 
       - name: Clear extended attributes
-        run: xattr -cr "target/release/bundle/osx/Nexus BBS.app"
+        run: xattr -cr "Nexus BBS.app"
 
       # Ad-hoc signing provides a valid signature without an Apple Developer account.
       # It helps with some Gatekeeper checks but isn't notarized.
@@ -355,18 +328,18 @@ jobs:
       - name: Ad-hoc code sign
         run: |
           # Sign all nested components first (inside-out signing)
-          find "target/release/bundle/osx/Nexus BBS.app" -type f -perm +111 -exec codesign --force --deep --sign - {} \; 2>/dev/null || true
+          find "Nexus BBS.app" -type f -perm +111 -exec codesign --force --deep --sign - {} \; 2>/dev/null || true
           # Sign the main binary
-          codesign --force --sign - "target/release/bundle/osx/Nexus BBS.app/Contents/MacOS/Nexus"
+          codesign --force --sign - "Nexus BBS.app/Contents/MacOS/Nexus"
           # Sign the app bundle
-          codesign --force --sign - "target/release/bundle/osx/Nexus BBS.app"
+          codesign --force --sign - "Nexus BBS.app"
           # Verify the signature
-          codesign --verify --verbose "target/release/bundle/osx/Nexus BBS.app"
+          codesign --verify --verbose "Nexus BBS.app"
 
       - name: Create DMG
         run: |
           mkdir -p dist dmg-contents
-          cp -R "target/release/bundle/osx/Nexus BBS.app" dmg-contents/
+          cp -R "Nexus BBS.app" dmg-contents/
           ln -s /Applications dmg-contents/Applications
           hdiutil create -volname "Nexus BBS" \
             -srcfolder dmg-contents \
