@@ -22,8 +22,10 @@ COPY nexus-server/Cargo.toml nexus-server/Cargo.toml
 COPY nexus-client/Cargo.toml nexus-client/Cargo.toml
 
 # Create dummy source files to build dependencies
+# nexus-server has both lib.rs and main.rs targets
 RUN mkdir -p nexus-common/src nexus-server/src nexus-client/src && \
   echo "pub fn dummy() {}" > nexus-common/src/lib.rs && \
+  echo "" > nexus-server/src/lib.rs && \
   echo "fn main() {}" > nexus-server/src/main.rs && \
   echo "fn main() {}" > nexus-client/src/main.rs && \
   cargo build --release --package nexus-server && \
@@ -40,11 +42,9 @@ RUN cargo build --release --package nexus-server && \
 # Runtime stage
 FROM debian:bookworm-slim
 
-# OCI labels
+# OCI labels (metadata-action sets source, revision, created, url, version automatically)
 LABEL org.opencontainers.image.title="Nexus BBS Server" \
   org.opencontainers.image.description="A modern BBS server inspired by Hotline" \
-  org.opencontainers.image.version="0.5.0" \
-  org.opencontainers.image.source="https://github.com/zquestz/nexus" \
   org.opencontainers.image.licenses="MIT"
 
 RUN useradd --create-home nexus && \
