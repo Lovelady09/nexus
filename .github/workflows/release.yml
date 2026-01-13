@@ -15,7 +15,9 @@ jobs:
   build-linux-client:
     name: Build Linux Client (${{ matrix.arch }})
     runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
     strategy:
+      fail-fast: false
       matrix:
         include:
           - runner: ubuntu-latest
@@ -82,7 +84,9 @@ jobs:
   build-linux-server:
     name: Build Linux Server (${{ matrix.arch }})
     runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
     strategy:
+      fail-fast: false
       matrix:
         include:
           - runner: ubuntu-latest
@@ -134,10 +138,11 @@ jobs:
           name: linux-server-${{ matrix.arch }}
           path: dist/*.tar.gz
 
-  # Build macOS (universal client + both arch servers)
-  build-macos:
-    name: Build macOS
+  # Build macOS client (universal binary)
+  build-macos-client:
+    name: Build macOS Client
     runs-on: macos-14
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
 
@@ -150,31 +155,25 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cargo/registry
-          key: macos-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+          key: macos-client-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Cache cargo index
         uses: actions/cache@v4
         with:
           path: ~/.cargo/git
-          key: macos-cargo-git-${{ hashFiles('**/Cargo.lock') }}
+          key: macos-client-cargo-git-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Cache cargo build
         uses: actions/cache@v4
         with:
           path: target
-          key: macos-cargo-build-${{ hashFiles('**/Cargo.lock') }}
+          key: macos-client-cargo-build-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Build client (ARM64)
         run: cargo build --release --package nexus-client --target aarch64-apple-darwin
 
       - name: Build client (x64)
         run: cargo build --release --package nexus-client --target x86_64-apple-darwin
-
-      - name: Build server (ARM64)
-        run: cargo build --release --package nexus-server --target aarch64-apple-darwin
-
-      - name: Build server (x64)
-        run: cargo build --release --package nexus-server --target x86_64-apple-darwin
 
       - name: Get version from tag
         id: version
@@ -219,6 +218,53 @@ jobs:
             -ov -format UDZO \
             "dist/nexus-client-${{ steps.version.outputs.VERSION }}-macos-universal.dmg"
 
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-client
+          path: dist/*
+
+  # Build macOS server (both architectures)
+  build-macos-server:
+    name: Build macOS Server
+    runs-on: macos-14
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-apple-darwin,aarch64-apple-darwin
+
+      - name: Cache cargo registry
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/registry
+          key: macos-server-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Cache cargo index
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/git
+          key: macos-server-cargo-git-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Cache cargo build
+        uses: actions/cache@v4
+        with:
+          path: target
+          key: macos-server-cargo-build-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Build server (ARM64)
+        run: cargo build --release --package nexus-server --target aarch64-apple-darwin
+
+      - name: Build server (x64)
+        run: cargo build --release --package nexus-server --target x86_64-apple-darwin
+
+      - name: Get version from tag
+        id: version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
       - name: Package server (x64)
         run: |
           mkdir -p dist/nexusd
@@ -240,13 +286,14 @@ jobs:
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: macos
+          name: macos-server
           path: dist/*
 
-  # Build Windows
-  build-windows:
-    name: Build Windows
+  # Build Windows client
+  build-windows-client:
+    name: Build Windows Client
     runs-on: windows-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
 
@@ -257,25 +304,22 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cargo/registry
-          key: windows-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+          key: windows-client-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Cache cargo index
         uses: actions/cache@v4
         with:
           path: ~/.cargo/git
-          key: windows-cargo-git-${{ hashFiles('**/Cargo.lock') }}
+          key: windows-client-cargo-git-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Cache cargo build
         uses: actions/cache@v4
         with:
           path: target
-          key: windows-cargo-build-${{ hashFiles('**/Cargo.lock') }}
+          key: windows-client-cargo-build-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Build client
-        run: cargo build --release --package nexus-client
-
-      - name: Build server
-        run: cargo build --release --package nexus-server
+        run: cargo build --release --package nexus-client --target x86_64-pc-windows-msvc
 
       - name: Get version from tag
         id: version
@@ -289,6 +333,56 @@ jobs:
         working-directory: nexus-client
         run: cargo bundle --target x86_64-pc-windows-msvc --format wxsmsi --release
 
+      - name: Collect client artifact
+        shell: bash
+        run: |
+          mkdir -p dist
+          mv target/x86_64-pc-windows-msvc/release/bundle/wxsmsi/bin/Release/*.msi \
+             dist/nexus-client-${{ steps.version.outputs.VERSION }}-windows-x64.msi
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-client
+          path: dist/*.msi
+
+  # Build Windows server
+  build-windows-server:
+    name: Build Windows Server
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo registry
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/registry
+          key: windows-server-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Cache cargo index
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/git
+          key: windows-server-cargo-git-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Cache cargo build
+        uses: actions/cache@v4
+        with:
+          path: target
+          key: windows-server-cargo-build-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Build server
+        run: cargo build --release --package nexus-server
+
+      - name: Get version from tag
+        id: version
+        shell: bash
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
       - name: Package server
         shell: bash
         run: |
@@ -298,26 +392,18 @@ jobs:
           cd dist
           7z a -tzip nexusd-${{ steps.version.outputs.VERSION }}-windows-x64.zip nexusd
 
-      - name: Collect client artifact
-        shell: bash
-        run: |
-          mkdir -p dist
-          mv target/x86_64-pc-windows-msvc/release/bundle/wxsmsi/*.msi \
-             dist/nexus-client-${{ steps.version.outputs.VERSION }}-windows-x64.msi
-
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: windows
-          path: |
-            dist/*.msi
-            dist/*.zip
+          name: windows-server
+          path: dist/*.zip
 
   # Create GitHub release with all artifacts
   release:
     name: Create Release
     runs-on: ubuntu-latest
-    needs: [build-linux-client, build-linux-server, build-macos, build-windows]
+    timeout-minutes: 10
+    needs: [build-linux-client, build-linux-server, build-macos-client, build-macos-server, build-windows-client, build-windows-server]
     permissions:
       contents: write
     steps:
@@ -345,10 +431,12 @@ jobs:
           cp artifacts/linux-server-arm64/* release/
 
           # macOS
-          cp artifacts/macos/* release/
+          cp artifacts/macos-client/* release/
+          cp artifacts/macos-server/* release/
 
           # Windows
-          cp artifacts/windows/* release/
+          cp artifacts/windows-client/* release/
+          cp artifacts/windows-server/* release/
 
           echo "Release artifacts:"
           ls -la release/
@@ -414,6 +502,7 @@ jobs:
   build-docker-amd64:
     name: Build Docker Image (amd64)
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     permissions:
       contents: read
       packages: write
@@ -451,6 +540,7 @@ jobs:
   build-docker-arm64:
     name: Build Docker Image (arm64)
     runs-on: ubuntu-24.04-arm
+    timeout-minutes: 45
     permissions:
       contents: read
       packages: write
@@ -488,6 +578,7 @@ jobs:
   docker-manifest:
     name: Create Docker Manifest
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     needs: [build-docker-amd64, build-docker-arm64]
     permissions:
       contents: read
