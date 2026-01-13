@@ -42,17 +42,17 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cargo/registry
-          key: linux-${{ runner.arch }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+          key: linux-${{ matrix.arch }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
-            linux-${{ runner.arch }}-cargo-registry-
+            linux-${{ matrix.arch }}-cargo-registry-
 
       - name: Cache cargo index
         uses: actions/cache@v4
         with:
           path: ~/.cargo/git
-          key: linux-${{ runner.arch }}-cargo-index-${{ hashFiles('**/Cargo.lock') }}
+          key: linux-${{ matrix.arch }}-cargo-index-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
-            linux-${{ runner.arch }}-cargo-index-
+            linux-${{ matrix.arch }}-cargo-index-
 
       - name: Cache cargo build
         uses: actions/cache@v4
@@ -67,7 +67,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cargo/bin/cargo-bundle
-          key: cargo-bundle-${{ runner.os }}-${{ runner.arch }}
+          key: cargo-bundle-${{ runner.os }}-${{ matrix.arch }}
 
       - name: Install cargo-bundle
         if: steps.cache-cargo-bundle.outputs.cache-hit != 'true'
@@ -120,17 +120,17 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cargo/registry
-          key: linux-${{ runner.arch }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+          key: linux-${{ matrix.arch }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
-            linux-${{ runner.arch }}-cargo-registry-
+            linux-${{ matrix.arch }}-cargo-registry-
 
       - name: Cache cargo index
         uses: actions/cache@v4
         with:
           path: ~/.cargo/git
-          key: linux-${{ runner.arch }}-cargo-index-${{ hashFiles('**/Cargo.lock') }}
+          key: linux-${{ matrix.arch }}-cargo-index-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
-            linux-${{ runner.arch }}-cargo-index-
+            linux-${{ matrix.arch }}-cargo-index-
 
       - name: Cache cargo build
         uses: actions/cache@v4
@@ -319,7 +319,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cargo/bin/cargo-bundle
-          key: cargo-bundle-${{ runner.os }}-${{ runner.arch }}
+          key: cargo-bundle-macos-arm64
 
       - name: Install cargo-bundle
         if: steps.cache-cargo-bundle.outputs.cache-hit != 'true'
@@ -496,7 +496,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cargo/bin/cargo-bundle
-          key: cargo-bundle-${{ runner.os }}-${{ runner.arch }}
+          key: cargo-bundle-windows-x64
 
       - name: Install cargo-bundle
         if: steps.cache-cargo-bundle.outputs.cache-hit != 'true'

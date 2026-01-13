@@ -33,6 +33,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Set lowercase arch
+        id: arch
+        shell: bash
+        run: echo "arch=$(echo ${{ runner.arch }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
+
       - name: Install Linux dependencies
         if: runner.os == 'Linux'
         run: |
@@ -48,25 +53,25 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cargo/registry
-          key: ${{ runner.os }}-${{ runner.arch }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.os }}-${{ steps.arch.outputs.arch }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
-            ${{ runner.os }}-${{ runner.arch }}-cargo-registry-
+            ${{ runner.os }}-${{ steps.arch.outputs.arch }}-cargo-registry-
 
       - name: Cache cargo index
         uses: actions/cache@v4
         with:
           path: ~/.cargo/git
-          key: ${{ runner.os }}-${{ runner.arch }}-cargo-index-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.os }}-${{ steps.arch.outputs.arch }}-cargo-index-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
-            ${{ runner.os }}-${{ runner.arch }}-cargo-index-
+            ${{ runner.os }}-${{ steps.arch.outputs.arch }}-cargo-index-
 
       - name: Cache cargo build
         uses: actions/cache@v4
         with:
           path: target
-          key: ${{ runner.os }}-${{ runner.arch }}-cargo-build-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.os }}-${{ steps.arch.outputs.arch }}-cargo-build-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
-            ${{ runner.os }}-${{ runner.arch }}-cargo-build-
+            ${{ runner.os }}-${{ steps.arch.outputs.arch }}-cargo-build-
 
       - name: Run tests
         run: cargo test --workspace --verbose
@@ -285,7 +290,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cargo/bin/cargo-bundle
-          key: cargo-bundle-${{ runner.os }}-${{ runner.arch }}
+          key: cargo-bundle-macos-arm64
 
       - name: Install cargo-bundle
         if: steps.cache-cargo-bundle.outputs.cache-hit != 'true'
@@ -338,17 +343,17 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cargo/registry
-          key: linux-${{ runner.arch }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+          key: linux-${{ matrix.arch }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
-            linux-${{ runner.arch }}-cargo-registry-
+            linux-${{ matrix.arch }}-cargo-registry-
 
       - name: Cache cargo index
         uses: actions/cache@v4
         with:
           path: ~/.cargo/git
-          key: linux-${{ runner.arch }}-cargo-index-${{ hashFiles('**/Cargo.lock') }}
+          key: linux-${{ matrix.arch }}-cargo-index-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
-            linux-${{ runner.arch }}-cargo-index-
+            linux-${{ matrix.arch }}-cargo-index-
 
       - name: Cache cargo build
         uses: actions/cache@v4
@@ -363,7 +368,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cargo/bin/cargo-bundle
-          key: cargo-bundle-${{ runner.os }}-${{ runner.arch }}
+          key: cargo-bundle-linux-${{ matrix.arch }}
 
       - name: Install cargo-bundle
         if: steps.cache-cargo-bundle.outputs.cache-hit != 'true'
@@ -417,7 +422,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cargo/bin/cargo-bundle
-          key: cargo-bundle-${{ runner.os }}-${{ runner.arch }}
+          key: cargo-bundle-windows-x64
 
       - name: Install cargo-bundle
         if: steps.cache-cargo-bundle.outputs.cache-hit != 'true'
