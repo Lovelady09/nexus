@@ -161,9 +161,9 @@ jobs:
           name: linux-server-${{ matrix.arch }}
           path: dist/*.tar.gz
 
-  # Build macOS client (ARM64) - native on ARM runner
+  # Build macOS client (arm64) - native on arm runner
   build-macos-client-arm64:
-    name: Build macOS Client (ARM64)
+    name: Build macOS Client (arm64)
     runs-on: macos-14
     timeout-minutes: 30
     steps:
@@ -196,7 +196,7 @@ jobs:
           restore-keys: |
             macos-arm64-client-cargo-build-
 
-      - name: Build client (ARM64)
+      - name: Build client (arm64)
         run: cargo build --release --package nexus-client
 
       - name: Upload binary
@@ -205,7 +205,7 @@ jobs:
           name: macos-client-arm64-binary
           path: target/release/nexus
 
-  # Build macOS client (x64) - cross-compile on ARM runner
+  # Build macOS client (x64) - cross-compile on arm runner
   build-macos-client-x64:
     name: Build macOS Client (x64)
     runs-on: macos-14
@@ -253,14 +253,14 @@ jobs:
 
   # Merge macOS client binaries into universal binary and create DMG
   build-macos-client-universal:
-    name: Build macOS Client (Universal)
+    name: Build macOS Client (universal)
     runs-on: macos-14
     needs: [build-macos-client-arm64, build-macos-client-x64]
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 
-      - name: Download ARM64 binary
+      - name: Download arm64 binary
         uses: actions/download-artifact@v4
         with:
           name: macos-client-arm64-binary
@@ -334,7 +334,7 @@ jobs:
 
   # Build macOS server (both architectures)
   build-macos-server:
-    name: Build macOS Server
+    name: Build macOS Server (universal)
     runs-on: macos-14
     timeout-minutes: 30
     steps:
@@ -369,7 +369,7 @@ jobs:
           restore-keys: |
             macos-server-cargo-build-
 
-      - name: Build server (ARM64)
+      - name: Build server (arm64)
         run: cargo build --release --package nexus-server --target aarch64-apple-darwin
 
       - name: Build server (x64)
@@ -388,7 +388,7 @@ jobs:
           tar -czvf nexusd-${{ steps.version.outputs.VERSION }}-macos-x64.tar.gz nexusd
           rm -rf nexusd
 
-      - name: Package server (ARM64)
+      - name: Package server (arm64)
         run: |
           mkdir -p dist/nexusd
           cp target/aarch64-apple-darwin/release/nexusd dist/nexusd/
