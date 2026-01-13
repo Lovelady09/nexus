@@ -346,6 +346,17 @@ jobs:
       - name: Clear extended attributes
         run: xattr -cr "target/release/bundle/osx/Nexus BBS.app"
 
+      - name: Ad-hoc code sign
+        run: |
+          # Sign all nested components first (inside-out signing)
+          find "target/release/bundle/osx/Nexus BBS.app" -type f -perm +111 -exec codesign --force --deep --sign - {} \; 2>/dev/null || true
+          # Sign the main binary
+          codesign --force --sign - "target/release/bundle/osx/Nexus BBS.app/Contents/MacOS/Nexus"
+          # Sign the app bundle
+          codesign --force --sign - "target/release/bundle/osx/Nexus BBS.app"
+          # Verify the signature
+          codesign --verify --verbose "target/release/bundle/osx/Nexus BBS.app"
+
       - name: Create DMG
         run: |
           mkdir -p dist

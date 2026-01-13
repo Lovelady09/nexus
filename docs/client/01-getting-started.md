@@ -19,13 +19,13 @@ The universal binary runs natively on both Intel and Apple Silicon Macs.
 
 **Troubleshooting "damaged and can't be opened" error:**
 
-If macOS reports the app is damaged, this is due to Gatekeeper quarantine attributes on unsigned apps. Fix it by running:
+The app is ad-hoc signed but not notarized with Apple (which requires a $99/year developer account). If macOS reports the app is damaged, run:
 
 ```bash
 xattr -cr /Applications/Nexus\ BBS.app
 ```
 
-Then launch the app normally.
+Then launch the app normally. This clears the quarantine attribute that macOS adds to downloaded files.
 
 #### Windows
 
