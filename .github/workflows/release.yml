@@ -365,9 +365,11 @@ jobs:
 
       - name: Create DMG
         run: |
-          mkdir -p dist
+          mkdir -p dist dmg-contents
+          cp -R "target/release/bundle/osx/Nexus BBS.app" dmg-contents/
+          ln -s /Applications dmg-contents/Applications
           hdiutil create -volname "Nexus BBS" \
-            -srcfolder "target/release/bundle/osx/Nexus BBS.app" \
+            -srcfolder dmg-contents \
             -ov -format UDZO \
             "dist/nexus-client-${{ steps.version.outputs.VERSION }}-macos-universal.dmg"
 
