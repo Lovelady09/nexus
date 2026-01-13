@@ -67,7 +67,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cargo/bin/cargo-bundle
-          key: cargo-bundle-${{ runner.os }}-${{ matrix.arch }}
+          key: cargo-bundle-linux-${{ matrix.arch }}
 
       - name: Install cargo-bundle
         if: steps.cache-cargo-bundle.outputs.cache-hit != 'true'
