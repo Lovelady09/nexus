@@ -1,0 +1,27 @@
+[Unit]
+Description=Nexus BBS Server
+Documentation=https://github.com/zquestz/nexus
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=nexus
+Group=nexus
+ExecStart=/usr/local/bin/nexusd --database /var/lib/nexusd/nexus.db --file-root /var/lib/nexusd/files
+Restart=on-failure
+RestartSec=5
+
+# Security hardening
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+
+# Data directory (systemd creates /var/lib/nexusd owned by nexus:nexus)
+StateDirectory=nexusd
+WorkingDirectory=/var/lib/nexusd
+
+[Install]
+WantedBy=multi-user.target

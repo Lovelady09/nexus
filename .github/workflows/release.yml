@@ -152,6 +152,7 @@ jobs:
           mkdir -p dist/nexusd
           cp target/release/nexusd dist/nexusd/
           cp README.md LICENSE dist/nexusd/
+          cp nexus-server/dist/nexusd.service dist/nexusd/
           cd dist
           tar -czvf nexusd-${{ steps.version.outputs.VERSION }}-linux-${{ matrix.arch }}.tar.gz nexusd
 

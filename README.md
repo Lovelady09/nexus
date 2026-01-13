@@ -31,7 +31,7 @@ Pre-built binaries are available on the [Releases](https://github.com/zquestz/ne
 | macOS (Universal) | `nexus-client-{version}-macos-universal.dmg` |
 | Windows (x64) | `nexus-client-{version}-windows-x64.msi` |
 | Linux (x64) | `.AppImage` or `.deb` |
-| Linux (ARM64) | `.AppImage` or `.deb` |
+| Linux (arm64) | `.AppImage` or `.deb` |
 
 ### Server
 
@@ -40,6 +40,7 @@ Pre-built binaries are available on the [Releases](https://github.com/zquestz/ne
 | macOS | `nexusd-{version}-macos-{x64,arm64}.tar.gz` |
 | Windows | `nexusd-{version}-windows-x64.zip` |
 | Linux | `nexusd-{version}-linux-{x64,arm64}.tar.gz` |
+| Docker | `ghcr.io/zquestz/nexusd:{version}` |
 
 See [Client Installation](docs/client/01-getting-started.md) and [Server Installation](docs/server/01-getting-started.md) for detailed instructions.
 

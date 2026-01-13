@@ -32,7 +32,7 @@ Choose the format that works best for your distribution:
 | **AppImage** | Any distro | Download, `chmod +x`, run |
 | **Deb** | Debian, Ubuntu, Mint | `sudo dpkg -i nexus-client-{version}-linux-{arch}.deb` |
 
-Both x64 and ARM64 builds are available.
+Both x64 and arm64 builds are available.
 
 **AppImage quick start:**
 ```bash

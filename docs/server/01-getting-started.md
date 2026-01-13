@@ -37,7 +37,7 @@ Download the appropriate tarball for your architecture:
 | Architecture | File |
 |--------------|------|
 | x64 (Intel/AMD) | `nexusd-{version}-linux-x64.tar.gz` |
-| ARM64 (Raspberry Pi 4+, ARM servers) | `nexusd-{version}-linux-arm64.tar.gz` |
+| arm64 (Raspberry Pi 4+, ARM servers) | `nexusd-{version}-linux-arm64.tar.gz` |
 
 ```bash
 # Extract and run
@@ -45,6 +45,34 @@ tar -xzf nexusd-*-linux-*.tar.gz
 cd nexusd
 ./nexusd
 ```
+
+#### Linux (systemd)
+
+For production deployments, use the included systemd service file:
+
+```bash
+# Extract
+tar -xzf nexusd-*-linux-*.tar.gz
+cd nexusd
+
+# Install binary
+sudo cp nexusd /usr/local/bin/
+sudo chmod +x /usr/local/bin/nexusd
+
+# Create service user
+sudo useradd --system --no-create-home nexus
+
+# Install and enable service
+sudo cp nexusd.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable nexusd
+sudo systemctl start nexusd
+
+# Check status
+sudo systemctl status nexusd
+```
+
+Data is stored in `/var/lib/nexusd/` (created automatically by systemd).
 
 ### Building from Source
 
