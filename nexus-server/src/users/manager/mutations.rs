@@ -4,7 +4,7 @@ use std::collections::HashSet;
 use std::net::IpAddr;
 
 use ipnet::IpNet;
-use nexus_common::protocol::ServerMessage;
+use nexus_common::protocol::{ServerMessage, UserInfo};
 
 use super::UserManager;
 use crate::db::Permission;
@@ -88,11 +88,15 @@ impl UserManager {
     /// `UserDisconnected` to all users with the `user_list` permission. Use this
     /// for normal disconnects, kicks, account deletion, and account disable.
     ///
+    /// For regular accounts with multiple sessions, this also broadcasts `UserUpdated`
+    /// with the newest remaining session's info (e.g., avatar) so clients can update.
+    ///
     /// For ban disconnects, use `disconnect_sessions_by_ip()` or
     /// `disconnect_sessions_in_range()` instead, as those need to send a custom
     /// message to the disconnected user before removing them.
     pub async fn remove_user_and_broadcast(&self, session_id: u32) -> Option<UserSession> {
         if let Some(user) = self.remove_user(session_id).await {
+            // Broadcast UserDisconnected
             self.broadcast_user_event(
                 ServerMessage::UserDisconnected {
                     session_id,
@@ -101,6 +105,41 @@ impl UserManager {
                 Some(session_id),
             )
             .await;
+
+            // For regular accounts, check if there are remaining sessions
+            // If so, broadcast UserUpdated with the newest session's info (for avatar sync)
+            if !user.is_shared {
+                let remaining_sessions = self.get_sessions_by_username(&user.username).await;
+                if !remaining_sessions.is_empty() {
+                    // Find the newest remaining session (by login_time)
+                    if let Some(newest) = remaining_sessions.iter().max_by_key(|s| s.login_time) {
+                        // Collect all session IDs for this user
+                        let session_ids: Vec<u32> =
+                            remaining_sessions.iter().map(|s| s.session_id).collect();
+
+                        self.broadcast_user_event(
+                            ServerMessage::UserUpdated {
+                                previous_username: user.username.clone(),
+                                user: UserInfo {
+                                    username: newest.username.clone(),
+                                    nickname: newest.nickname.clone(),
+                                    is_admin: newest.is_admin,
+                                    is_shared: newest.is_shared,
+                                    login_time: newest.login_time,
+                                    session_ids,
+                                    locale: newest.locale.clone(),
+                                    avatar: newest.avatar.clone(),
+                                    is_away: newest.is_away,
+                                    status: newest.status.clone(),
+                                },
+                            },
+                            Some(session_id),
+                        )
+                        .await;
+                    }
+                }
+            }
+
             Some(user)
         } else {
             None
