@@ -155,7 +155,15 @@ jobs:
           chmod +x target/release/Nexus
           file target/release/Nexus
 
+      - name: Cache cargo-bundle
+        id: cache-cargo-bundle
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/bin/cargo-bundle
+          key: cargo-bundle-${{ runner.os }}-${{ runner.arch }}
+
       - name: Install cargo-bundle
+        if: steps.cache-cargo-bundle.outputs.cache-hit != 'true'
         run: cargo install --git https://github.com/zquestz/cargo-bundle --force
 
       - name: Configure for macOS bundle
@@ -176,7 +184,7 @@ jobs:
 
   # Test Linux package formats (deb, appimage)
   bundle-linux:
-    name: Bundle Linux (${{ matrix.format }}, ${{ matrix.arch }})
+    name: Bundle Linux (${{ matrix.arch }})
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 30
     strategy:
@@ -185,16 +193,8 @@ jobs:
         include:
           - runner: ubuntu-latest
             arch: x64
-            format: deb
-          - runner: ubuntu-latest
-            arch: x64
-            format: appimage
           - runner: ubuntu-24.04-arm
             arch: arm64
-            format: deb
-          - runner: ubuntu-24.04-arm
-            arch: arm64
-            format: appimage
     steps:
       - uses: actions/checkout@v4
 
@@ -213,26 +213,38 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cargo/registry
-          key: linux-bundle-${{ matrix.arch }}-${{ matrix.format }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+          key: linux-bundle-${{ matrix.arch }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Cache cargo index
         uses: actions/cache@v4
         with:
           path: ~/.cargo/git
-          key: linux-bundle-${{ matrix.arch }}-${{ matrix.format }}-cargo-git-${{ hashFiles('**/Cargo.lock') }}
+          key: linux-bundle-${{ matrix.arch }}-cargo-git-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Cache cargo build
         uses: actions/cache@v4
         with:
           path: target
-          key: linux-bundle-${{ matrix.arch }}-${{ matrix.format }}-cargo-build-${{ hashFiles('**/Cargo.lock') }}
+          key: linux-bundle-${{ matrix.arch }}-cargo-build-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Cache cargo-bundle
+        id: cache-cargo-bundle
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/bin/cargo-bundle
+          key: cargo-bundle-${{ runner.os }}-${{ runner.arch }}
 
       - name: Install cargo-bundle
+        if: steps.cache-cargo-bundle.outputs.cache-hit != 'true'
         run: cargo install --git https://github.com/zquestz/cargo-bundle --force
 
-      - name: Build ${{ matrix.format }} bundle
+      - name: Build deb bundle
         working-directory: nexus-client
-        run: cargo bundle --release --format ${{ matrix.format }}
+        run: cargo bundle --release --format deb
+
+      - name: Build appimage bundle
+        working-directory: nexus-client
+        run: cargo bundle --release --format appimage
 
   # Test Windows MSI installer
   bundle-windows:
@@ -263,7 +275,15 @@ jobs:
           path: target
           key: windows-bundle-cargo-build-${{ hashFiles('**/Cargo.lock') }}
 
+      - name: Cache cargo-bundle
+        id: cache-cargo-bundle
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/bin/cargo-bundle
+          key: cargo-bundle-${{ runner.os }}-${{ runner.arch }}
+
       - name: Install cargo-bundle
+        if: steps.cache-cargo-bundle.outputs.cache-hit != 'true'
         run: cargo install --git https://github.com/zquestz/cargo-bundle --force
 
       - name: Build MSI installer

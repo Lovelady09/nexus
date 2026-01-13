@@ -56,7 +56,15 @@ jobs:
           path: target
           key: linux-${{ matrix.arch }}-client-cargo-build-${{ hashFiles('**/Cargo.lock') }}
 
+      - name: Cache cargo-bundle
+        id: cache-cargo-bundle
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/bin/cargo-bundle
+          key: cargo-bundle-${{ runner.os }}-${{ runner.arch }}
+
       - name: Install cargo-bundle
+        if: steps.cache-cargo-bundle.outputs.cache-hit != 'true'
         run: cargo install --git https://github.com/zquestz/cargo-bundle --force
 
       - name: Get version from tag
@@ -192,7 +200,15 @@ jobs:
           chmod +x target/release/Nexus
           file target/release/Nexus
 
+      - name: Cache cargo-bundle
+        id: cache-cargo-bundle
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/bin/cargo-bundle
+          key: cargo-bundle-${{ runner.os }}-${{ runner.arch }}
+
       - name: Install cargo-bundle
+        if: steps.cache-cargo-bundle.outputs.cache-hit != 'true'
         run: cargo install --git https://github.com/zquestz/cargo-bundle --force
 
       - name: Configure for macOS bundle
@@ -329,7 +345,15 @@ jobs:
         shell: bash
         run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
 
+      - name: Cache cargo-bundle
+        id: cache-cargo-bundle
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/bin/cargo-bundle
+          key: cargo-bundle-${{ runner.os }}-${{ runner.arch }}
+
       - name: Install cargo-bundle
+        if: steps.cache-cargo-bundle.outputs.cache-hit != 'true'
         run: cargo install --git https://github.com/zquestz/cargo-bundle --force
 
       - name: Create MSI installer
