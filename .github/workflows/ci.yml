@@ -168,9 +168,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: target
-          key: macos-arm64-native-bundle-cargo-build-${{ hashFiles('**/Cargo.lock') }}
+          key: macos-arm64-client-cargo-build-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
-            macos-arm64-native-bundle-cargo-build-
+            macos-arm64-client-cargo-build-
 
       - name: Build client (arm64)
         run: cargo build --release --package nexus-client
@@ -214,9 +214,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: target
-          key: macos-x64-cross-bundle-cargo-build-${{ hashFiles('**/Cargo.lock') }}
+          key: macos-x64-client-cargo-build-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
-            macos-x64-cross-bundle-cargo-build-
+            macos-x64-client-cargo-build-
 
       - name: Build client (x64)
         run: cargo build --release --package nexus-client --target x86_64-apple-darwin
@@ -281,9 +281,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: target
-          key: macos-universal-bundle-cargo-build-${{ hashFiles('**/Cargo.lock') }}
+          key: macos-universal-client-cargo-build-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
-            macos-universal-bundle-cargo-build-
+            macos-universal-client-cargo-build-
 
       - name: Cache cargo-bundle
         id: cache-cargo-bundle
@@ -359,9 +359,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: target
-          key: linux-bundle-${{ matrix.arch }}-cargo-build-${{ hashFiles('**/Cargo.lock') }}
+          key: linux-${{ matrix.arch }}-client-cargo-build-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
-            linux-bundle-${{ matrix.arch }}-cargo-build-
+            linux-${{ matrix.arch }}-client-cargo-build-
 
       - name: Cache cargo-bundle
         id: cache-cargo-bundle
