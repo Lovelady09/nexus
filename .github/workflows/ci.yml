@@ -388,9 +388,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: target
-          key: windows-bundle-cargo-build-${{ hashFiles('**/Cargo.lock') }}
+          key: windows-client-cargo-build-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
-            windows-bundle-cargo-build-
+            windows-client-cargo-build-
 
       - name: Cache cargo-bundle
         id: cache-cargo-bundle
