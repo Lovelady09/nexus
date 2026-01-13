@@ -29,7 +29,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, ubuntu-24.04-arm, macos-latest, windows-latest]
+        os: [ubuntu-24.04, ubuntu-24.04-arm, macos-latest, windows-latest]
     steps:
       - uses: actions/checkout@v4
 
@@ -42,8 +42,8 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           # Remove Microsoft repos that cause 403 errors on ARM runners
-          sudo rm -f /etc/apt/sources.list.d/microsoft-prod.list
-          sudo rm -f /etc/apt/sources.list.d/azure-cli.list
+          sudo rm -f /etc/apt/sources.list.d/microsoft*.list
+          sudo rm -f /etc/apt/sources.list.d/azure*.list
           sudo apt-get update && sudo apt-get install -y libasound2-dev
 
       - name: Install Rust
@@ -78,7 +78,7 @@ jobs:
 
   clippy:
     name: Clippy
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
@@ -86,8 +86,8 @@ jobs:
       - name: Install Linux dependencies
         run: |
           # Remove Microsoft repos that cause 403 errors on ARM runners
-          sudo rm -f /etc/apt/sources.list.d/microsoft-prod.list
-          sudo rm -f /etc/apt/sources.list.d/azure-cli.list
+          sudo rm -f /etc/apt/sources.list.d/microsoft*.list
+          sudo rm -f /etc/apt/sources.list.d/azure*.list
           sudo apt-get update && sudo apt-get install -y libasound2-dev
 
       - name: Install Rust
@@ -124,7 +124,7 @@ jobs:
 
   fmt:
     name: Format
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
@@ -296,7 +296,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - runner: ubuntu-latest
+          - runner: ubuntu-24.04
             arch: x64
           - runner: ubuntu-24.04-arm
             arch: arm64
@@ -306,8 +306,8 @@ jobs:
       - name: Install Linux dependencies
         run: |
           # Remove Microsoft repos that cause 403 errors on ARM runners
-          sudo rm -f /etc/apt/sources.list.d/microsoft-prod.list
-          sudo rm -f /etc/apt/sources.list.d/azure-cli.list
+          sudo rm -f /etc/apt/sources.list.d/microsoft*.list
+          sudo rm -f /etc/apt/sources.list.d/azure*.list
           sudo apt-get update
           sudo apt-get install -y libasound2-dev
 
@@ -410,7 +410,7 @@ jobs:
   # Test Docker image build
   docker-build:
     name: Docker Build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4

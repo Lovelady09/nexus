@@ -20,7 +20,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - runner: ubuntu-latest
+          - runner: ubuntu-24.04
             arch: x64
           - runner: ubuntu-24.04-arm
             arch: arm64
@@ -30,8 +30,8 @@ jobs:
       - name: Install dependencies
         run: |
           # Remove Microsoft repos that cause 403 errors on ARM runners
-          sudo rm -f /etc/apt/sources.list.d/microsoft-prod.list
-          sudo rm -f /etc/apt/sources.list.d/azure-cli.list
+          sudo rm -f /etc/apt/sources.list.d/microsoft*.list
+          sudo rm -f /etc/apt/sources.list.d/azure*.list
           sudo apt-get update
           sudo apt-get install -y libasound2-dev
 
@@ -106,7 +106,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - runner: ubuntu-latest
+          - runner: ubuntu-24.04
             arch: x64
           - runner: ubuntu-24.04-arm
             arch: arm64
@@ -562,7 +562,7 @@ jobs:
   # Create GitHub release with all artifacts
   release:
     name: Create Release
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     needs: [build-linux-client, build-linux-server, build-macos-client-universal, build-macos-server, build-windows-client, build-windows-server]
     permissions:
@@ -693,7 +693,7 @@ jobs:
   # Build Docker image (amd64) - native build
   build-docker-amd64:
     name: Build Docker Image (amd64)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 45
     permissions:
       contents: read
