@@ -647,6 +647,9 @@ impl NexusApp {
             Message::TransferRemove(id) => self.handle_transfer_remove(id),
             Message::TransferOpenFolder(id) => self.handle_transfer_open_folder(id),
             Message::TransferClearInactive => self.handle_transfer_clear_inactive(),
+            Message::TransferMoveUp(id) => self.handle_transfer_move_up(id),
+            Message::TransferMoveDown(id) => self.handle_transfer_move_down(id),
+            Message::TransferRetry(id) => self.handle_transfer_retry(id),
         }
     }
 
@@ -679,8 +682,8 @@ impl NexusApp {
         let active_transfers: Vec<_> = self.transfer_manager.active().collect();
         let mut queued_transfers: Vec<_> = self.transfer_manager.queued().collect();
 
-        // Sort queued transfers by created_at for FIFO ordering
-        queued_transfers.sort_by_key(|t| t.created_at);
+        // Sort queued transfers by queue_position for priority ordering
+        queued_transfers.sort_by_key(|t| t.queue_position);
 
         // Active transfers always get subscriptions
         for transfer in &active_transfers {

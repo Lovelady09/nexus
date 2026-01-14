@@ -198,23 +198,26 @@ impl NexusApp {
     /// Handle request to cancel a transfer
     ///
     /// For active transfers: requests cancellation via the flag and marks as failed.
-    /// For paused transfers: just marks as failed (no executor running).
+    /// For queued/paused transfers: just removes them (no executor running).
     pub fn handle_transfer_cancel(&mut self, id: Uuid) -> Task<Message> {
         let Some(transfer) = self.transfer_manager.get(id) else {
             return Task::none();
         };
 
         let is_active = transfer.status.is_active();
+        let is_queued = transfer.status == TransferStatus::Queued;
         let is_paused = transfer.status == TransferStatus::Paused;
 
-        if is_active || is_paused {
-            if is_active {
-                // Request the executor to stop
-                request_cancel(id);
-            }
+        if is_active {
+            // Request the executor to stop
+            request_cancel(id);
             // Mark as failed
             self.transfer_manager
                 .fail(id, t("transfer-cancelled"), None);
+            self.save_transfers();
+        } else if is_queued || is_paused {
+            // Not started yet - just remove it
+            self.transfer_manager.remove(id);
             self.save_transfers();
         }
         Task::none()
@@ -248,6 +251,34 @@ impl NexusApp {
         self.transfer_manager.clear_completed();
         self.transfer_manager.clear_failed();
         self.save_transfers();
+        Task::none()
+    }
+
+    /// Handle request to move a queued transfer up (higher priority)
+    pub fn handle_transfer_move_up(&mut self, id: Uuid) -> Task<Message> {
+        if self.transfer_manager.move_up(id) {
+            self.save_transfers();
+        }
+        Task::none()
+    }
+
+    /// Handle request to move a queued transfer down (lower priority)
+    pub fn handle_transfer_move_down(&mut self, id: Uuid) -> Task<Message> {
+        if self.transfer_manager.move_down(id) {
+            self.save_transfers();
+        }
+        Task::none()
+    }
+
+    /// Handle request to retry a failed transfer (re-queue)
+    pub fn handle_transfer_retry(&mut self, id: Uuid) -> Task<Message> {
+        // Same as resume - re-queue the failed transfer
+        if let Some(transfer) = self.transfer_manager.get(id)
+            && transfer.status.is_failed()
+        {
+            self.transfer_manager.queue(id);
+            self.save_transfers();
+        }
         Task::none()
     }
 

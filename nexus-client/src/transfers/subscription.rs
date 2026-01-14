@@ -311,6 +311,7 @@ mod tests {
             false,
             PathBuf::from("/tmp/file.txt"),
             None,
+            0,
         )
     }
 

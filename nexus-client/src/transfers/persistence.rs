@@ -301,14 +301,101 @@ impl TransferManager {
     }
 
     /// Queue a transfer for resume
+    ///
+    /// Assigns the transfer to the end of the queue (highest queue_position + 1).
     pub fn queue(&mut self, id: Uuid) -> bool {
+        // Calculate position before taking mutable borrow
+        let new_position = self.next_queue_position_internal();
         if let Some(transfer) = self.transfers.get_mut(&id) {
             transfer.queue();
+            transfer.queue_position = new_position;
             self.dirty = true;
             true
         } else {
             false
         }
+    }
+
+    /// Get the next queue position (max + 1, or 0 if empty)
+    pub fn next_queue_position(&self) -> u32 {
+        self.next_queue_position_internal()
+    }
+
+    /// Internal helper to calculate next queue position
+    fn next_queue_position_internal(&self) -> u32 {
+        self.transfers
+            .values()
+            .filter(|t| t.status == TransferStatus::Queued)
+            .map(|t| t.queue_position)
+            .max()
+            .map(|max| max.saturating_add(1))
+            .unwrap_or(0)
+    }
+
+    /// Move a queued transfer up (lower position = higher priority)
+    ///
+    /// Returns false if transfer not found, not queued, or already first.
+    pub fn move_up(&mut self, id: Uuid) -> bool {
+        // Get the transfer's current position
+        let current_pos = match self.transfers.get(&id) {
+            Some(t) if t.status == TransferStatus::Queued => t.queue_position,
+            _ => return false,
+        };
+
+        // Find the transfer with the next lower position (the one above)
+        // Capture both id and position to avoid double-lookup
+        let Some((swap_id, swap_pos)) = self
+            .transfers
+            .iter()
+            .filter(|(_, t)| t.status == TransferStatus::Queued && t.queue_position < current_pos)
+            .max_by_key(|(_, t)| t.queue_position)
+            .map(|(id, t)| (*id, t.queue_position))
+        else {
+            return false; // Already first
+        };
+
+        // Swap positions
+        if let Some(t) = self.transfers.get_mut(&id) {
+            t.queue_position = swap_pos;
+        }
+        if let Some(t) = self.transfers.get_mut(&swap_id) {
+            t.queue_position = current_pos;
+        }
+        self.dirty = true;
+        true
+    }
+
+    /// Move a queued transfer down (higher position = lower priority)
+    ///
+    /// Returns false if transfer not found, not queued, or already last.
+    pub fn move_down(&mut self, id: Uuid) -> bool {
+        // Get the transfer's current position
+        let current_pos = match self.transfers.get(&id) {
+            Some(t) if t.status == TransferStatus::Queued => t.queue_position,
+            _ => return false,
+        };
+
+        // Find the transfer with the next higher position (the one below)
+        // Capture both id and position to avoid double-lookup
+        let Some((swap_id, swap_pos)) = self
+            .transfers
+            .iter()
+            .filter(|(_, t)| t.status == TransferStatus::Queued && t.queue_position > current_pos)
+            .min_by_key(|(_, t)| t.queue_position)
+            .map(|(id, t)| (*id, t.queue_position))
+        else {
+            return false; // Already last
+        };
+
+        // Swap positions
+        if let Some(t) = self.transfers.get_mut(&id) {
+            t.queue_position = swap_pos;
+        }
+        if let Some(t) = self.transfers.get_mut(&swap_id) {
+            t.queue_position = current_pos;
+        }
+        self.dirty = true;
+        true
     }
 
     /// Remove all completed transfers
@@ -440,6 +527,19 @@ mod tests {
             false,
             PathBuf::from("/home/user/Downloads/app.zip"),
             None,
+            0,
+        )
+    }
+
+    fn test_transfer_with_position(position: u32) -> Transfer {
+        Transfer::new_download(
+            test_connection_info(),
+            "/Games/app.zip".to_string(),
+            false,
+            false,
+            PathBuf::from("/home/user/Downloads/app.zip"),
+            None,
+            position,
         )
     }
 
@@ -711,6 +811,142 @@ mod tests {
 
         let all: Vec<_> = manager.all().collect();
         assert_eq!(all.len(), 3);
+    }
+
+    #[test]
+    fn test_next_queue_position_empty() {
+        let manager = TransferManager::new();
+        assert_eq!(manager.next_queue_position(), 0);
+    }
+
+    #[test]
+    fn test_next_queue_position_with_transfers() {
+        let mut manager = TransferManager::new();
+        manager.add(test_transfer_with_position(0));
+        manager.add(test_transfer_with_position(5));
+        manager.add(test_transfer_with_position(3));
+        assert_eq!(manager.next_queue_position(), 6);
+    }
+
+    #[test]
+    fn test_queue_assigns_position_at_end() {
+        let mut manager = TransferManager::new();
+
+        // Add a queued transfer at position 0
+        let t1 = test_transfer_with_position(0);
+        let id1 = t1.id;
+        manager.add(t1);
+
+        // Add another at position 5
+        let t2 = test_transfer_with_position(5);
+        manager.add(t2);
+
+        // Pause the first transfer, then re-queue it
+        manager.pause(id1);
+        manager.queue(id1);
+
+        // Should now be at position 6 (max + 1)
+        assert_eq!(manager.get(id1).unwrap().queue_position, 6);
+    }
+
+    #[test]
+    fn test_move_up() {
+        let mut manager = TransferManager::new();
+
+        let t1 = test_transfer_with_position(0);
+        let id1 = t1.id;
+        manager.add(t1);
+
+        let t2 = test_transfer_with_position(1);
+        let id2 = t2.id;
+        manager.add(t2);
+
+        let t3 = test_transfer_with_position(2);
+        let id3 = t3.id;
+        manager.add(t3);
+
+        // Move t3 up - should swap with t2
+        assert!(manager.move_up(id3));
+        assert_eq!(manager.get(id2).unwrap().queue_position, 2);
+        assert_eq!(manager.get(id3).unwrap().queue_position, 1);
+
+        // Move t3 up again - should swap with t1
+        assert!(manager.move_up(id3));
+        assert_eq!(manager.get(id1).unwrap().queue_position, 1);
+        assert_eq!(manager.get(id3).unwrap().queue_position, 0);
+
+        // Move t3 up again - should fail (already first)
+        assert!(!manager.move_up(id3));
+    }
+
+    #[test]
+    fn test_move_down() {
+        let mut manager = TransferManager::new();
+
+        let t1 = test_transfer_with_position(0);
+        let id1 = t1.id;
+        manager.add(t1);
+
+        let t2 = test_transfer_with_position(1);
+        let id2 = t2.id;
+        manager.add(t2);
+
+        let t3 = test_transfer_with_position(2);
+        let id3 = t3.id;
+        manager.add(t3);
+
+        // Move t1 down - should swap with t2
+        assert!(manager.move_down(id1));
+        assert_eq!(manager.get(id1).unwrap().queue_position, 1);
+        assert_eq!(manager.get(id2).unwrap().queue_position, 0);
+
+        // Move t1 down again - should swap with t3
+        assert!(manager.move_down(id1));
+        assert_eq!(manager.get(id1).unwrap().queue_position, 2);
+        assert_eq!(manager.get(id3).unwrap().queue_position, 1);
+
+        // Move t1 down again - should fail (already last)
+        assert!(!manager.move_down(id1));
+    }
+
+    #[test]
+    fn test_move_up_not_queued() {
+        let mut manager = TransferManager::new();
+
+        let t = test_transfer_with_position(0);
+        let id = t.id;
+        manager.add(t);
+
+        // Complete the transfer
+        manager.complete(id);
+
+        // Should fail - not queued
+        assert!(!manager.move_up(id));
+    }
+
+    #[test]
+    fn test_move_down_not_queued() {
+        let mut manager = TransferManager::new();
+
+        let t = test_transfer_with_position(0);
+        let id = t.id;
+        manager.add(t);
+
+        // Pause the transfer
+        manager.set_connecting(id);
+        manager.pause(id);
+
+        // Should fail - not queued (paused)
+        assert!(!manager.move_down(id));
+    }
+
+    #[test]
+    fn test_move_nonexistent() {
+        let mut manager = TransferManager::new();
+        let fake_id = Uuid::new_v4();
+
+        assert!(!manager.move_up(fake_id));
+        assert!(!manager.move_down(fake_id));
     }
 
     #[test]

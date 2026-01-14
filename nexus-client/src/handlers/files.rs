@@ -1162,6 +1162,7 @@ impl NexusApp {
         };
 
         // Create the transfer
+        let queue_position = self.transfer_manager.next_queue_position();
         let transfer = crate::transfers::Transfer::new_download(
             conn.connection_info.clone(),
             remote_path,
@@ -1169,6 +1170,7 @@ impl NexusApp {
             is_directory,
             local_path,
             conn.bookmark_id,
+            queue_position,
         );
 
         // Add to transfer manager
@@ -1256,6 +1258,7 @@ impl NexusApp {
             };
 
             // Create the transfer
+            let queue_position = self.transfer_manager.next_queue_position();
             let transfer = crate::transfers::Transfer::new_upload(
                 conn.connection_info.clone(),
                 remote_path,
@@ -1263,6 +1266,7 @@ impl NexusApp {
                 is_directory,
                 local_path,
                 conn.bookmark_id,
+                queue_position,
             );
 
             // Add to transfer manager
@@ -1327,6 +1331,7 @@ impl NexusApp {
         };
 
         // Create the transfer
+        let queue_position = self.transfer_manager.next_queue_position();
         let transfer = crate::transfers::Transfer::new_upload(
             conn.connection_info.clone(),
             remote_path,
@@ -1334,6 +1339,7 @@ impl NexusApp {
             is_directory,
             path,
             conn.bookmark_id,
+            queue_position,
         );
 
         // Add to transfer manager

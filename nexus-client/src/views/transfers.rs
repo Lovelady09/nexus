@@ -175,12 +175,20 @@ fn danger_action_button_with_tooltip<'a>(
 /// Layout:
 /// ```text
 /// ┌─────────────────────────────────────────────────────────────────────┐
-/// │ ↓  Transfer Name                                           ▶  ✕    │
+/// │ ↓  Transfer Name                                      ↑  ↓  ✕      │
 /// │    [████████████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░] │
 /// │    Server • Status • 1.5 MB/s • ~2m • 192.0 KB / 1.0 GB            │
 /// └─────────────────────────────────────────────────────────────────────┘
 /// ```
-fn build_transfer_row<'a>(transfer: &Transfer, index: usize) -> Element<'a, Message> {
+///
+/// For queued transfers, `is_first_queued` and `is_last_queued` control visibility
+/// of the up/down reorder buttons. Arrows are shown on the left of the cancel button.
+fn build_transfer_row<'a>(
+    transfer: &Transfer,
+    index: usize,
+    is_first_queued: bool,
+    is_last_queued: bool,
+) -> Element<'a, Message> {
     let id = transfer.id;
 
     // Direction icon (download or upload)
@@ -193,14 +201,38 @@ fn build_transfer_row<'a>(transfer: &Transfer, index: usize) -> Element<'a, Mess
     let name = shaped_text(transfer.display_name()).size(TEXT_SIZE);
 
     // Action buttons based on status (top-right corner)
+    // For queued: [↑] [↓] [✕] with arrows shown based on position
     let actions: Element<'a, Message> = match transfer.status {
-        TransferStatus::Queued => row![danger_action_button_with_tooltip(
-            icon::close(),
-            Message::TransferCancel(id),
-            "tooltip-transfer-cancel"
-        )]
-        .spacing(SMALL_SPACING)
-        .into(),
+        TransferStatus::Queued => {
+            let mut action_row = row![].spacing(SMALL_SPACING);
+
+            // Show up arrow if not first queued transfer
+            if !is_first_queued {
+                action_row = action_row.push(action_button_with_tooltip(
+                    icon::up_dir(),
+                    Message::TransferMoveUp(id),
+                    "tooltip-transfer-move-up",
+                ));
+            }
+
+            // Show down arrow if not last queued transfer
+            if !is_last_queued {
+                action_row = action_row.push(action_button_with_tooltip(
+                    icon::down_dir(),
+                    Message::TransferMoveDown(id),
+                    "tooltip-transfer-move-down",
+                ));
+            }
+
+            // Always show cancel button
+            action_row = action_row.push(danger_action_button_with_tooltip(
+                icon::close(),
+                Message::TransferCancel(id),
+                "tooltip-transfer-cancel",
+            ));
+
+            action_row.into()
+        }
         TransferStatus::Connecting | TransferStatus::Transferring => row![
             action_button_with_tooltip(
                 icon::pause(),
@@ -245,9 +277,9 @@ fn build_transfer_row<'a>(transfer: &Transfer, index: usize) -> Element<'a, Mess
         .into(),
         TransferStatus::Failed => row![
             action_button_with_tooltip(
-                icon::play(),
-                Message::TransferResume(id),
-                "tooltip-transfer-resume"
+                icon::refresh(),
+                Message::TransferRetry(id),
+                "tooltip-transfer-retry"
             ),
             action_button_with_tooltip(
                 icon::folder(),
@@ -362,19 +394,14 @@ fn build_transfer_row<'a>(transfer: &Transfer, index: usize) -> Element<'a, Mess
     };
 
     // Progress bar row (full width, with spacing before and after)
-    let progress_row: Element<'a, Message> = if transfer.total_bytes > 0 {
-        let progress = transfer.progress_percent() / 100.0;
-        column![
-            Space::new().height(TRANSFER_PROGRESS_SPACING),
-            container(progress_bar(0.0..=1.0, progress).girth(TRANSFER_PROGRESS_BAR_HEIGHT))
-                .width(Fill),
-            Space::new().height(TRANSFER_PROGRESS_SPACING),
-        ]
-        .into()
-    } else {
-        // No progress info available (queued, connecting, etc.)
-        Space::new().height(0).into()
-    };
+    let progress = transfer.progress_percent() / 100.0;
+    let progress_row: Element<'a, Message> = column![
+        Space::new().height(TRANSFER_PROGRESS_SPACING),
+        container(progress_bar(0.0..=1.0, progress).girth(TRANSFER_PROGRESS_BAR_HEIGHT))
+            .width(Fill),
+        Space::new().height(TRANSFER_PROGRESS_SPACING),
+    ]
+    .into();
 
     // Combine all rows into a column: Item → Bar → Stats
     let content = column![title_row, progress_row, status_row,]
@@ -458,8 +485,8 @@ pub fn transfers_view<'a>(manager: &'a TransferManager) -> Element<'a, Message> 
             .style(muted_text_style)
             .into()
     } else {
-        // Build transfer rows, sorted by status priority then created_at
-        // Active first, then queued, paused, failed, completed
+        // Build transfer rows, sorted by status priority
+        // Active first, then queued (by queue_position), paused, failed, completed
         let mut sorted_transfers = transfers;
         sorted_transfers.sort_by(|a, b| {
             let status_priority = |s: TransferStatus| -> u8 {
@@ -476,16 +503,35 @@ pub fn transfers_view<'a>(manager: &'a TransferManager) -> Element<'a, Message> 
             let b_priority = status_priority(b.status);
             if a_priority != b_priority {
                 a_priority.cmp(&b_priority)
+            } else if a.status == TransferStatus::Queued {
+                // Queued transfers: sort by queue_position (ascending)
+                a.queue_position.cmp(&b.queue_position)
             } else {
-                // Within same status, newest first
+                // Other statuses: newest first
                 b.created_at.cmp(&a.created_at)
             }
         });
 
+        // Find first and last queued transfer IDs for button visibility
+        let queued_ids: Vec<_> = sorted_transfers
+            .iter()
+            .filter(|t| t.status == TransferStatus::Queued)
+            .map(|t| t.id)
+            .collect();
+        let first_queued_id = queued_ids.first().copied();
+        let last_queued_id = queued_ids.last().copied();
+
         let mut rows = Column::new().spacing(TRANSFER_ITEM_SPACING);
 
         for (index, transfer) in sorted_transfers.iter().enumerate() {
-            rows = rows.push(build_transfer_row(transfer, index));
+            let is_first_queued = Some(transfer.id) == first_queued_id;
+            let is_last_queued = Some(transfer.id) == last_queued_id;
+            rows = rows.push(build_transfer_row(
+                transfer,
+                index,
+                is_first_queued,
+                is_last_queued,
+            ));
         }
 
         rows.width(Fill).into()

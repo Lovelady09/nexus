@@ -495,4 +495,10 @@ pub enum Message {
     TransferOpenFolder(Uuid),
     /// Transfer: Clear all inactive (completed and failed) transfers
     TransferClearInactive,
+    /// Transfer: Move a queued transfer up (higher priority)
+    TransferMoveUp(Uuid),
+    /// Transfer: Move a queued transfer down (lower priority)
+    TransferMoveDown(Uuid),
+    /// Transfer: Retry a failed transfer (re-queue)
+    TransferRetry(Uuid),
 }

@@ -269,10 +269,27 @@ View and manage active transfers by clicking the **Transfers** icon in the toolb
 | Button | Available When | Action |
 |--------|----------------|--------|
 | **Pause** | Transferring | Pause the transfer |
-| **Resume** | Paused, Failed | Resume the transfer |
-| **Cancel** | Any active state | Cancel and remove |
+| **Resume** | Paused | Resume the transfer |
+| **Retry** | Failed | Re-queue the failed transfer |
+| **Cancel** | Queued, Transferring | Cancel and remove |
 | **Open Folder** | Completed, Failed | Open download location |
 | **Remove** | Completed, Failed | Remove from list |
+| **↑ Move Up** | Queued | Move higher in queue (executes sooner) |
+| **↓ Move Down** | Queued | Move lower in queue (executes later) |
+
+### Queue Reordering
+
+Queued transfers can be reordered to control which transfers execute first:
+
+1. Open the **Transfers** panel
+2. Find a queued transfer you want to prioritize
+3. Use the stacked arrow buttons on the right side of the row:
+   - Click **↑** to move the transfer higher in the queue (executes sooner)
+   - Click **↓** to move it lower in the queue (executes later)
+
+Transfers at the top of the queue execute first. The up arrow is disabled for the first queued transfer, and the down arrow is disabled for the last.
+
+**Note:** Only queued transfers can be reordered. Active, paused, completed, and failed transfers cannot be moved.
 
 ### Resume Support
 

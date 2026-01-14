@@ -231,6 +231,10 @@ pub struct Transfer {
     /// Current file being transferred (relative path)
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub current_file: Option<String>,
+
+    /// Position in the queue (lower = higher priority, executed first)
+    #[serde(default)]
+    pub queue_position: u32,
 }
 
 impl Transfer {
@@ -242,6 +246,7 @@ impl Transfer {
         is_directory: bool,
         local_path: PathBuf,
         bookmark_id: Option<Uuid>,
+        queue_position: u32,
     ) -> Self {
         Self {
             id: Uuid::new_v4(),
@@ -264,6 +269,7 @@ impl Transfer {
             started_at: None,
             completed_at: None,
             current_file: None,
+            queue_position,
         }
     }
 
@@ -275,6 +281,7 @@ impl Transfer {
         is_directory: bool,
         local_path: PathBuf,
         bookmark_id: Option<Uuid>,
+        queue_position: u32,
     ) -> Self {
         Self {
             id: Uuid::new_v4(),
@@ -297,6 +304,7 @@ impl Transfer {
             started_at: None,
             completed_at: None,
             current_file: None,
+            queue_position,
         }
     }
 
@@ -432,6 +440,7 @@ mod tests {
             false,
             PathBuf::from("/home/user/Downloads/app.zip"),
             None,
+            5,
         );
 
         assert_eq!(transfer.direction, TransferDirection::Download);
@@ -439,6 +448,7 @@ mod tests {
         assert_eq!(transfer.status, TransferStatus::Queued);
         assert_eq!(transfer.total_bytes, 0);
         assert_eq!(transfer.transferred_bytes, 0);
+        assert_eq!(transfer.queue_position, 5);
     }
 
     #[test]
@@ -451,6 +461,7 @@ mod tests {
             false,
             PathBuf::from("/tmp/test.zip"),
             None,
+            0,
         );
 
         // 0 bytes total, not completed
@@ -481,6 +492,7 @@ mod tests {
             false,
             PathBuf::from("/tmp/app.zip"),
             None,
+            0,
         );
         assert_eq!(transfer.display_name(), "app.zip");
 
@@ -492,6 +504,7 @@ mod tests {
             true,
             PathBuf::from("/tmp/root"),
             None,
+            0,
         );
         assert_eq!(transfer2.display_name(), "Test Server");
 
@@ -502,6 +515,7 @@ mod tests {
             false,
             PathBuf::from("/tmp/single_file.txt"),
             None,
+            0,
         );
         assert_eq!(transfer3.display_name(), "single_file.txt");
     }
@@ -535,6 +549,7 @@ mod tests {
             false,
             PathBuf::from("/tmp/test.zip"),
             None,
+            0,
         );
 
         transfer.status = TransferStatus::Transferring;
@@ -558,6 +573,7 @@ mod tests {
             false,
             PathBuf::from("/tmp/test.zip"),
             None,
+            0,
         );
 
         transfer.status = TransferStatus::Transferring;
@@ -579,6 +595,7 @@ mod tests {
             false,
             PathBuf::from("/tmp/test.zip"),
             None,
+            0,
         );
 
         // Can't pause if not active
@@ -640,6 +657,7 @@ mod tests {
             false,
             PathBuf::from("/home/user/Downloads/app.zip"),
             Some(Uuid::new_v4()),
+            42,
         );
 
         let json = serde_json::to_string(&transfer).expect("serialize");
@@ -649,6 +667,7 @@ mod tests {
         assert_eq!(transfer.remote_path, deserialized.remote_path);
         assert_eq!(transfer.direction, deserialized.direction);
         assert_eq!(transfer.status, deserialized.status);
+        assert_eq!(transfer.queue_position, deserialized.queue_position);
     }
 
     #[test]
@@ -682,6 +701,7 @@ mod tests {
             false,
             PathBuf::from("/tmp/test.zip"),
             None,
+            0,
         );
 
         // Initially no timestamps except created_at
@@ -710,6 +730,7 @@ mod tests {
             false,
             PathBuf::from("/tmp/test.zip"),
             None,
+            0,
         );
 
         transfer.start();
@@ -732,6 +753,7 @@ mod tests {
             false,
             PathBuf::from("/tmp/test.zip"),
             None,
+            0,
         );
 
         transfer.start();
@@ -755,6 +777,7 @@ mod tests {
             false,
             PathBuf::from("/tmp/test.zip"),
             None,
+            0,
         );
 
         // No elapsed time if not started
@@ -777,6 +800,7 @@ mod tests {
             false,
             PathBuf::from("/tmp/test.zip"),
             None,
+            0,
         );
 
         // No speed if not started
