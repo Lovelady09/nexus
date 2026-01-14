@@ -33,11 +33,11 @@ Raw TCP connections with TLS. This is the standard transport used by the native 
 
 WebSocket connections over TLS (WSS). Enabled with the `--websocket` server flag. This transport is designed for web-based clients.
 
-**WebSocket framing:**
-- The same binary frame format (`NX|...|payload\n`) is used inside WebSocket binary messages
-- Each WebSocket binary message should contain exactly one Nexus frame
-- The server wraps the connection in an adapter that presents WebSocket as a byte stream
-- Clients should send one Nexus frame per WebSocket message and flush after each frame
+**WebSocket transport:**
+- The server wraps WebSocket in an adapter that presents it as a byte stream
+- The same binary frame format (`NX|...|payload\n`) flows over this byte stream
+- WebSocket message boundaries are ignored - frames can span multiple WS messages
+- Clients should treat the connection as a raw byte stream, same as TCP
 
 **Connection flow (WebSocket):**
 1. TCP connection to port 7502 or 7503
