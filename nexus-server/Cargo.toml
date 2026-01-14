@@ -18,6 +18,8 @@ dirs = "6.0"
 argon2 = { version = "0.5", features = ["std"] }
 strum = { version = "0.27", features = ["derive"] }
 tokio-rustls = "0.26"
+tokio-tungstenite = "0.26"
+futures-util = "0.3"
 rustls-pemfile = "2.2"
 rcgen = "0.14"
 sha2 = "0.10"

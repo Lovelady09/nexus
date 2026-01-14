@@ -13,6 +13,7 @@ mod ip_rule_cache;
 mod transfers;
 mod upnp;
 mod users;
+mod websocket;
 
 use std::fs;
 use std::io::{self, BufReader};
@@ -104,15 +105,49 @@ async fn main() {
     // Setup file area
     let file_root = setup_file_area(args.file_root);
 
-    // Setup network (TCP listeners + TLS)
-    let (listener, transfer_listener, tls_acceptor) =
-        setup_network(args.bind, args.port, args.transfer_port, &db_path).await;
+    // Setup network (TCP listeners + TLS, optionally WebSocket listeners)
+    let websocket_enabled = args.websocket;
+    let (listener, transfer_listener, ws_listener, ws_transfer_listener, tls_acceptor) =
+        setup_network(
+            args.bind,
+            args.port,
+            args.transfer_port,
+            if websocket_enabled {
+                Some(args.websocket_port)
+            } else {
+                None
+            },
+            if websocket_enabled {
+                Some(args.transfer_websocket_port)
+            } else {
+                None
+            },
+            &db_path,
+        )
+        .await;
 
-    // Store transfer port for ServerInfo
+    // Store transfer ports for ServerInfo
     let transfer_port = args.transfer_port;
+    let transfer_websocket_port = if websocket_enabled {
+        Some(args.transfer_websocket_port)
+    } else {
+        None
+    };
 
-    // Setup UPnP port forwarding if requested (forwards both main and transfer ports)
-    let upnp_handle = setup_upnp(args.upnp, args.bind, args.port, transfer_port).await;
+    // Setup UPnP port forwarding if requested (forwards WS ports only if enabled)
+    let upnp_handle = setup_upnp(
+        args.upnp,
+        args.bind,
+        args.port,
+        transfer_port,
+        if websocket_enabled {
+            Some(args.websocket_port)
+        } else {
+            None
+        },
+        transfer_websocket_port,
+    )
+    .await;
 
     // Setup connection tracking for DoS protection (load limits from database)
     let max_connections_per_ip = database.config.get_max_connections_per_ip().await;
@@ -258,6 +293,7 @@ async fn main() {
                             debug,
                             file_root: Some(file_root),
                             transfer_port,
+                            transfer_websocket_port,
                             connection_tracker: connection_tracker.clone(),
                             ip_rule_cache: ip_rule_cache.clone(),
                             file_index: file_index.clone(),
@@ -380,6 +416,158 @@ async fn main() {
                             if let Err(e) =
                                 transfers::handle_transfer_connection(socket, tls_acceptor, params)
                                     .await
+                            {
+                                log_connection_error(&e, peer_addr, debug);
+                            }
+                        });
+                    }
+                    Err(e) => {
+                        eprintln!("{}{}", ERR_ACCEPT, e);
+                    }
+                }
+            }
+        } => {}
+        // WebSocket BBS port accept loop (only if enabled)
+        _ = async {
+            let Some(ref ws_listener) = ws_listener else {
+                // WebSocket disabled, just wait forever
+                std::future::pending::<()>().await;
+                return;
+            };
+            loop {
+                match ws_listener.accept().await {
+                    Ok((socket, peer_addr)) => {
+                        // Check connection limit before accepting (same limit as TCP)
+                        let connection_guard = match connection_tracker.try_acquire(peer_addr.ip()) {
+                            Some(guard) => guard,
+                            None => {
+                                if debug {
+                                    eprintln!("{}{}", ERR_CONNECTION_LIMIT, peer_addr.ip());
+                                }
+                                continue;
+                            }
+                        };
+
+                        let params = ConnectionParams {
+                            peer_addr,
+                            user_manager: user_manager.clone(),
+                            db: database.clone(),
+                            debug,
+                            file_root: Some(file_root),
+                            transfer_port,
+                            transfer_websocket_port,
+                            connection_tracker: connection_tracker.clone(),
+                            ip_rule_cache: ip_rule_cache.clone(),
+                            file_index: file_index.clone(),
+                            channel_manager: channel_manager.clone(),
+                        };
+                        let tls_acceptor = tls_acceptor.clone();
+                        let ip_rule_cache_for_check = ip_rule_cache.clone();
+
+                        tokio::spawn(async move {
+                            let _guard = connection_guard;
+
+                            // Check IP rules BEFORE TLS handshake (same as TCP)
+                            let should_allow = {
+                                let cache = ip_rule_cache_for_check
+                                    .read()
+                                    .expect("ip rule cache lock poisoned");
+                                if cache.needs_rebuild() {
+                                    drop(cache);
+                                    ip_rule_cache_for_check
+                                        .write()
+                                        .expect("ip rule cache lock poisoned")
+                                        .should_allow(peer_addr.ip())
+                                } else {
+                                    cache.should_allow_read_only(peer_addr.ip())
+                                }
+                            };
+
+                            if !should_allow {
+                                if debug {
+                                    eprintln!("Rejected banned IP on WebSocket port: {}", peer_addr.ip());
+                                }
+                                return;
+                            }
+
+                            if let Err(e) =
+                                websocket::handle_websocket_connection(socket, tls_acceptor, params)
+                                    .await
+                            {
+                                log_connection_error(&e, peer_addr, debug);
+                            }
+                        });
+                    }
+                    Err(e) => {
+                        eprintln!("{}{}", ERR_ACCEPT, e);
+                    }
+                }
+            }
+        } => {}
+        // WebSocket transfer port accept loop (only if enabled)
+        _ = async {
+            let Some(ref ws_transfer_listener) = ws_transfer_listener else {
+                // WebSocket disabled, just wait forever
+                std::future::pending::<()>().await;
+                return;
+            };
+            loop {
+                match ws_transfer_listener.accept().await {
+                    Ok((socket, peer_addr)) => {
+                        // Check transfer connection limit before accepting (same limit as TCP)
+                        let transfer_guard = match connection_tracker.try_acquire_transfer(peer_addr.ip()) {
+                            Some(guard) => guard,
+                            None => {
+                                if debug {
+                                    eprintln!("{}{}", ERR_CONNECTION_LIMIT, peer_addr.ip());
+                                }
+                                continue;
+                            }
+                        };
+
+                        let params = TransferParams {
+                            peer_addr,
+                            db: database.clone(),
+                            debug,
+                            file_root: Some(file_root),
+                            file_index: file_index.clone(),
+                        };
+                        let tls_acceptor = tls_acceptor.clone();
+                        let ip_rule_cache_for_check = ip_rule_cache.clone();
+
+                        tokio::spawn(async move {
+                            let _guard = transfer_guard;
+
+                            // Check IP rules BEFORE TLS handshake (same as TCP)
+                            let should_allow = {
+                                let cache = ip_rule_cache_for_check
+                                    .read()
+                                    .expect("ip rule cache lock poisoned");
+                                if cache.needs_rebuild() {
+                                    drop(cache);
+                                    ip_rule_cache_for_check
+                                        .write()
+                                        .expect("ip rule cache lock poisoned")
+                                        .should_allow(peer_addr.ip())
+                                } else {
+                                    cache.should_allow_read_only(peer_addr.ip())
+                                }
+                            };
+
+                            if !should_allow {
+                                if debug {
+                                    eprintln!("Rejected banned IP on WebSocket transfer port: {}", peer_addr.ip());
+                                }
+                                return;
+                            }
+
+                            if let Err(e) =
+                                websocket::handle_websocket_transfer_connection(
+                                    socket,
+                                    tls_acceptor,
+                                    params,
+                                )
+                                .await
                             {
                                 log_connection_error(&e, peer_addr, debug);
                             }
@@ -569,12 +757,22 @@ async fn setup_upnp(
     bind: std::net::IpAddr,
     main_port: u16,
     transfer_port: u16,
+    websocket_port: Option<u16>,
+    transfer_websocket_port: Option<u16>,
 ) -> Option<(Arc<upnp::UpnpGateway>, tokio::task::JoinHandle<()>)> {
     if !enabled {
         return None;
     }
 
-    match upnp::UpnpGateway::setup(bind, main_port, transfer_port).await {
+    match upnp::UpnpGateway::setup(
+        bind,
+        main_port,
+        transfer_port,
+        websocket_port,
+        transfer_websocket_port,
+    )
+    .await
+    {
         Ok(gateway) => {
             // Spawn background task to renew UPnP lease periodically
             let gateway_arc = Arc::new(gateway);
@@ -590,13 +788,21 @@ async fn setup_upnp(
     }
 }
 
-/// Setup network: TCP listeners (main + transfer) and TLS acceptor
+/// Setup network: TCP listeners (main + transfer + optionally WebSocket) and TLS acceptor
 async fn setup_network(
     bind: std::net::IpAddr,
     port: u16,
     transfer_port: u16,
+    websocket_port: Option<u16>,
+    transfer_websocket_port: Option<u16>,
     db_path: &std::path::Path,
-) -> (TcpListener, TcpListener, TlsAcceptor) {
+) -> (
+    TcpListener,
+    TcpListener,
+    Option<TcpListener>,
+    Option<TcpListener>,
+    TlsAcceptor,
+) {
     // Get certificate directory (same parent as database)
     let cert_dir = db_path.parent().expect(ERR_DB_PATH_NO_PARENT).to_path_buf();
 
@@ -635,7 +841,47 @@ async fn setup_network(
         MSG_TRANSFER_LISTENING, transfer_addr, MSG_TLS_ENABLED
     );
 
-    (listener, transfer_listener, tls_acceptor)
+    // Create WebSocket listeners if enabled
+    let (ws_listener, ws_transfer_listener) = if let (Some(ws_port), Some(ws_transfer_port)) =
+        (websocket_port, transfer_websocket_port)
+    {
+        // Create WebSocket BBS listener
+        let ws_addr = SocketAddr::new(bind, ws_port);
+        let ws_listener = match TcpListener::bind(ws_addr).await {
+            Ok(listener) => listener,
+            Err(e) => {
+                eprintln!("{}{}: {}", ERR_BIND_FAILED, ws_addr, e);
+                std::process::exit(1);
+            }
+        };
+        println!("{}{}{}", MSG_WS_LISTENING, ws_addr, MSG_TLS_ENABLED);
+
+        // Create WebSocket transfer listener
+        let ws_transfer_addr = SocketAddr::new(bind, ws_transfer_port);
+        let ws_transfer_listener = match TcpListener::bind(ws_transfer_addr).await {
+            Ok(listener) => listener,
+            Err(e) => {
+                eprintln!("{}{}: {}", ERR_BIND_FAILED, ws_transfer_addr, e);
+                std::process::exit(1);
+            }
+        };
+        println!(
+            "{}{}{}",
+            MSG_WS_TRANSFER_LISTENING, ws_transfer_addr, MSG_TLS_ENABLED
+        );
+
+        (Some(ws_listener), Some(ws_transfer_listener))
+    } else {
+        (None, None)
+    };
+
+    (
+        listener,
+        transfer_listener,
+        ws_listener,
+        ws_transfer_listener,
+        tls_acceptor,
+    )
 }
 
 /// Calculate and display certificate fingerprint (SHA-256)

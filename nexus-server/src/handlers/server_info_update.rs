@@ -359,6 +359,7 @@ where
             max_transfers_per_ip: current_max_transfers,
             image: current_image,
             transfer_port: ctx.transfer_port,
+            transfer_websocket_port: ctx.transfer_websocket_port,
             file_reindex_interval: current_file_reindex_interval,
             persistent_channels: current_persistent_channels,
             auto_join_channels: current_auto_join_channels,

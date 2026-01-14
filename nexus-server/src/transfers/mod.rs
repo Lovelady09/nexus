@@ -54,6 +54,25 @@ pub async fn handle_transfer_connection(
     tls_acceptor: TlsAcceptor,
     params: TransferParams,
 ) -> io::Result<()> {
+    // Perform TLS handshake (mandatory, same cert as main port)
+    let tls_stream = tls_acceptor
+        .accept(socket)
+        .await
+        .map_err(|e| io::Error::other(format!("TLS handshake failed: {e}")))?;
+
+    handle_transfer_connection_inner(tls_stream, params).await
+}
+
+/// Inner transfer connection handler that works with any AsyncRead + AsyncWrite stream
+///
+/// This is used by both TCP and WebSocket connections.
+pub async fn handle_transfer_connection_inner<S>(
+    socket: S,
+    params: TransferParams,
+) -> io::Result<()>
+where
+    S: tokio::io::AsyncRead + tokio::io::AsyncWrite + Unpin + Send + 'static,
+{
     let TransferParams {
         peer_addr,
         db,
@@ -62,18 +81,12 @@ pub async fn handle_transfer_connection(
         file_index,
     } = params;
 
-    // Perform TLS handshake (mandatory, same cert as main port)
-    let tls_stream = tls_acceptor
-        .accept(socket)
-        .await
-        .map_err(|e| io::Error::other(format!("TLS handshake failed: {e}")))?;
-
     if debug {
         eprintln!("Transfer connection from {peer_addr}");
     }
 
     // Set up framed I/O
-    let (reader, writer) = tokio::io::split(tls_stream);
+    let (reader, writer) = tokio::io::split(socket);
     let buf_reader = BufReader::new(reader);
     let mut frame_reader = FrameReader::new(buf_reader);
     let mut frame_writer = FrameWriter::new(writer);

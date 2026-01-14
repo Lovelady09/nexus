@@ -128,6 +128,8 @@ pub struct HandlerContext<'a, W> {
     pub file_root: Option<&'static Path>,
     /// Port for file transfers (typically 7501)
     pub transfer_port: u16,
+    /// Port for WebSocket file transfers (typically 7503), None if WebSocket disabled
+    pub transfer_websocket_port: Option<u16>,
     /// Connection tracker for both main and transfer connections
     pub connection_tracker: Arc<ConnectionTracker>,
     /// In-memory IP rule cache for fast lookups and cache updates (bans and trusts)

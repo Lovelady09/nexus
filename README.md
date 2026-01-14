@@ -19,6 +19,7 @@ A modern BBS inspired by Hotline, KDX, Carracho, and Wired. Built for the [Yggdr
 - **Notifications** — Desktop and sound alerts for 12 event types
 - **Customization** — 30 themes, 13 languages, configurable UI
 - **Connectivity** — Multi-server bookmarks, auto-connect, UPnP, IPv4/IPv6/Yggdrasil
+- **WebSocket** — Optional WebSocket support for web-based clients (`--websocket`)
 
 ## Downloads
 

@@ -861,6 +861,9 @@ pub struct ServerInfo {
     pub image: Option<String>,
     /// Port for file transfers (typically 7501)
     pub transfer_port: u16,
+    /// Port for WebSocket file transfers (typically 7503)
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub transfer_websocket_port: Option<u16>,
     /// File reindex interval in minutes (0 = disabled)
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub file_reindex_interval: Option<u32>,
@@ -2306,6 +2309,7 @@ mod tests {
             max_transfers_per_ip: Some(3),
             image: None,
             transfer_port: 7501,
+            transfer_websocket_port: Some(7503),
             file_reindex_interval: Some(5),
             persistent_channels: None,
             auto_join_channels: None,
@@ -2313,11 +2317,13 @@ mod tests {
         let json = serde_json::to_string(&info).unwrap();
         assert!(json.contains("\"max_transfers_per_ip\":3"));
         assert!(json.contains("\"transfer_port\":7501"));
+        assert!(json.contains("\"transfer_websocket_port\":7503"));
 
         // Test deserialization
         let parsed: ServerInfo = serde_json::from_str(&json).unwrap();
         assert_eq!(parsed.max_transfers_per_ip, Some(3));
         assert_eq!(parsed.transfer_port, 7501);
+        assert_eq!(parsed.transfer_websocket_port, Some(7503));
     }
 
     #[test]
@@ -2329,6 +2335,7 @@ mod tests {
         assert_eq!(info.name, Some("Old Server".to_string()));
         assert_eq!(info.max_transfers_per_ip, None);
         assert_eq!(info.transfer_port, 7501);
+        assert_eq!(info.transfer_websocket_port, None);
     }
 
     // =========================================================================

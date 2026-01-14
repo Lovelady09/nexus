@@ -115,6 +115,7 @@ impl TestContext {
             message_id: self.message_id,
             file_root: self.file_root,
             transfer_port: nexus_common::DEFAULT_TRANSFER_PORT,
+            transfer_websocket_port: Some(nexus_common::DEFAULT_TRANSFER_WEBSOCKET_PORT),
             connection_tracker: self.connection_tracker.clone(),
             ip_rule_cache: self.ip_rule_cache.clone(),
             file_index: self.file_index.clone(),

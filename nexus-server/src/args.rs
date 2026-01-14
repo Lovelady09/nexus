@@ -1,7 +1,9 @@
 //! Command-line argument parsing
 
 use clap::Parser;
-use nexus_common::{DEFAULT_PORT, DEFAULT_TRANSFER_PORT};
+use nexus_common::{
+    DEFAULT_PORT, DEFAULT_TRANSFER_PORT, DEFAULT_TRANSFER_WEBSOCKET_PORT, DEFAULT_WEBSOCKET_PORT,
+};
 use std::net::IpAddr;
 use std::path::PathBuf;
 
@@ -68,4 +70,16 @@ pub struct Args {
     /// Port for file transfers
     #[arg(short = 't', long, default_value_t = DEFAULT_TRANSFER_PORT)]
     pub transfer_port: u16,
+
+    /// Enable WebSocket support (ports 7502/7503 by default)
+    #[arg(long, default_value = "false")]
+    pub websocket: bool,
+
+    /// Port for WebSocket BBS connections (requires --websocket)
+    #[arg(long, default_value_t = DEFAULT_WEBSOCKET_PORT)]
+    pub websocket_port: u16,
+
+    /// Port for WebSocket file transfers (requires --websocket)
+    #[arg(long, default_value_t = DEFAULT_TRANSFER_WEBSOCKET_PORT)]
+    pub transfer_websocket_port: u16,
 }

@@ -17,6 +17,9 @@ nexusd [OPTIONS]
 | `--file-root <PATH>` | `-f` | (platform default) | File area root directory |
 | `--debug` | | `false` | Enable debug logging |
 | `--upnp` | | `false` | Enable UPnP port forwarding |
+| `--websocket` | | `false` | Enable WebSocket support |
+| `--websocket-port <PORT>` | | `7502` | WebSocket BBS port (requires `--websocket`) |
+| `--transfer-websocket-port <PORT>` | | `7503` | WebSocket transfer port (requires `--websocket`) |
 | `--help` | `-h` | | Show help message |
 | `--version` | `-V` | | Show version |
 
@@ -44,10 +47,28 @@ nexusd --bind 200:your:yggdrasil:address
 ## Ports
 
 ```bash
+# Custom TCP ports
 nexusd --port 8500 --transfer-port 8501
+
+# Enable WebSocket with default ports (7502/7503)
+nexusd --websocket
+
+# Enable WebSocket with custom ports
+nexusd --websocket --websocket-port 8502 --transfer-websocket-port 8503
 ```
 
 Ports below 1024 require root/admin privileges on most systems.
+
+### Port Summary
+
+| Port | Default | Purpose |
+|------|---------|---------|
+| BBS | 7500 | Main protocol (TCP) |
+| Transfer | 7501 | File transfers (TCP) |
+| WebSocket BBS | 7502 | Main protocol (WebSocket over TLS) |
+| WebSocket Transfer | 7503 | File transfers (WebSocket over TLS) |
+
+WebSocket ports are only active when `--websocket` is enabled.
 
 ## Database
 
@@ -109,16 +130,35 @@ Debug mode shows:
 - User connect/disconnect events
 - Connection errors
 
+## WebSocket Support
+
+Enable WebSocket support for web-based clients:
+
+```bash
+nexusd --websocket
+```
+
+WebSocket connections use the same TLS certificate and protocol as TCP connections. The only difference is the transport layer (WebSocket binary messages instead of raw TCP).
+
+When enabled:
+- Port 7502 accepts WebSocket BBS connections
+- Port 7503 accepts WebSocket file transfers
+- `ServerInfo` includes `transfer_websocket_port` for clients
+
 ## UPnP Port Forwarding
 
 Automatically configure NAT port forwarding:
 
 ```bash
 nexusd --upnp
+
+# With WebSocket enabled, forwards all 4 ports
+nexusd --upnp --websocket
 ```
 
 UPnP behavior:
-- Requests port mappings for both BBS and transfer ports
+- Requests port mappings for BBS and transfer ports
+- If `--websocket` is enabled, also forwards WebSocket ports
 - Lease duration: 1 hour
 - Automatic renewal every 30 minutes
 - Mappings removed on graceful shutdown
@@ -198,6 +238,18 @@ nexusd \
   --bind 0.0.0.0 \
   --port 7500 \
   --transfer-port 7501 \
+  --database /var/lib/nexusd/nexus.db \
+  --file-root /srv/nexus/files
+```
+
+### Production Server with WebSocket
+
+```bash
+nexusd \
+  --bind 0.0.0.0 \
+  --port 7500 \
+  --transfer-port 7501 \
+  --websocket \
   --database /var/lib/nexusd/nexus.db \
   --file-root /srv/nexus/files
 ```

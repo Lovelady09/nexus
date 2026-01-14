@@ -16,8 +16,39 @@ Nexus uses a custom framed JSON protocol over TLS. The protocol is designed to b
 |------|---------|-------------|
 | 7500 | BBS | Main protocol (chat, users, news, file browsing) |
 | 7501 | Transfers | File uploads and downloads |
+| 7502 | WebSocket BBS | Main protocol over WebSocket (requires `--websocket`) |
+| 7503 | WebSocket Transfers | File transfers over WebSocket (requires `--websocket`) |
 
-Both ports use the same TLS certificate and frame format. The transfer port is communicated to clients in the `LoginResponse`.
+All ports use the same TLS certificate and frame format. The transfer port is communicated to clients in the `LoginResponse` via `transfer_port`. If WebSocket is enabled, `transfer_websocket_port` is also included.
+
+## Transport
+
+Nexus supports two transport mechanisms:
+
+### TCP (Default)
+
+Raw TCP connections with TLS. This is the standard transport used by the native client.
+
+### WebSocket (Optional)
+
+WebSocket connections over TLS (WSS). Enabled with the `--websocket` server flag. This transport is designed for web-based clients.
+
+**WebSocket framing:**
+- The same binary frame format (`NX|...|payload\n`) is used inside WebSocket binary messages
+- Each WebSocket binary message should contain exactly one Nexus frame
+- The server wraps the connection in an adapter that presents WebSocket as a byte stream
+- Clients should send one Nexus frame per WebSocket message and flush after each frame
+
+**Connection flow (WebSocket):**
+1. TCP connection to port 7502 or 7503
+2. TLS handshake (same certificate as TCP ports)
+3. WebSocket handshake
+4. Nexus protocol (Handshake → Login → session)
+
+WebSocket connections go through the same security checks as TCP:
+- IP ban/trust verification (before TLS)
+- Connection limits (same pool as TCP)
+- Same authentication and permissions
 
 ## TLS
 
@@ -132,3 +163,14 @@ Current version: `0.5.0`
 | [10-errors.md](10-errors.md) | Error handling |
 | [11-bans.md](11-bans.md) | IP bans and CIDR ranges |
 | [12-trusts.md](12-trusts.md) | IP trust list (ban bypass) |
+
+## ServerInfo Fields
+
+The `LoginResponse` includes a `ServerInfo` object with connection details:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `transfer_port` | `u16` | TCP file transfer port (typically 7501) |
+| `transfer_websocket_port` | `u16?` | WebSocket file transfer port (7503 if enabled, absent otherwise) |
+
+Clients should use `transfer_websocket_port` for file transfers when connected via WebSocket, and `transfer_port` when connected via TCP.

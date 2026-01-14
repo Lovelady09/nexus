@@ -73,6 +73,10 @@ pub struct UpnpGateway {
     main_port: u16,
     /// Transfer port for file downloads
     transfer_port: u16,
+    /// WebSocket BBS port (None if WebSocket disabled)
+    websocket_port: Option<u16>,
+    /// WebSocket transfer port (None if WebSocket disabled)
+    transfer_websocket_port: Option<u16>,
     local_addr: SocketAddrV4,
 }
 
@@ -114,6 +118,8 @@ impl UpnpGateway {
     /// * `bind_addr` - The IP address the server is bound to
     /// * `main_port` - The main BBS port to forward
     /// * `transfer_port` - The transfer port to forward
+    /// * `websocket_port` - The WebSocket BBS port to forward (None if disabled)
+    /// * `transfer_websocket_port` - The WebSocket transfer port to forward (None if disabled)
     ///
     /// # Returns
     /// * `Ok(UpnpGateway)` - Successfully configured port forwarding
@@ -126,7 +132,7 @@ impl UpnpGateway {
     /// # use nexus_server::upnp::UpnpGateway;
     /// # async fn example() -> Result<(), String> {
     /// let bind_addr: IpAddr = "0.0.0.0".parse().expect("valid IP address");
-    /// let gateway = UpnpGateway::setup(bind_addr, 7500, 7501).await?;
+    /// let gateway = UpnpGateway::setup(bind_addr, 7500, 7501, Some(7502), Some(7503)).await?;
     /// # Ok(())
     /// # }
     /// ```
@@ -134,6 +140,8 @@ impl UpnpGateway {
         bind_addr: IpAddr,
         main_port: u16,
         transfer_port: u16,
+        websocket_port: Option<u16>,
+        transfer_websocket_port: Option<u16>,
     ) -> Result<Self, String> {
         // UPnP only works with IPv4, but :: (dual-stack) binds IPv4 too
         let local_addr = match bind_addr {
@@ -176,32 +184,40 @@ impl UpnpGateway {
         .map_err(|e| format!("{}{}", ERR_UPNP_GET_EXTERNAL_IP_TASK, e))?
         .map_err(|e| format!("{}{}", ERR_UPNP_GET_EXTERNAL_IP, e))?;
 
-        // Request port forwarding for main BBS port
-        println!(
-            "{}{}:{} -> {}:{}",
-            MSG_REQUESTING_PORT_FORWARD, external_ip, main_port, local_addr, main_port
-        );
+        // Request port forwarding for all ports
         add_port_mapping(&gateway, main_port, local_addr).await?;
-        println!(
-            "{}{}:{} -> {}:{}",
-            MSG_UPNP_CONFIGURED, external_ip, main_port, local_addr, main_port
-        );
-
-        // Request port forwarding for transfer port
-        println!(
-            "{}{}:{} -> {}:{}",
-            MSG_REQUESTING_PORT_FORWARD, external_ip, transfer_port, local_addr, transfer_port
-        );
         add_port_mapping(&gateway, transfer_port, local_addr).await?;
+
+        // Build port list for summary message
+        let mut ports = vec![main_port, transfer_port];
+
+        if let Some(ws_port) = websocket_port {
+            add_port_mapping(&gateway, ws_port, local_addr).await?;
+            ports.push(ws_port);
+        }
+
+        if let Some(ws_transfer_port) = transfer_websocket_port {
+            add_port_mapping(&gateway, ws_transfer_port, local_addr).await?;
+            ports.push(ws_transfer_port);
+        }
+
+        // Print single summary line
+        let port_list = ports
+            .iter()
+            .map(|p| p.to_string())
+            .collect::<Vec<_>>()
+            .join(", ");
         println!(
-            "{}{}:{} -> {}:{}",
-            MSG_UPNP_CONFIGURED, external_ip, transfer_port, local_addr, transfer_port
+            "{}{} → {} (ports {})",
+            MSG_UPNP_CONFIGURED, external_ip, local_addr, port_list
         );
 
         Ok(Self {
             gateway: RwLock::new(gateway),
             main_port,
             transfer_port,
+            websocket_port,
+            transfer_websocket_port,
             local_addr: SocketAddrV4::new(local_addr, main_port),
         })
     }
@@ -229,12 +245,34 @@ impl UpnpGateway {
 
         // Remove transfer port mapping
         let transfer_port = self.transfer_port;
+        let gw2 = gateway.clone();
         tokio::task::spawn_blocking(move || {
-            gateway.remove_port(igd_next::PortMappingProtocol::TCP, transfer_port)
+            gw2.remove_port(igd_next::PortMappingProtocol::TCP, transfer_port)
         })
         .await
         .map_err(|e| format!("{}{}", ERR_UPNP_REMOVE_PORT_TASK, e))?
         .map_err(|e| format!("{}{}", ERR_UPNP_REMOVE_PORT_MAPPING, e))?;
+
+        // Remove WebSocket BBS port mapping if enabled
+        if let Some(websocket_port) = self.websocket_port {
+            let gw3 = gateway.clone();
+            tokio::task::spawn_blocking(move || {
+                gw3.remove_port(igd_next::PortMappingProtocol::TCP, websocket_port)
+            })
+            .await
+            .map_err(|e| format!("{}{}", ERR_UPNP_REMOVE_PORT_TASK, e))?
+            .map_err(|e| format!("{}{}", ERR_UPNP_REMOVE_PORT_MAPPING, e))?;
+        }
+
+        // Remove WebSocket transfer port mapping if enabled
+        if let Some(transfer_websocket_port) = self.transfer_websocket_port {
+            tokio::task::spawn_blocking(move || {
+                gateway.remove_port(igd_next::PortMappingProtocol::TCP, transfer_websocket_port)
+            })
+            .await
+            .map_err(|e| format!("{}{}", ERR_UPNP_REMOVE_PORT_TASK, e))?
+            .map_err(|e| format!("{}{}", ERR_UPNP_REMOVE_PORT_MAPPING, e))?;
+        }
 
         Ok(())
     }
@@ -260,6 +298,20 @@ impl UpnpGateway {
         add_port_mapping(&gateway, self.transfer_port, local_ip)
             .await
             .map_err(|e| format!("{}{}", ERR_UPNP_RENEW_LEASE, e))?;
+
+        // Renew WebSocket BBS port lease if enabled
+        if let Some(websocket_port) = self.websocket_port {
+            add_port_mapping(&gateway, websocket_port, local_ip)
+                .await
+                .map_err(|e| format!("{}{}", ERR_UPNP_RENEW_LEASE, e))?;
+        }
+
+        // Renew WebSocket transfer port lease if enabled
+        if let Some(transfer_websocket_port) = self.transfer_websocket_port {
+            add_port_mapping(&gateway, transfer_websocket_port, local_ip)
+                .await
+                .map_err(|e| format!("{}{}", ERR_UPNP_RENEW_LEASE, e))?;
+        }
 
         Ok(())
     }
@@ -287,6 +339,16 @@ impl UpnpGateway {
 
         // Add transfer port mapping
         add_port_mapping(&new_gateway, self.transfer_port, local_ip).await?;
+
+        // Add WebSocket BBS port mapping if enabled
+        if let Some(websocket_port) = self.websocket_port {
+            add_port_mapping(&new_gateway, websocket_port, local_ip).await?;
+        }
+
+        // Add WebSocket transfer port mapping if enabled
+        if let Some(transfer_websocket_port) = self.transfer_websocket_port {
+            add_port_mapping(&new_gateway, transfer_websocket_port, local_ip).await?;
+        }
 
         // Update stored gateway
         *self.gateway.write().expect("UPnP gateway lock poisoned") = new_gateway;

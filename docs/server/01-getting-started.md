@@ -134,8 +134,10 @@ The **first user to connect and log in** automatically becomes an administrator.
 |------|---------|
 | 7500 | Main BBS connection (chat, commands, browsing) |
 | 7501 | File transfers (downloads, uploads) |
+| 7502 | WebSocket BBS connection (requires `--websocket`) |
+| 7503 | WebSocket file transfers (requires `--websocket`) |
 
-Both ports use TLS encryption.
+All ports use TLS encryption. WebSocket ports are only active when `--websocket` is enabled.
 
 ## Data Locations
 
@@ -170,6 +172,9 @@ nexusd --debug
 # Enable UPnP port forwarding
 nexusd --upnp
 
+# Enable WebSocket support (ports 7502/7503)
+nexusd --websocket
+
 # Custom database location
 nexusd --database /path/to/nexus.db
 
@@ -189,6 +194,8 @@ If you're running behind a firewall, open these ports:
 
 - **TCP 7500** — Main BBS port
 - **TCP 7501** — File transfer port
+- **TCP 7502** — WebSocket BBS port (if `--websocket` enabled)
+- **TCP 7503** — WebSocket transfer port (if `--websocket` enabled)
 
 For cloud servers, also configure security groups to allow inbound traffic on these ports.
 

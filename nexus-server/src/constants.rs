@@ -197,6 +197,12 @@ pub const MSG_LISTENING: &str = "Listening on ";
 /// Transfer port listening display
 pub const MSG_TRANSFER_LISTENING: &str = "Transfer port: ";
 
+/// WebSocket port listening display
+pub const MSG_WS_LISTENING: &str = "WebSocket port: ";
+
+/// WebSocket transfer port listening display
+pub const MSG_WS_TRANSFER_LISTENING: &str = "WebSocket transfer port: ";
+
 /// TLS enabled indicator
 pub const MSG_TLS_ENABLED: &str = " (TLS enabled)";
 
@@ -339,11 +345,8 @@ pub const ERR_CREATE_TLS_CONFIG: &str = "Failed to create TLS configuration: ";
 // UPnP Messages (operator-facing)
 // =============================================================================
 
-/// UPnP port forwarding request message
-pub const MSG_REQUESTING_PORT_FORWARD: &str = "Requesting port forwarding: ";
-
-/// UPnP configuration success message
-pub const MSG_UPNP_CONFIGURED: &str = "UPnP configured: ";
+/// UPnP configuration success message (single line summary)
+pub const MSG_UPNP_CONFIGURED: &str = "UPnP: ";
 
 /// UPnP setup failure warning
 pub const MSG_UPNP_WARNING: &str = "Warning: UPnP setup failed: ";

@@ -19,6 +19,17 @@ docker run -d \
   -v nexus-data:/home/nexus/.local/share/nexusd \
   --name nexusd \
   ghcr.io/zquestz/nexusd:latest
+
+# With WebSocket support enabled
+docker run -d \
+  -p 7500:7500 \
+  -p 7501:7501 \
+  -p 7502:7502 \
+  -p 7503:7503 \
+  -e NEXUS_WEBSOCKET=true \
+  -v nexus-data:/home/nexus/.local/share/nexusd \
+  --name nexusd \
+  ghcr.io/zquestz/nexusd:latest
 ```
 
 ### Using Docker Compose with Pre-built Image
@@ -40,6 +51,10 @@ services:
       - NEXUS_BIND=0.0.0.0
       - NEXUS_PORT=7500
       - NEXUS_TRANSFER_PORT=7501
+      # Uncomment to enable WebSocket support
+      # - NEXUS_WEBSOCKET=true
+      # - NEXUS_WEBSOCKET_PORT=7502
+      # - NEXUS_TRANSFER_WEBSOCKET_PORT=7503
       - NEXUS_DEBUG=
 
 volumes:
@@ -112,6 +127,9 @@ docker run -d \
 | `NEXUS_BIND` | `0.0.0.0` | IP address to bind to |
 | `NEXUS_PORT` | `7500` | Main BBS port |
 | `NEXUS_TRANSFER_PORT` | `7501` | File transfer port |
+| `NEXUS_WEBSOCKET` | (empty) | Set to any value to enable WebSocket support |
+| `NEXUS_WEBSOCKET_PORT` | `7502` | WebSocket BBS port (requires `NEXUS_WEBSOCKET`) |
+| `NEXUS_TRANSFER_WEBSOCKET_PORT` | `7503` | WebSocket transfer port (requires `NEXUS_WEBSOCKET`) |
 | `NEXUS_DEBUG` | (empty) | Set to any value to enable debug logging |
 
 ### Enable Debug Mode
@@ -119,6 +137,18 @@ docker run -d \
 ```yaml
 environment:
   - NEXUS_DEBUG=1
+```
+
+### Enable WebSocket Support
+
+```yaml
+ports:
+  - "7500:7500"
+  - "7501:7501"
+  - "7502:7502"
+  - "7503:7503"
+environment:
+  - NEXUS_WEBSOCKET=true
 ```
 
 ### IPv6 Support
@@ -167,6 +197,9 @@ volumes:
 ports:
   - "7500:7500"   # Main BBS
   - "7501:7501"   # File transfers
+  # Uncomment for WebSocket support (requires NEXUS_WEBSOCKET=true)
+  # - "7502:7502"   # WebSocket BBS
+  # - "7503:7503"   # WebSocket transfers
 ```
 
 ### Custom Ports

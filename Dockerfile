@@ -3,10 +3,21 @@
 # Build:
 #   docker build -t nexus-server .
 #
-# Run:
+# Run (without WebSocket):
 #   docker run -d \
 #     -p 7500:7500 \
 #     -p 7501:7501 \
+#     -v nexus-data:/home/nexus/.local/share/nexusd \
+#     --name nexusd \
+#     nexus-server
+#
+# Run (with WebSocket enabled):
+#   docker run -d \
+#     -p 7500:7500 \
+#     -p 7501:7501 \
+#     -p 7502:7502 \
+#     -p 7503:7503 \
+#     -e NEXUS_WEBSOCKET=true \
 #     -v nexus-data:/home/nexus/.local/share/nexusd \
 #     --name nexusd \
 #     nexus-server
@@ -61,23 +72,37 @@ RUN apt-get update && \
 COPY --from=builder /build/target/release/nexusd /usr/local/bin/
 COPY LICENSE README.md /usr/share/doc/nexusd/
 USER nexus
-EXPOSE 7500 7501
+
+# Expose all ports (TCP and WebSocket)
+# 7500: Main BBS port
+# 7501: File transfer port
+# 7502: WebSocket BBS port (requires --websocket)
+# 7503: WebSocket transfer port (requires --websocket)
+EXPOSE 7500 7501 7502 7503
 
 # Health check - verify server is accepting connections
 HEALTHCHECK --interval=5s --timeout=3s --start-period=2s --retries=3 \
   CMD nc -z localhost ${NEXUS_PORT:-7500} || exit 1
 
 # Environment variables
+# NEXUS_WEBSOCKET: set to "true" to enable WebSocket support on ports 7502/7503
 ENV NEXUS_BIND=0.0.0.0 \
   NEXUS_PORT=7500 \
   NEXUS_TRANSFER_PORT=7501 \
+  NEXUS_WEBSOCKET= \
+  NEXUS_WEBSOCKET_PORT=7502 \
+  NEXUS_TRANSFER_WEBSOCKET_PORT=7503 \
   NEXUS_DEBUG=
 
 # Use shell to expand environment variables
 # NEXUS_DEBUG: set to any non-empty value to enable debug logging
+# NEXUS_WEBSOCKET: set to any non-empty value to enable WebSocket support
 ENTRYPOINT ["/bin/sh", "-c", "exec nexusd \
   --bind \"$NEXUS_BIND\" \
   --port \"$NEXUS_PORT\" \
   --transfer-port \"$NEXUS_TRANSFER_PORT\" \
+  ${NEXUS_WEBSOCKET:+--websocket} \
+  ${NEXUS_WEBSOCKET:+--websocket-port \"$NEXUS_WEBSOCKET_PORT\"} \
+  ${NEXUS_WEBSOCKET:+--transfer-websocket-port \"$NEXUS_TRANSFER_WEBSOCKET_PORT\"} \
   ${NEXUS_DEBUG:+--debug} \
   \"$@\"", "--"]

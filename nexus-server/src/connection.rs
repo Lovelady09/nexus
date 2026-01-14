@@ -36,6 +36,7 @@ pub struct ConnectionParams {
     pub debug: bool,
     pub file_root: Option<&'static Path>,
     pub transfer_port: u16,
+    pub transfer_websocket_port: Option<u16>,
     pub connection_tracker: Arc<ConnectionTracker>,
     pub ip_rule_cache: Arc<RwLock<IpRuleCache>>,
     pub file_index: Arc<FileIndex>,
@@ -75,7 +76,7 @@ pub async fn handle_connection(
 }
 
 /// Inner connection handler that works with any AsyncRead + AsyncWrite stream
-async fn handle_connection_inner<S>(socket: S, params: ConnectionParams) -> io::Result<()>
+pub async fn handle_connection_inner<S>(socket: S, params: ConnectionParams) -> io::Result<()>
 where
     S: tokio::io::AsyncRead + tokio::io::AsyncWrite + Unpin + Send + 'static,
 {
@@ -86,6 +87,7 @@ where
         debug,
         file_root,
         transfer_port,
+        transfer_websocket_port,
         connection_tracker,
         ip_rule_cache,
         file_index,
@@ -139,6 +141,7 @@ where
                             message_id: received.message_id,
                             file_root,
                             transfer_port,
+                            transfer_websocket_port,
                             connection_tracker: connection_tracker.clone(),
                             ip_rule_cache: ip_rule_cache.clone(),
                             file_index: file_index.clone(),

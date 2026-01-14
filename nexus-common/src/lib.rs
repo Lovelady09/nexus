@@ -26,6 +26,12 @@ pub const DEFAULT_PORT: u16 = 7500;
 /// Default port for file transfers
 pub const DEFAULT_TRANSFER_PORT: u16 = 7501;
 
+/// Default port for WebSocket BBS connections
+pub const DEFAULT_WEBSOCKET_PORT: u16 = 7502;
+
+/// Default port for WebSocket file transfers
+pub const DEFAULT_TRANSFER_WEBSOCKET_PORT: u16 = 7503;
+
 /// Buffer size for SHA-256 hashing operations (1MB for fewer syscalls)
 pub const HASH_BUFFER_SIZE: usize = 1024 * 1024;
 
@@ -205,6 +211,18 @@ mod tests {
     fn test_default_transfer_port() {
         // Verify default transfer port is the expected value
         assert_eq!(DEFAULT_TRANSFER_PORT, 7501);
+    }
+
+    #[test]
+    fn test_default_websocket_port() {
+        // Verify default WebSocket port is the expected value
+        assert_eq!(DEFAULT_WEBSOCKET_PORT, 7502);
+    }
+
+    #[test]
+    fn test_default_transfer_websocket_port() {
+        // Verify default WebSocket transfer port is the expected value
+        assert_eq!(DEFAULT_TRANSFER_WEBSOCKET_PORT, 7503);
     }
 
     #[test]
