@@ -271,7 +271,7 @@ impl NewsManagementState {
 // =============================================================================
 
 /// Column to sort files by
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Hash)]
 pub enum FileSortColumn {
     /// Sort by name (default) - keeps dirs first, sorts within groups
     #[default]
@@ -285,7 +285,7 @@ pub enum FileSortColumn {
 }
 
 /// Clipboard operation type (cut or copy)
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum ClipboardOperation {
     /// Cut - file will be moved on paste
     Cut,
@@ -294,7 +294,7 @@ pub enum ClipboardOperation {
 }
 
 /// Item stored in clipboard for move/copy operations
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ClipboardItem {
     /// Full path to the file or directory
     pub path: String,

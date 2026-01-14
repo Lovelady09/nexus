@@ -1,10 +1,12 @@
 //! Files panel view (browse, upload, download files)
 
+use std::hash::{Hash, Hasher};
+
 use chrono::{DateTime, Local, TimeZone, Utc};
 use iced::widget::button as btn;
 use iced::widget::text::Wrapping;
 use iced::widget::{
-    Space, button, column, container, row, scrollable, stack, table, text_input, tooltip,
+    Space, button, column, container, lazy, row, scrollable, stack, table, text_input, tooltip,
 };
 use iced::{Center, Element, Fill, Right, alignment};
 use iced_aw::ContextMenu;
@@ -36,7 +38,7 @@ use crate::types::{
 };
 
 /// File permission flags for view rendering
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct FilePermissions {
     pub file_root: bool,
     pub file_create_dir: bool,
@@ -65,6 +67,66 @@ pub struct ToolbarState<'a> {
     pub current_path: &'a str,
     pub is_loading: bool,
     pub is_searching: bool,
+}
+
+/// Self-contained row data for lazy file table rendering
+///
+/// Each row carries all the data it needs to render, including pre-computed
+/// paths and styling flags. This allows the table to work with `lazy()` since
+/// the row data is owned and doesn't borrow from external state.
+#[derive(Clone, PartialEq, Eq)]
+struct FileRowData {
+    /// File entry from server
+    entry: FileEntry,
+    /// Pre-computed full path for this entry
+    path: String,
+    /// Whether this entry is cut (pending move)
+    is_cut: bool,
+    /// User permissions (Copy, so cheap to include per-row)
+    perms: FilePermissions,
+    /// Whether clipboard has content (for paste option)
+    has_clipboard: bool,
+}
+
+impl Hash for FileRowData {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.entry.name.hash(state);
+        self.entry.size.hash(state);
+        self.entry.modified.hash(state);
+        self.entry.dir_type.hash(state);
+        self.entry.can_upload.hash(state);
+        self.path.hash(state);
+        self.is_cut.hash(state);
+        self.perms.hash(state);
+        self.has_clipboard.hash(state);
+    }
+}
+
+/// Dependencies for lazy file table caching
+///
+/// When these values change, the table will be rebuilt. Otherwise,
+/// the cached widget tree is reused, avoiding expensive re-renders.
+#[derive(Clone, PartialEq, Eq, Hash)]
+struct FileTableDeps {
+    /// Pre-built row data with all rendering context
+    rows: Vec<FileRowData>,
+    /// Sort column (for header display)
+    sort_column: FileSortColumn,
+    /// Sort direction (for header display)
+    sort_ascending: bool,
+}
+
+/// Dependencies for lazy search results table caching
+#[derive(Clone, PartialEq, Eq, Hash)]
+struct SearchResultsDeps {
+    /// Search results
+    results: Vec<FileSearchResult>,
+    /// User permissions
+    perms: FilePermissions,
+    /// Sort column
+    sort_column: FileSortColumn,
+    /// Sort direction
+    sort_ascending: bool,
 }
 
 // ============================================================================
@@ -585,238 +647,248 @@ fn parent_path(path: &str) -> String {
 }
 
 /// Build search results table
-fn search_results_table<'a>(
-    results: &'a [FileSearchResult],
-    perms: FilePermissions,
-    sort_column: FileSortColumn,
-    sort_ascending: bool,
-) -> Element<'a, Message> {
-    // Name column header (clickable for sorting)
-    let name_header_content: Element<'_, Message> = if sort_column == FileSortColumn::Name {
-        let sort_icon = if sort_ascending {
-            icon::down_dir()
-        } else {
-            icon::up_dir()
-        };
-        row![
-            shaped_text(t("files-column-name"))
-                .size(TEXT_SIZE)
-                .style(muted_text_style),
-            Space::new().width(Fill),
-            sort_icon.size(SORT_ICON_SIZE).style(muted_text_style),
-            Space::new().width(SORT_ICON_RIGHT_MARGIN),
-        ]
-        .align_y(Center)
-        .into()
-    } else {
-        shaped_text(t("files-column-name"))
-            .size(TEXT_SIZE)
-            .style(muted_text_style)
-            .into()
-    };
-    let name_header: Element<'_, Message> = button(name_header_content)
-        .padding(NO_SPACING)
-        .width(Fill)
-        .style(transparent_icon_button_style)
-        .on_press(Message::FileSearchSortBy(FileSortColumn::Name))
-        .into();
-
-    // Name column with icon - clickable to navigate
-    let name_column = table::column(name_header, move |result: &FileSearchResult| {
-        let is_directory = result.is_directory;
-
-        // Icon based on type
-        let icon_element: Element<'_, Message> = if is_directory {
-            icon::folder().size(FILE_LIST_ICON_SIZE).into()
-        } else {
-            file_icon_for_extension(&result.name)
-                .size(FILE_LIST_ICON_SIZE)
+fn lazy_search_results_table(deps: SearchResultsDeps) -> Element<'static, Message> {
+    lazy(deps, |deps| {
+        // Name column header (clickable for sorting)
+        let name_header_content: Element<'static, Message> =
+            if deps.sort_column == FileSortColumn::Name {
+                let sort_icon = if deps.sort_ascending {
+                    icon::down_dir()
+                } else {
+                    icon::up_dir()
+                };
+                row![
+                    shaped_text(t("files-column-name"))
+                        .size(TEXT_SIZE)
+                        .style(muted_text_style),
+                    Space::new().width(Fill),
+                    sort_icon.size(SORT_ICON_SIZE).style(muted_text_style),
+                    Space::new().width(SORT_ICON_RIGHT_MARGIN),
+                ]
+                .align_y(Center)
                 .into()
-        };
-
-        let name_text = shaped_text(&result.name)
-            .size(TEXT_SIZE)
-            .wrapping(Wrapping::WordOrGlyph);
-
-        let name_content: Element<'_, Message> = row![
-            icon_element,
-            Space::new().width(FILE_LIST_ICON_SPACING),
-            name_text,
-        ]
-        .align_y(Center)
-        .into();
-
-        // Left-click: open in new tab
-        let row_element: Element<'_, Message> = button(name_content)
+            } else {
+                shaped_text(t("files-column-name"))
+                    .size(TEXT_SIZE)
+                    .style(muted_text_style)
+                    .into()
+            };
+        let name_header: Element<'static, Message> = button(name_header_content)
             .padding(NO_SPACING)
+            .width(Fill)
             .style(transparent_icon_button_style)
-            .on_press(Message::FileSearchResultClicked(result.clone()))
+            .on_press(Message::FileSearchSortBy(FileSortColumn::Name))
             .into();
 
-        // Build context menu - always show since Open is always available
-        let result_clone = result.clone();
-        let element: Element<'_, Message> = ContextMenu::new(row_element, move || {
-            build_search_result_context_menu(&result_clone, perms)
-        })
-        .into();
-        element
-    })
-    .width(Fill);
+        let perms = deps.perms;
 
-    // Path column header (clickable for sorting)
-    let path_header_content: Element<'_, Message> = if sort_column == FileSortColumn::Path {
-        let sort_icon = if sort_ascending {
-            icon::down_dir()
-        } else {
-            icon::up_dir()
-        };
-        row![
-            shaped_text(t("files-column-path"))
-                .size(TEXT_SIZE)
-                .style(muted_text_style),
-            Space::new().width(Fill),
-            sort_icon.size(SORT_ICON_SIZE).style(muted_text_style),
-            Space::new().width(SORT_ICON_RIGHT_MARGIN),
-        ]
-        .align_y(Center)
-        .into()
-    } else {
-        shaped_text(t("files-column-path"))
-            .size(TEXT_SIZE)
-            .style(muted_text_style)
-            .into()
-    };
-    let path_header: Element<'_, Message> = button(path_header_content)
-        .padding(NO_SPACING)
-        .width(Fill)
-        .style(transparent_icon_button_style)
-        .on_press(Message::FileSearchSortBy(FileSortColumn::Path))
-        .into();
+        // Name column with icon - clickable to navigate
+        let name_column = table::column(
+            name_header,
+            move |result: FileSearchResult| -> Element<'static, Message> {
+                let is_directory = result.is_directory;
 
-    // Path column - shows parent directory
-    let path_column = table::column(path_header, |result: &FileSearchResult| {
-        let display_path = parent_path(&result.path);
+                // Icon based on type
+                let icon_element: Element<'static, Message> = if is_directory {
+                    icon::folder().size(FILE_LIST_ICON_SIZE).into()
+                } else {
+                    file_icon_for_extension(&result.name)
+                        .size(FILE_LIST_ICON_SIZE)
+                        .into()
+                };
 
-        // Show "/" for root, otherwise show the path
-        let display = if display_path.is_empty() {
-            "/".to_string()
-        } else {
-            display_path
-        };
+                let name_text = shaped_text(result.name.clone())
+                    .size(TEXT_SIZE)
+                    .wrapping(Wrapping::WordOrGlyph);
 
-        let element: Element<'_, Message> = shaped_text(display)
-            .size(TEXT_SIZE)
-            .style(muted_text_style)
-            .wrapping(Wrapping::WordOrGlyph)
+                let name_content: Element<'static, Message> = row![
+                    icon_element,
+                    Space::new().width(FILE_LIST_ICON_SPACING),
+                    name_text,
+                ]
+                .align_y(Center)
+                .into();
+
+                // Left-click: open in new tab
+                let row_element: Element<'static, Message> = button(name_content)
+                    .padding(NO_SPACING)
+                    .style(transparent_icon_button_style)
+                    .on_press(Message::FileSearchResultClicked(result.clone()))
+                    .into();
+
+                // Build context menu - always show since Open is always available
+                ContextMenu::new(row_element, move || {
+                    build_lazy_search_context_menu(result.clone(), perms)
+                })
+                .into()
+            },
+        )
+        .width(Fill);
+
+        // Path column header (clickable for sorting)
+        let path_header_content: Element<'static, Message> =
+            if deps.sort_column == FileSortColumn::Path {
+                let sort_icon = if deps.sort_ascending {
+                    icon::down_dir()
+                } else {
+                    icon::up_dir()
+                };
+                row![
+                    shaped_text(t("files-column-path"))
+                        .size(TEXT_SIZE)
+                        .style(muted_text_style),
+                    Space::new().width(Fill),
+                    sort_icon.size(SORT_ICON_SIZE).style(muted_text_style),
+                    Space::new().width(SORT_ICON_RIGHT_MARGIN),
+                ]
+                .align_y(Center)
+                .into()
+            } else {
+                shaped_text(t("files-column-path"))
+                    .size(TEXT_SIZE)
+                    .style(muted_text_style)
+                    .into()
+            };
+        let path_header: Element<'static, Message> = button(path_header_content)
+            .padding(NO_SPACING)
+            .width(Fill)
+            .style(transparent_icon_button_style)
+            .on_press(Message::FileSearchSortBy(FileSortColumn::Path))
             .into();
-        element
-    })
-    .width(FILE_SIZE_COLUMN_WIDTH * 2.0); // Wider than size column
 
-    // Size column header (clickable for sorting)
-    let size_header_content: Element<'_, Message> = if sort_column == FileSortColumn::Size {
-        let sort_icon = if sort_ascending {
-            icon::down_dir()
-        } else {
-            icon::up_dir()
-        };
-        row![
-            shaped_text(t("files-column-size"))
-                .size(TEXT_SIZE)
-                .style(muted_text_style),
-            Space::new().width(Fill),
-            sort_icon.size(SORT_ICON_SIZE).style(muted_text_style),
-            Space::new().width(SORT_ICON_RIGHT_MARGIN),
-        ]
-        .align_y(Center)
-        .into()
-    } else {
-        shaped_text(t("files-column-size"))
-            .size(TEXT_SIZE)
-            .style(muted_text_style)
-            .into()
-    };
-    let size_header: Element<'_, Message> = button(size_header_content)
-        .padding(NO_SPACING)
-        .width(Fill)
-        .style(transparent_icon_button_style)
-        .on_press(Message::FileSearchSortBy(FileSortColumn::Size))
-        .into();
+        // Path column - shows parent directory
+        let path_column = table::column(
+            path_header,
+            |result: FileSearchResult| -> Element<'static, Message> {
+                let display_path = parent_path(&result.path);
 
-    // Size column
-    let size_column = table::column(size_header, |result: &FileSearchResult| {
-        let size_text = if result.is_directory {
-            String::from("—")
-        } else {
-            format_size(result.size)
-        };
-        let element: Element<'_, Message> = shaped_text(size_text)
-            .size(TEXT_SIZE)
-            .style(muted_text_style)
+                // Show "/" for root, otherwise show the path
+                let display = if display_path.is_empty() {
+                    "/".to_string()
+                } else {
+                    display_path
+                };
+
+                shaped_text(display)
+                    .size(TEXT_SIZE)
+                    .style(muted_text_style)
+                    .wrapping(Wrapping::WordOrGlyph)
+                    .into()
+            },
+        )
+        .width(FILE_SIZE_COLUMN_WIDTH * 2.0); // Wider than size column
+
+        // Size column header (clickable for sorting)
+        let size_header_content: Element<'static, Message> =
+            if deps.sort_column == FileSortColumn::Size {
+                let sort_icon = if deps.sort_ascending {
+                    icon::down_dir()
+                } else {
+                    icon::up_dir()
+                };
+                row![
+                    shaped_text(t("files-column-size"))
+                        .size(TEXT_SIZE)
+                        .style(muted_text_style),
+                    Space::new().width(Fill),
+                    sort_icon.size(SORT_ICON_SIZE).style(muted_text_style),
+                    Space::new().width(SORT_ICON_RIGHT_MARGIN),
+                ]
+                .align_y(Center)
+                .into()
+            } else {
+                shaped_text(t("files-column-size"))
+                    .size(TEXT_SIZE)
+                    .style(muted_text_style)
+                    .into()
+            };
+        let size_header: Element<'static, Message> = button(size_header_content)
+            .padding(NO_SPACING)
+            .width(Fill)
+            .style(transparent_icon_button_style)
+            .on_press(Message::FileSearchSortBy(FileSortColumn::Size))
             .into();
-        element
-    })
-    .width(FILE_SIZE_COLUMN_WIDTH)
-    .align_x(Right);
 
-    // Modified column header (clickable for sorting)
-    let modified_header_content: Element<'_, Message> = if sort_column == FileSortColumn::Modified {
-        let sort_icon = if sort_ascending {
-            icon::down_dir()
-        } else {
-            icon::up_dir()
-        };
-        row![
-            shaped_text(t("files-column-modified"))
-                .size(TEXT_SIZE)
-                .style(muted_text_style),
-            Space::new().width(Fill),
-            sort_icon.size(SORT_ICON_SIZE).style(muted_text_style),
-            Space::new().width(SORT_ICON_RIGHT_MARGIN),
-        ]
-        .align_y(Center)
-        .into()
-    } else {
-        shaped_text(t("files-column-modified"))
-            .size(TEXT_SIZE)
-            .style(muted_text_style)
-            .into()
-    };
-    let modified_header: Element<'_, Message> = button(modified_header_content)
-        .padding(NO_SPACING)
-        .width(Fill)
-        .style(transparent_icon_button_style)
-        .on_press(Message::FileSearchSortBy(FileSortColumn::Modified))
-        .into();
+        // Size column
+        let size_column = table::column(
+            size_header,
+            |result: FileSearchResult| -> Element<'static, Message> {
+                let size_text = if result.is_directory {
+                    String::from("—")
+                } else {
+                    format_size(result.size)
+                };
+                shaped_text(size_text)
+                    .size(TEXT_SIZE)
+                    .style(muted_text_style)
+                    .into()
+            },
+        )
+        .width(FILE_SIZE_COLUMN_WIDTH)
+        .align_x(Right);
 
-    // Modified column
-    let modified_column = table::column(modified_header, |result: &FileSearchResult| {
-        let date_text = format_timestamp(result.modified);
-        let element: Element<'_, Message> = shaped_text(date_text)
-            .size(TEXT_SIZE)
-            .style(muted_text_style)
+        // Modified column header (clickable for sorting)
+        let modified_header_content: Element<'static, Message> =
+            if deps.sort_column == FileSortColumn::Modified {
+                let sort_icon = if deps.sort_ascending {
+                    icon::down_dir()
+                } else {
+                    icon::up_dir()
+                };
+                row![
+                    shaped_text(t("files-column-modified"))
+                        .size(TEXT_SIZE)
+                        .style(muted_text_style),
+                    Space::new().width(Fill),
+                    sort_icon.size(SORT_ICON_SIZE).style(muted_text_style),
+                    Space::new().width(SORT_ICON_RIGHT_MARGIN),
+                ]
+                .align_y(Center)
+                .into()
+            } else {
+                shaped_text(t("files-column-modified"))
+                    .size(TEXT_SIZE)
+                    .style(muted_text_style)
+                    .into()
+            };
+        let modified_header: Element<'static, Message> = button(modified_header_content)
+            .padding(NO_SPACING)
+            .width(Fill)
+            .style(transparent_icon_button_style)
+            .on_press(Message::FileSearchSortBy(FileSortColumn::Modified))
             .into();
-        element
+
+        // Modified column
+        let modified_column = table::column(
+            modified_header,
+            |result: FileSearchResult| -> Element<'static, Message> {
+                let date_text = format_timestamp(result.modified);
+                shaped_text(date_text)
+                    .size(TEXT_SIZE)
+                    .style(muted_text_style)
+                    .into()
+            },
+        )
+        .width(FILE_DATE_COLUMN_WIDTH)
+        .align_x(Right);
+
+        let columns = [name_column, path_column, size_column, modified_column];
+
+        table(columns, deps.results.clone())
+            .width(Fill)
+            .padding_x(SPACER_SIZE_SMALL)
+            .padding_y(SPACER_SIZE_SMALL)
+            .separator_x(NO_SPACING)
+            .separator_y(SEPARATOR_HEIGHT)
     })
-    .width(FILE_DATE_COLUMN_WIDTH)
-    .align_x(Right);
-
-    let columns = [name_column, path_column, size_column, modified_column];
-
-    table(columns, results)
-        .width(Fill)
-        .padding_x(SPACER_SIZE_SMALL)
-        .padding_y(SPACER_SIZE_SMALL)
-        .separator_x(NO_SPACING)
-        .separator_y(SEPARATOR_HEIGHT)
-        .into()
+    .into()
 }
 
-/// Build context menu for search results
-fn build_search_result_context_menu<'a>(
-    result: &FileSearchResult,
+/// Build context menu for search results (lazy version with owned data)
+fn build_lazy_search_context_menu(
+    result: FileSearchResult,
     perms: FilePermissions,
-) -> Element<'a, Message> {
+) -> Element<'static, Message> {
     let mut menu_items: Vec<Element<'_, Message>> = vec![];
     let mut has_download = false;
 
@@ -828,6 +900,19 @@ fn build_search_result_context_menu<'a>(
                 .width(Fill)
                 .style(context_menu_button_style)
                 .on_press(Message::FileSearchResultDownload(result.clone()))
+                .into(),
+        );
+        has_download = true;
+    }
+
+    // Upload (directories only, if permission)
+    if perms.file_upload && result.is_directory {
+        menu_items.push(
+            button(shaped_text(t("context-menu-upload")).size(TEXT_SIZE))
+                .padding(CONTEXT_MENU_ITEM_PADDING)
+                .width(Fill)
+                .style(context_menu_button_style)
+                .on_press(Message::FileUpload(result.path.clone()))
                 .into(),
         );
         has_download = true;
@@ -1221,399 +1306,396 @@ fn rename_dialog<'a>(path: &str, name: &str, error: Option<&String>) -> Element<
     scrollable_panel(form)
 }
 
-/// Build the file table
+/// Build file table using lazy caching
 ///
-/// Note: entries should already be sorted before calling this function.
-fn file_table<'a>(
-    entries: &'a [FileEntry],
-    current_path: &'a str,
-    perms: FilePermissions,
-    clipboard: &'a Option<crate::types::ClipboardItem>,
-    sort_column: FileSortColumn,
-    sort_ascending: bool,
-) -> Element<'a, Message> {
-    // Name column header (clickable)
-    let name_header_content: Element<'_, Message> = if sort_column == FileSortColumn::Name {
-        let sort_icon = if sort_ascending {
-            icon::down_dir()
-        } else {
-            icon::up_dir()
-        };
-        row![
-            shaped_text(t("files-column-name"))
-                .size(TEXT_SIZE)
-                .style(muted_text_style),
-            Space::new().width(Fill),
-            sort_icon.size(SORT_ICON_SIZE).style(muted_text_style),
-            Space::new().width(SORT_ICON_RIGHT_MARGIN),
-        ]
-        .align_y(Center)
-        .into()
-    } else {
-        shaped_text(t("files-column-name"))
-            .size(TEXT_SIZE)
-            .style(muted_text_style)
-            .into()
-    };
-    let name_header: Element<'_, Message> = button(name_header_content)
-        .padding(NO_SPACING)
-        .width(Fill)
-        .style(transparent_icon_button_style)
-        .on_press(Message::FileSortBy(FileSortColumn::Name))
-        .into();
+/// This function wraps the table in `lazy()` so it only rebuilds when the
+/// dependencies change (file list, sort settings, clipboard state, etc.).
+/// This prevents expensive re-renders when unrelated state changes.
+fn lazy_file_table(deps: FileTableDeps) -> Element<'static, Message> {
+    lazy(deps, |deps| {
+        // Name column header
+        let name_header_content: Element<'static, Message> =
+            if deps.sort_column == FileSortColumn::Name {
+                let sort_icon = if deps.sort_ascending {
+                    icon::down_dir()
+                } else {
+                    icon::up_dir()
+                };
+                row![
+                    shaped_text(t("files-column-name"))
+                        .size(TEXT_SIZE)
+                        .style(muted_text_style),
+                    Space::new().width(Fill),
+                    sort_icon.size(SORT_ICON_SIZE).style(muted_text_style),
+                    Space::new().width(SORT_ICON_RIGHT_MARGIN),
+                ]
+                .align_y(Center)
+                .into()
+            } else {
+                shaped_text(t("files-column-name"))
+                    .size(TEXT_SIZE)
+                    .style(muted_text_style)
+                    .into()
+            };
+        let name_header: Element<'static, Message> = button(name_header_content)
+            .padding(NO_SPACING)
+            .width(Fill)
+            .style(transparent_icon_button_style)
+            .on_press(Message::FileSortBy(FileSortColumn::Name))
+            .into();
 
-    // Name column with icon
-    let name_column = table::column(name_header, |entry: &FileEntry| {
-        let is_directory = entry.dir_type.is_some();
-        let display_name = FilesManagementState::display_name(&entry.name);
+        // Name column - each row has all the data it needs
+        let name_column = table::column(name_header, |row: FileRowData| {
+            let is_directory = row.entry.dir_type.is_some();
+            let display_name = FilesManagementState::display_name(&row.entry.name);
 
-        // Build path for this entry (used for cut check, click actions, and context menu)
-        let entry_path = build_navigate_path(current_path, &entry.name);
-
-        // Check if this entry is cut (pending move) - show muted
-        let is_cut = clipboard
-            .as_ref()
-            .is_some_and(|c| c.operation == ClipboardOperation::Cut && c.path == entry_path);
-
-        // Icon based on type (folder or file extension)
-        // Uploadable folders get primary color
-        let icon_element: Element<'_, Message> = if is_directory {
-            if entry.can_upload {
-                icon::folder()
+            // Icon based on type
+            let icon_element: Element<'static, Message> = if is_directory {
+                if row.entry.can_upload {
+                    icon::folder()
+                        .size(FILE_LIST_ICON_SIZE)
+                        .style(upload_folder_style)
+                        .into()
+                } else {
+                    icon::folder().size(FILE_LIST_ICON_SIZE).into()
+                }
+            } else {
+                file_icon_for_extension(&row.entry.name)
                     .size(FILE_LIST_ICON_SIZE)
-                    .style(upload_folder_style)
+                    .into()
+            };
+
+            // Name text - muted if cut
+            let name_text = if row.is_cut {
+                shaped_text(display_name)
+                    .size(TEXT_SIZE)
+                    .wrapping(Wrapping::WordOrGlyph)
+                    .style(muted_text_style)
+            } else {
+                shaped_text(display_name)
+                    .size(TEXT_SIZE)
+                    .wrapping(Wrapping::WordOrGlyph)
+            };
+
+            let name_content: Element<'static, Message> = row![
+                icon_element,
+                Space::new().width(FILE_LIST_ICON_SPACING),
+                name_text,
+            ]
+            .align_y(Center)
+            .into();
+
+            // Make rows clickable
+            let row_element: Element<'static, Message> = if is_directory {
+                button(name_content)
+                    .padding(NO_SPACING)
+                    .style(transparent_icon_button_style)
+                    .on_press(Message::FileNavigate(row.path.clone()))
+                    .into()
+            } else if row.perms.file_download {
+                button(name_content)
+                    .padding(NO_SPACING)
+                    .style(transparent_icon_button_style)
+                    .on_press(Message::FileDownload(row.path.clone()))
                     .into()
             } else {
-                icon::folder().size(FILE_LIST_ICON_SIZE).into()
+                name_content
+            };
+
+            // Context menu
+            let has_any_permission = row.perms.file_info
+                || row.perms.file_delete
+                || row.perms.file_rename
+                || row.perms.file_move
+                || row.perms.file_copy
+                || row.perms.file_download
+                || row.perms.file_upload;
+
+            if has_any_permission {
+                ContextMenu::new(row_element, move || {
+                    build_lazy_context_menu(
+                        &row.path,
+                        &row.entry.name,
+                        is_directory,
+                        row.entry.can_upload,
+                        row.perms,
+                        row.has_clipboard,
+                    )
+                })
+                .into()
+            } else {
+                row_element
             }
-        } else {
-            file_icon_for_extension(&entry.name)
-                .size(FILE_LIST_ICON_SIZE)
-                .into()
-        };
+        })
+        .width(Fill);
 
-        // Name with icon - use muted style if cut
-        let name_text = if is_cut {
-            shaped_text(display_name)
+        // Size column header
+        let size_header_content: Element<'static, Message> =
+            if deps.sort_column == FileSortColumn::Size {
+                let sort_icon = if deps.sort_ascending {
+                    icon::down_dir()
+                } else {
+                    icon::up_dir()
+                };
+                row![
+                    shaped_text(t("files-column-size"))
+                        .size(TEXT_SIZE)
+                        .style(muted_text_style),
+                    Space::new().width(Fill),
+                    sort_icon.size(SORT_ICON_SIZE).style(muted_text_style),
+                    Space::new().width(SORT_ICON_RIGHT_MARGIN),
+                ]
+                .align_y(Center)
+                .into()
+            } else {
+                shaped_text(t("files-column-size"))
+                    .size(TEXT_SIZE)
+                    .style(muted_text_style)
+                    .into()
+            };
+        let size_header: Element<'static, Message> = button(size_header_content)
+            .padding(NO_SPACING)
+            .width(Fill)
+            .style(transparent_icon_button_style)
+            .on_press(Message::FileSortBy(FileSortColumn::Size))
+            .into();
+
+        // Size column
+        let size_column = table::column(size_header, |row: FileRowData| {
+            let size_text = if row.entry.dir_type.is_some() {
+                String::new()
+            } else {
+                format_size(row.entry.size)
+            };
+            shaped_text(size_text)
                 .size(TEXT_SIZE)
-                .wrapping(Wrapping::WordOrGlyph)
                 .style(muted_text_style)
-        } else {
-            shaped_text(display_name)
-                .size(TEXT_SIZE)
-                .wrapping(Wrapping::WordOrGlyph)
-        };
+        })
+        .width(FILE_SIZE_COLUMN_WIDTH)
+        .align_x(Right);
 
-        let name_content: Element<'_, Message> = row![
-            icon_element,
-            Space::new().width(FILE_LIST_ICON_SPACING),
-            name_text,
-        ]
-        .align_y(Center)
-        .into();
-
-        // Make rows clickable - directories navigate, files download
-        let row_element: Element<'_, Message> = if is_directory {
-            button(name_content)
-                .padding(NO_SPACING)
-                .style(transparent_icon_button_style)
-                .on_press(Message::FileNavigate(entry_path.clone()))
+        // Modified column header
+        let modified_header_content: Element<'static, Message> =
+            if deps.sort_column == FileSortColumn::Modified {
+                let sort_icon = if deps.sort_ascending {
+                    icon::down_dir()
+                } else {
+                    icon::up_dir()
+                };
+                row![
+                    shaped_text(t("files-column-modified"))
+                        .size(TEXT_SIZE)
+                        .style(muted_text_style),
+                    Space::new().width(Fill),
+                    sort_icon.size(SORT_ICON_SIZE).style(muted_text_style),
+                    Space::new().width(SORT_ICON_RIGHT_MARGIN),
+                ]
+                .align_y(Center)
                 .into()
-        } else if perms.file_download {
-            button(name_content)
-                .padding(NO_SPACING)
-                .style(transparent_icon_button_style)
-                .on_press(Message::FileDownload(entry_path.clone()))
-                .into()
-        } else {
-            name_content
-        };
+            } else {
+                shaped_text(t("files-column-modified"))
+                    .size(TEXT_SIZE)
+                    .style(muted_text_style)
+                    .into()
+            };
+        let modified_header: Element<'static, Message> = button(modified_header_content)
+            .padding(NO_SPACING)
+            .width(Fill)
+            .style(transparent_icon_button_style)
+            .on_press(Message::FileSortBy(FileSortColumn::Modified))
+            .into();
 
-        // Wrap in context menu if user has any file action permission
-        let has_any_permission = perms.file_info
-            || perms.file_delete
-            || perms.file_rename
-            || perms.file_move
-            || perms.file_copy
-            || perms.file_download
-            || perms.file_upload;
-        let has_clipboard = clipboard.is_some();
-
-        if has_any_permission {
-            // entry_path already built above
-            let entry_name = entry.name.clone();
-            let entry_is_dir = is_directory;
-            let entry_can_upload = entry.can_upload;
-
-            ContextMenu::new(row_element, move || {
-                let mut menu_items: Vec<Element<'_, Message>> = vec![];
-                let mut has_download_section = false;
-                let mut has_clipboard_section = false;
-                let mut has_normal_section = false;
-
-                // === Section 1: Download (primary action) ===
-
-                // Download (if permission)
-                if perms.file_download {
-                    let download_message = if entry_is_dir {
-                        Message::FileDownloadAll(entry_path.clone())
-                    } else {
-                        Message::FileDownload(entry_path.clone())
-                    };
-                    menu_items.push(
-                        button(shaped_text(t("context-menu-download")).size(TEXT_SIZE))
-                            .padding(CONTEXT_MENU_ITEM_PADDING)
-                            .width(Fill)
-                            .style(context_menu_button_style)
-                            .on_press(download_message)
-                            .into(),
-                    );
-                    has_download_section = true;
-                }
-
-                // Upload (if permission and directory allows uploads)
-                if perms.file_upload && entry_is_dir && entry_can_upload {
-                    menu_items.push(
-                        button(shaped_text(t("context-menu-upload")).size(TEXT_SIZE))
-                            .padding(CONTEXT_MENU_ITEM_PADDING)
-                            .width(Fill)
-                            .style(context_menu_button_style)
-                            .on_press(Message::FileUpload(entry_path.clone()))
-                            .into(),
-                    );
-                    has_download_section = true; // Group with download section
-                }
-
-                // === Section 2: Clipboard actions ===
-
-                // Check if we'll have any clipboard items (Cut, Copy, or Paste)
-                let will_have_clipboard = perms.file_move || perms.file_copy;
-
-                // Separator before clipboard actions (if we had download section and will have clipboard items)
-                if has_download_section && will_have_clipboard {
-                    menu_items.push(
-                        container(Space::new())
-                            .width(Fill)
-                            .height(CONTEXT_MENU_SEPARATOR_HEIGHT)
-                            .style(separator_style)
-                            .into(),
-                    );
-                }
-
-                // Cut (if permission)
-                if perms.file_move {
-                    menu_items.push(
-                        button(shaped_text(t("files-cut")).size(TEXT_SIZE))
-                            .padding(CONTEXT_MENU_ITEM_PADDING)
-                            .width(Fill)
-                            .style(context_menu_button_style)
-                            .on_press(Message::FileCut(entry_path.clone(), entry_name.clone()))
-                            .into(),
-                    );
-                    has_clipboard_section = true;
-                }
-
-                // Copy (if permission)
-                if perms.file_copy {
-                    menu_items.push(
-                        button(shaped_text(t("files-copy")).size(TEXT_SIZE))
-                            .padding(CONTEXT_MENU_ITEM_PADDING)
-                            .width(Fill)
-                            .style(context_menu_button_style)
-                            .on_press(Message::FileCopyToClipboard(
-                                entry_path.clone(),
-                                entry_name.clone(),
-                            ))
-                            .into(),
-                    );
-                    has_clipboard_section = true;
-                }
-
-                // Paste (only on directories, when clipboard has content)
-                if entry_is_dir && has_clipboard && (perms.file_move || perms.file_copy) {
-                    menu_items.push(
-                        button(shaped_text(t("files-paste")).size(TEXT_SIZE))
-                            .padding(CONTEXT_MENU_ITEM_PADDING)
-                            .width(Fill)
-                            .style(context_menu_button_style)
-                            .on_press(Message::FilePasteInto(entry_path.clone()))
-                            .into(),
-                    );
-                    has_clipboard_section = true;
-                }
-
-                // === Section 3: Normal actions ===
-
-                // Separator before normal actions (if we had clipboard actions)
-                if has_clipboard_section && (perms.file_info || perms.file_rename) {
-                    menu_items.push(
-                        container(Space::new())
-                            .width(Fill)
-                            .height(CONTEXT_MENU_SEPARATOR_HEIGHT)
-                            .style(separator_style)
-                            .into(),
-                    );
-                }
-
-                // Info (if permission)
-                if perms.file_info {
-                    menu_items.push(
-                        button(shaped_text(t("files-info")).size(TEXT_SIZE))
-                            .padding(CONTEXT_MENU_ITEM_PADDING)
-                            .width(Fill)
-                            .style(context_menu_button_style)
-                            .on_press(Message::FileInfoClicked(entry_name.clone()))
-                            .into(),
-                    );
-                    has_normal_section = true;
-                }
-
-                // Rename (if permission)
-                if perms.file_rename {
-                    menu_items.push(
-                        button(shaped_text(t("files-rename")).size(TEXT_SIZE))
-                            .padding(CONTEXT_MENU_ITEM_PADDING)
-                            .width(Fill)
-                            .style(context_menu_button_style)
-                            .on_press(Message::FileRenameClicked(entry_name.clone()))
-                            .into(),
-                    );
-                    has_normal_section = true;
-                }
-
-                // === Section 4: Destructive actions ===
-
-                // Delete (if permission) - with separator before destructive action
-                if perms.file_delete {
-                    // Only add separator if there are items above it
-                    if has_download_section || has_clipboard_section || has_normal_section {
-                        menu_items.push(
-                            container(Space::new())
-                                .width(Fill)
-                                .height(CONTEXT_MENU_SEPARATOR_HEIGHT)
-                                .style(separator_style)
-                                .into(),
-                        );
-                    }
-                    menu_items.push(
-                        button(shaped_text(t("files-delete")).size(TEXT_SIZE))
-                            .padding(CONTEXT_MENU_ITEM_PADDING)
-                            .width(Fill)
-                            .style(context_menu_item_danger_style)
-                            .on_press(Message::FileDeleteClicked(entry_path.clone()))
-                            .into(),
-                    );
-                }
-
-                container(
-                    iced::widget::Column::with_children(menu_items)
-                        .spacing(CONTEXT_MENU_SEPARATOR_MARGIN),
-                )
-                .width(CONTEXT_MENU_MIN_WIDTH)
-                .padding(CONTEXT_MENU_PADDING)
-                .style(context_menu_container_style)
-                .into()
-            })
-            .into()
-        } else {
-            row_element
-        }
-    })
-    .width(Fill);
-
-    // Size column header (clickable)
-    let size_header_content: Element<'_, Message> = if sort_column == FileSortColumn::Size {
-        let sort_icon = if sort_ascending {
-            icon::down_dir()
-        } else {
-            icon::up_dir()
-        };
-        row![
-            shaped_text(t("files-column-size"))
+        // Modified column
+        let modified_column = table::column(modified_header, |row: FileRowData| {
+            let date_text = format_timestamp(row.entry.modified);
+            shaped_text(date_text)
                 .size(TEXT_SIZE)
-                .style(muted_text_style),
-            Space::new().width(Fill),
-            sort_icon.size(SORT_ICON_SIZE).style(muted_text_style),
-            Space::new().width(SORT_ICON_RIGHT_MARGIN),
-        ]
-        .align_y(Center)
-        .into()
-    } else {
-        shaped_text(t("files-column-size"))
-            .size(TEXT_SIZE)
-            .style(muted_text_style)
-            .into()
-    };
-    let size_header: Element<'_, Message> = button(size_header_content)
-        .padding(NO_SPACING)
-        .width(Fill)
-        .style(transparent_icon_button_style)
-        .on_press(Message::FileSortBy(FileSortColumn::Size))
-        .into();
+                .style(muted_text_style)
+        })
+        .width(FILE_DATE_COLUMN_WIDTH)
+        .align_x(Right);
 
-    // Size column
-    let size_column = table::column(size_header, |entry: &FileEntry| {
-        let size_text = if entry.dir_type.is_some() {
-            String::new()
-        } else {
-            format_size(entry.size)
-        };
-        shaped_text(size_text)
-            .size(TEXT_SIZE)
-            .style(muted_text_style)
+        let columns = [name_column, size_column, modified_column];
+
+        table(columns, deps.rows.clone())
+            .width(Fill)
+            .padding_x(SPACER_SIZE_SMALL)
+            .padding_y(SPACER_SIZE_SMALL)
+            .separator_x(NO_SPACING)
+            .separator_y(SEPARATOR_HEIGHT)
     })
-    .width(FILE_SIZE_COLUMN_WIDTH)
-    .align_x(Right);
+    .into()
+}
 
-    // Modified column header (clickable)
-    let modified_header_content: Element<'_, Message> = if sort_column == FileSortColumn::Modified {
-        let sort_icon = if sort_ascending {
-            icon::down_dir()
+/// Build context menu for lazy file table (takes owned data)
+fn build_lazy_context_menu(
+    entry_path: &str,
+    entry_name: &str,
+    is_dir: bool,
+    can_upload: bool,
+    perms: FilePermissions,
+    has_clipboard: bool,
+) -> Element<'static, Message> {
+    let mut menu_items: Vec<Element<'_, Message>> = vec![];
+    let mut has_download_section = false;
+    let mut has_clipboard_section = false;
+    let mut has_normal_section = false;
+
+    // Download
+    if perms.file_download {
+        let download_message = if is_dir {
+            Message::FileDownloadAll(entry_path.to_string())
         } else {
-            icon::up_dir()
+            Message::FileDownload(entry_path.to_string())
         };
-        row![
-            shaped_text(t("files-column-modified"))
-                .size(TEXT_SIZE)
-                .style(muted_text_style),
-            Space::new().width(Fill),
-            sort_icon.size(SORT_ICON_SIZE).style(muted_text_style),
-            Space::new().width(SORT_ICON_RIGHT_MARGIN),
-        ]
-        .align_y(Center)
-        .into()
-    } else {
-        shaped_text(t("files-column-modified"))
-            .size(TEXT_SIZE)
-            .style(muted_text_style)
-            .into()
-    };
-    let modified_header: Element<'_, Message> = button(modified_header_content)
-        .padding(NO_SPACING)
-        .width(Fill)
-        .style(transparent_icon_button_style)
-        .on_press(Message::FileSortBy(FileSortColumn::Modified))
-        .into();
+        menu_items.push(
+            button(shaped_text(t("context-menu-download")).size(TEXT_SIZE))
+                .padding(CONTEXT_MENU_ITEM_PADDING)
+                .width(Fill)
+                .style(context_menu_button_style)
+                .on_press(download_message)
+                .into(),
+        );
+        has_download_section = true;
+    }
 
-    // Modified column
-    let modified_column = table::column(modified_header, |entry: &FileEntry| {
-        let date_text = format_timestamp(entry.modified);
-        shaped_text(date_text)
-            .size(TEXT_SIZE)
-            .style(muted_text_style)
-    })
-    .width(FILE_DATE_COLUMN_WIDTH)
-    .align_x(Right);
+    // Upload
+    if perms.file_upload && is_dir && can_upload {
+        menu_items.push(
+            button(shaped_text(t("context-menu-upload")).size(TEXT_SIZE))
+                .padding(CONTEXT_MENU_ITEM_PADDING)
+                .width(Fill)
+                .style(context_menu_button_style)
+                .on_press(Message::FileUpload(entry_path.to_string()))
+                .into(),
+        );
+        has_download_section = true;
+    }
 
-    let columns = [name_column, size_column, modified_column];
+    // Clipboard separator
+    let will_have_clipboard = perms.file_move || perms.file_copy;
+    if has_download_section && will_have_clipboard {
+        menu_items.push(
+            container(Space::new())
+                .width(Fill)
+                .height(CONTEXT_MENU_SEPARATOR_HEIGHT)
+                .style(separator_style)
+                .into(),
+        );
+    }
 
-    table(columns, entries)
-        .width(Fill)
-        .padding_x(SPACER_SIZE_SMALL)
-        .padding_y(SPACER_SIZE_SMALL)
-        .separator_x(NO_SPACING)
-        .separator_y(SEPARATOR_HEIGHT)
-        .into()
+    // Cut
+    if perms.file_move {
+        menu_items.push(
+            button(shaped_text(t("files-cut")).size(TEXT_SIZE))
+                .padding(CONTEXT_MENU_ITEM_PADDING)
+                .width(Fill)
+                .style(context_menu_button_style)
+                .on_press(Message::FileCut(
+                    entry_path.to_string(),
+                    entry_name.to_string(),
+                ))
+                .into(),
+        );
+        has_clipboard_section = true;
+    }
+
+    // Copy
+    if perms.file_copy {
+        menu_items.push(
+            button(shaped_text(t("files-copy")).size(TEXT_SIZE))
+                .padding(CONTEXT_MENU_ITEM_PADDING)
+                .width(Fill)
+                .style(context_menu_button_style)
+                .on_press(Message::FileCopyToClipboard(
+                    entry_path.to_string(),
+                    entry_name.to_string(),
+                ))
+                .into(),
+        );
+        has_clipboard_section = true;
+    }
+
+    // Paste
+    if is_dir && has_clipboard && (perms.file_move || perms.file_copy) {
+        menu_items.push(
+            button(shaped_text(t("files-paste")).size(TEXT_SIZE))
+                .padding(CONTEXT_MENU_ITEM_PADDING)
+                .width(Fill)
+                .style(context_menu_button_style)
+                .on_press(Message::FilePasteInto(entry_path.to_string()))
+                .into(),
+        );
+        has_clipboard_section = true;
+    }
+
+    // Normal actions separator
+    if has_clipboard_section && (perms.file_info || perms.file_rename) {
+        menu_items.push(
+            container(Space::new())
+                .width(Fill)
+                .height(CONTEXT_MENU_SEPARATOR_HEIGHT)
+                .style(separator_style)
+                .into(),
+        );
+    }
+
+    // Info
+    if perms.file_info {
+        menu_items.push(
+            button(shaped_text(t("files-info")).size(TEXT_SIZE))
+                .padding(CONTEXT_MENU_ITEM_PADDING)
+                .width(Fill)
+                .style(context_menu_button_style)
+                .on_press(Message::FileInfoClicked(entry_name.to_string()))
+                .into(),
+        );
+        has_normal_section = true;
+    }
+
+    // Rename
+    if perms.file_rename {
+        menu_items.push(
+            button(shaped_text(t("files-rename")).size(TEXT_SIZE))
+                .padding(CONTEXT_MENU_ITEM_PADDING)
+                .width(Fill)
+                .style(context_menu_button_style)
+                .on_press(Message::FileRenameClicked(entry_name.to_string()))
+                .into(),
+        );
+        has_normal_section = true;
+    }
+
+    // Delete separator
+    if perms.file_delete && (has_download_section || has_clipboard_section || has_normal_section) {
+        menu_items.push(
+            container(Space::new())
+                .width(Fill)
+                .height(CONTEXT_MENU_SEPARATOR_HEIGHT)
+                .style(separator_style)
+                .into(),
+        );
+    }
+
+    // Delete
+    if perms.file_delete {
+        menu_items.push(
+            button(shaped_text(t("files-delete")).size(TEXT_SIZE))
+                .padding(CONTEXT_MENU_ITEM_PADDING)
+                .width(Fill)
+                .style(context_menu_item_danger_style)
+                .on_press(Message::FileDeleteClicked(entry_path.to_string()))
+                .into(),
+        );
+    }
+
+    container(
+        iced::widget::Column::with_children(menu_items).spacing(CONTEXT_MENU_SEPARATOR_MARGIN),
+    )
+    .width(CONTEXT_MENU_MIN_WIDTH)
+    .padding(CONTEXT_MENU_PADDING)
+    .style(context_menu_container_style)
+    .into()
 }
 
 // ============================================================================
@@ -1879,12 +1961,12 @@ pub fn files_view<'a>(
                 .into()
             } else {
                 // Search results table
-                search_results_table(
-                    results,
+                lazy_search_results_table(SearchResultsDeps {
+                    results: results.clone(),
                     perms,
-                    tab.search_sort_column,
-                    tab.search_sort_ascending,
-                )
+                    sort_column: tab.search_sort_column,
+                    sort_ascending: tab.search_sort_ascending,
+                })
             }
         } else {
             // Should not happen, but handle gracefully
@@ -1925,15 +2007,31 @@ pub fn files_view<'a>(
                 .padding(SPACER_SIZE_SMALL)
                 .into()
             } else {
-                // File table
-                file_table(
-                    entries,
-                    &tab.current_path,
-                    perms,
-                    &files_management.clipboard,
-                    tab.sort_column,
-                    tab.sort_ascending,
-                )
+                // Build row data with all context pre-computed
+                let rows: Vec<FileRowData> = entries
+                    .iter()
+                    .map(|entry| {
+                        let path = build_navigate_path(&tab.current_path, &entry.name);
+                        let is_cut = files_management.clipboard.as_ref().is_some_and(|c| {
+                            c.operation == ClipboardOperation::Cut && c.path == path
+                        });
+                        FileRowData {
+                            entry: entry.clone(),
+                            path,
+                            is_cut,
+                            perms,
+                            has_clipboard: files_management.clipboard.is_some(),
+                        }
+                    })
+                    .collect();
+
+                let deps = FileTableDeps {
+                    rows,
+                    sort_column: tab.sort_column,
+                    sort_ascending: tab.sort_ascending,
+                };
+
+                lazy_file_table(deps)
             }
         } else {
             // Loading state

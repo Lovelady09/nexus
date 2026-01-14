@@ -19,8 +19,8 @@ use nexus_common::protocol::ServerMessage;
 use super::file_utils::is_cancelled;
 use super::{BUFFER_SIZE, TransferError};
 
-/// Minimum interval between progress updates (100ms = 10 updates/second)
-const PROGRESS_UPDATE_INTERVAL: Duration = Duration::from_millis(100);
+/// Minimum interval between progress updates (250ms = 4 updates/second)
+const PROGRESS_UPDATE_INTERVAL: Duration = Duration::from_millis(250);
 
 /// Error type for streaming operations
 #[derive(Debug)]
@@ -118,7 +118,7 @@ where
         remaining -= bytes_read as u64;
         total_written += bytes_read as u64;
 
-        // Send progress updates at most every PROGRESS_UPDATE_INTERVAL
+        // Rate limit progress updates to reduce UI rebuilds
         if last_progress_time.elapsed() >= PROGRESS_UPDATE_INTERVAL {
             on_progress(total_written);
             last_progress_time = Instant::now();
@@ -264,7 +264,7 @@ where
         remaining -= bytes_read as u64;
         total_sent += bytes_read as u64;
 
-        // Send progress updates at most every PROGRESS_UPDATE_INTERVAL
+        // Rate limit progress updates to reduce UI rebuilds
         if last_progress_time.elapsed() >= PROGRESS_UPDATE_INTERVAL {
             on_progress(total_sent);
             last_progress_time = Instant::now();

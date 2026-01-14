@@ -975,7 +975,7 @@ pub struct TrustInfo {
 }
 
 /// File search result entry
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct FileSearchResult {
     /// Full path relative to user's root (e.g., "/Documents/report.pdf")
     pub path: String,
@@ -990,7 +990,7 @@ pub struct FileSearchResult {
 }
 
 /// File entry in a directory listing
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct FileEntry {
     /// Filesystem name (including any suffix like ` [NEXUS-UL]`; client strips for display)
     pub name: String,
