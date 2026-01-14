@@ -180,18 +180,47 @@ Use `/focus` to switch to a specific tab:
 /focus alice       # Switch to PM with alice
 ```
 
-## Nickname Completion
+## Tab Completion
 
-Press **Tab** while typing to complete nicknames:
+Press **Tab** while typing to complete commands, channels, or nicknames.
 
-1. Type the first few letters of a nickname
-2. Press **Tab** to complete
-3. Press **Tab** again to cycle through matches
+### Command Completion
 
-Completion uses the member list of the current tab:
-- **Channel tabs**: Completes from channel members
-- **PM tabs**: Completes from you and the other user
-- **Console tab**: No completion
+When your input starts with `/` and has no space:
+
+```
+/he<Tab>     →  /help
+/jo<Tab>     →  /join
+/<Tab>       →  cycles through all available commands
+```
+
+Only commands you have permission to use are shown.
+
+### Channel Completion
+
+When a word starts with `#`:
+
+```
+#nex<Tab>     →  #nexus
+/join #su<Tab>  →  /join #support
+```
+
+Completes from known channels (channels you've joined plus any seen from `/channels` output). Run `/channels` once to discover and cache available channels for completion.
+
+### Nickname Completion
+
+For any other word:
+
+```
+ali<Tab>     →  alice
+hello bo<Tab>  →  hello bob
+```
+
+Completes from online users (in channels, from channel members).
+
+### Cycling Through Matches
+
+Press **Tab** repeatedly to cycle through all matches alphabetically.
 
 ## Mentions
 

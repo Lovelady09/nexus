@@ -53,6 +53,21 @@ chmod +x nexus-client-*-linux-x64.AppImage
 
 > **Fedora/RHEL users:** Use the AppImage. RPM packages are not currently available due to a limitation in our build tooling.
 
+#### Arch Linux (AUR)
+
+Nexus is available in the [Arch User Repository](https://aur.archlinux.org/):
+
+- [nexus-client](https://aur.archlinux.org/packages/nexus-client) — Release version
+- [nexus-client-git](https://aur.archlinux.org/packages/nexus-client-git) — Latest from main branch
+
+```bash
+# Using yay
+yay -S nexus-client
+
+# Or for latest development version
+yay -S nexus-client-git
+```
+
 ### Building from Source
 
 Requirements:

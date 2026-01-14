@@ -250,8 +250,23 @@ impl NexusApp {
                 );
 
                 // Add to channels map and tabs list
-                conn.channels.insert(channel_lower, channel_state);
+                conn.channels.insert(channel_lower.clone(), channel_state);
                 conn.channel_tabs.push(channel_info.channel.clone());
+
+                // Add to known_channels for tab completion (sorted, deduplicated)
+                if !conn
+                    .known_channels
+                    .iter()
+                    .any(|c| c.to_lowercase() == channel_lower)
+                {
+                    let pos = conn
+                        .known_channels
+                        .iter()
+                        .position(|c| c.to_lowercase() > channel_lower)
+                        .unwrap_or(conn.known_channels.len());
+                    conn.known_channels
+                        .insert(pos, channel_info.channel.clone());
+                }
             }
 
             // Set active tab to last joined channel, or stay on Console if no channels

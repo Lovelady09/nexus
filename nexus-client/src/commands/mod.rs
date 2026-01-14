@@ -395,6 +395,104 @@ pub fn get_command_info(name: &str) -> Option<&'static CommandInfo> {
         .map(|&index| &COMMANDS[index].info)
 }
 
+/// Complete a command name. Returns matching command names or None if no matches.
+pub fn complete_command(
+    prefix: &str,
+    is_admin: bool,
+    permissions: &[String],
+) -> Option<Vec<String>> {
+    let prefix_lower = prefix.to_lowercase();
+    let matches: Vec<String> = command_names_for_completion(is_admin, permissions)
+        .into_iter()
+        .filter(|cmd| cmd.to_lowercase().starts_with(&prefix_lower))
+        .collect();
+
+    if matches.is_empty() {
+        None
+    } else {
+        // Already sorted by command_names_for_completion
+        Some(matches)
+    }
+}
+
+/// Complete a channel name. Returns matching channel names or None if no matches.
+pub fn complete_channel(prefix: &str, channels: &[String]) -> Option<Vec<String>> {
+    let prefix_lower = prefix.to_lowercase();
+    let mut matches: Vec<String> = channels
+        .iter()
+        .filter(|name| name.to_lowercase().starts_with(&prefix_lower))
+        .cloned()
+        .collect();
+
+    if matches.is_empty() {
+        None
+    } else {
+        matches.sort_unstable_by_key(|a| a.to_lowercase());
+        Some(matches)
+    }
+}
+
+/// Complete a nickname. Returns matching nicknames or None if no matches.
+pub fn complete_nickname<T, F>(prefix: &str, users: &[T], get_nickname: F) -> Option<Vec<String>>
+where
+    F: Fn(&T) -> &str,
+{
+    let prefix_lower = prefix.to_lowercase();
+    let mut matches: Vec<String> = users
+        .iter()
+        .filter(|u| get_nickname(u).to_lowercase().starts_with(&prefix_lower))
+        .map(|u| get_nickname(u).to_string())
+        .collect();
+
+    if matches.is_empty() {
+        None
+    } else {
+        matches.sort_unstable_by_key(|a| a.to_lowercase());
+        Some(matches)
+    }
+}
+
+/// Find the last word in a string, returning (start_position, word_slice).
+///
+/// This correctly handles multi-byte Unicode whitespace characters by using
+/// char boundaries rather than assuming single-byte whitespace.
+///
+/// Returns (0, input) if no whitespace is found (entire input is one word).
+/// Returns (len, "") if input ends with whitespace.
+pub fn last_word(input: &str) -> (usize, &str) {
+    match input.rfind(char::is_whitespace) {
+        Some(i) => {
+            // Skip past the whitespace character (handles multi-byte whitespace)
+            let ws_char = input[i..].chars().next().unwrap();
+            let start = i + ws_char.len_utf8();
+            (start, &input[start..])
+        }
+        None => (0, input),
+    }
+}
+
+/// Get list of command names (including aliases) the user has permission to use (for tab completion)
+pub fn command_names_for_completion(is_admin: bool, permissions: &[String]) -> Vec<String> {
+    let mut names = Vec::new();
+    for reg in COMMANDS.iter() {
+        let has_permission = reg.info.permissions.is_empty()
+            || is_admin
+            || reg
+                .info
+                .permissions
+                .iter()
+                .any(|req| permissions.iter().any(|p| p == *req));
+        if has_permission {
+            names.push(reg.info.name.to_string());
+            for alias in reg.info.aliases {
+                names.push((*alias).to_string());
+            }
+        }
+    }
+    names.sort_unstable_by_key(|a| a.to_lowercase());
+    names
+}
+
 /// Get list of commands the user has permission to use (for /help display)
 pub(crate) fn command_list_for_permissions(
     is_admin: bool,
@@ -739,5 +837,463 @@ mod tests {
         assert!(commands.iter().any(|c| c.name == "list"));
         // Still shouldn't see kick
         assert!(!commands.iter().any(|c| c.name == "kick"));
+    }
+
+    // =========================================================================
+    // Tab Completion Tests
+    // =========================================================================
+
+    // --- last_word tests ---
+
+    #[test]
+    fn test_last_word_empty_string() {
+        let (pos, word) = last_word("");
+        assert_eq!(pos, 0);
+        assert_eq!(word, "");
+    }
+
+    #[test]
+    fn test_last_word_single_word() {
+        let (pos, word) = last_word("hello");
+        assert_eq!(pos, 0);
+        assert_eq!(word, "hello");
+    }
+
+    #[test]
+    fn test_last_word_two_words() {
+        let (pos, word) = last_word("hello world");
+        assert_eq!(pos, 6);
+        assert_eq!(word, "world");
+    }
+
+    #[test]
+    fn test_last_word_multiple_words() {
+        let (pos, word) = last_word("one two three four");
+        assert_eq!(pos, 14);
+        assert_eq!(word, "four");
+    }
+
+    #[test]
+    fn test_last_word_trailing_space() {
+        let (pos, word) = last_word("hello ");
+        assert_eq!(pos, 6);
+        assert_eq!(word, "");
+    }
+
+    #[test]
+    fn test_last_word_multiple_trailing_spaces() {
+        let (pos, word) = last_word("hello   ");
+        assert_eq!(pos, 8);
+        assert_eq!(word, "");
+    }
+
+    #[test]
+    fn test_last_word_leading_space() {
+        let (pos, word) = last_word(" hello");
+        assert_eq!(pos, 1);
+        assert_eq!(word, "hello");
+    }
+
+    #[test]
+    fn test_last_word_multiple_spaces_between() {
+        let (pos, word) = last_word("hello   world");
+        assert_eq!(pos, 8);
+        assert_eq!(word, "world");
+    }
+
+    #[test]
+    fn test_last_word_tab_character() {
+        let (pos, word) = last_word("hello\tworld");
+        assert_eq!(pos, 6);
+        assert_eq!(word, "world");
+    }
+
+    #[test]
+    fn test_last_word_newline() {
+        let (pos, word) = last_word("hello\nworld");
+        assert_eq!(pos, 6);
+        assert_eq!(word, "world");
+    }
+
+    #[test]
+    fn test_last_word_unicode_content() {
+        let (pos, word) = last_word("hello 日本語");
+        assert_eq!(pos, 6);
+        assert_eq!(word, "日本語");
+    }
+
+    #[test]
+    fn test_last_word_unicode_whitespace() {
+        // Em space (U+2003) is a multi-byte whitespace character
+        let (pos, word) = last_word("hello\u{2003}world");
+        assert_eq!(pos, 8); // 5 bytes for "hello" + 3 bytes for em space
+        assert_eq!(word, "world");
+    }
+
+    #[test]
+    fn test_last_word_channel_prefix() {
+        let (pos, word) = last_word("/join #nexus");
+        assert_eq!(pos, 6);
+        assert_eq!(word, "#nexus");
+    }
+
+    #[test]
+    fn test_last_word_partial_channel() {
+        let (pos, word) = last_word("/join #nex");
+        assert_eq!(pos, 6);
+        assert_eq!(word, "#nex");
+    }
+
+    #[test]
+    fn test_last_word_just_hash() {
+        let (pos, word) = last_word("/join #");
+        assert_eq!(pos, 6);
+        assert_eq!(word, "#");
+    }
+
+    // --- complete_channel tests ---
+
+    #[test]
+    fn test_complete_channel_empty_prefix() {
+        // Empty prefix matches all channels (everything starts with "")
+        let channels = vec!["#nexus".to_string(), "#support".to_string()];
+        let result = complete_channel("", &channels);
+        assert!(result.is_some());
+        let matches = result.unwrap();
+        assert_eq!(matches.len(), 2);
+    }
+
+    #[test]
+    fn test_complete_channel_hash_only() {
+        let channels = vec!["#nexus".to_string(), "#support".to_string()];
+        let result = complete_channel("#", &channels);
+        assert!(result.is_some());
+        let matches = result.unwrap();
+        assert_eq!(matches.len(), 2);
+        assert_eq!(matches[0], "#nexus");
+        assert_eq!(matches[1], "#support");
+    }
+
+    #[test]
+    fn test_complete_channel_partial_match() {
+        let channels = vec![
+            "#nexus".to_string(),
+            "#news".to_string(),
+            "#support".to_string(),
+        ];
+        let result = complete_channel("#ne", &channels);
+        assert!(result.is_some());
+        let matches = result.unwrap();
+        assert_eq!(matches.len(), 2);
+        assert!(matches.contains(&"#nexus".to_string()));
+        assert!(matches.contains(&"#news".to_string()));
+    }
+
+    #[test]
+    fn test_complete_channel_exact_match() {
+        let channels = vec!["#nexus".to_string(), "#support".to_string()];
+        let result = complete_channel("#nexus", &channels);
+        assert!(result.is_some());
+        let matches = result.unwrap();
+        assert_eq!(matches.len(), 1);
+        assert_eq!(matches[0], "#nexus");
+    }
+
+    #[test]
+    fn test_complete_channel_no_match() {
+        let channels = vec!["#nexus".to_string(), "#support".to_string()];
+        let result = complete_channel("#xyz", &channels);
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_complete_channel_case_insensitive() {
+        let channels = vec!["#Nexus".to_string(), "#SUPPORT".to_string()];
+        let result = complete_channel("#nex", &channels);
+        assert!(result.is_some());
+        let matches = result.unwrap();
+        assert_eq!(matches.len(), 1);
+        assert_eq!(matches[0], "#Nexus"); // Preserves original casing
+    }
+
+    #[test]
+    fn test_complete_channel_uppercase_prefix() {
+        let channels = vec!["#nexus".to_string(), "#support".to_string()];
+        let result = complete_channel("#NEX", &channels);
+        assert!(result.is_some());
+        let matches = result.unwrap();
+        assert_eq!(matches[0], "#nexus");
+    }
+
+    #[test]
+    fn test_complete_channel_sorted_output() {
+        let channels = vec![
+            "#zebra".to_string(),
+            "#alpha".to_string(),
+            "#middle".to_string(),
+        ];
+        let result = complete_channel("#", &channels);
+        assert!(result.is_some());
+        let matches = result.unwrap();
+        assert_eq!(matches[0], "#alpha");
+        assert_eq!(matches[1], "#middle");
+        assert_eq!(matches[2], "#zebra");
+    }
+
+    #[test]
+    fn test_complete_channel_empty_list() {
+        let channels: Vec<String> = vec![];
+        let result = complete_channel("#nex", &channels);
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_complete_channel_unicode_name() {
+        let channels = vec!["#日本語".to_string(), "#nexus".to_string()];
+        let result = complete_channel("#日", &channels);
+        assert!(result.is_some());
+        let matches = result.unwrap();
+        assert_eq!(matches.len(), 1);
+        assert_eq!(matches[0], "#日本語");
+    }
+
+    // --- complete_nickname tests ---
+
+    #[test]
+    fn test_complete_nickname_empty_prefix() {
+        let users = vec!["alice", "bob", "charlie"];
+        let result = complete_nickname("", &users, |u| u);
+        assert!(result.is_some());
+        let matches = result.unwrap();
+        assert_eq!(matches.len(), 3);
+    }
+
+    #[test]
+    fn test_complete_nickname_partial_match() {
+        let users = vec!["alice", "alex", "bob"];
+        let result = complete_nickname("al", &users, |u| u);
+        assert!(result.is_some());
+        let matches = result.unwrap();
+        assert_eq!(matches.len(), 2);
+        assert!(matches.contains(&"alice".to_string()));
+        assert!(matches.contains(&"alex".to_string()));
+    }
+
+    #[test]
+    fn test_complete_nickname_single_match() {
+        let users = vec!["alice", "bob", "charlie"];
+        let result = complete_nickname("bo", &users, |u| u);
+        assert!(result.is_some());
+        let matches = result.unwrap();
+        assert_eq!(matches.len(), 1);
+        assert_eq!(matches[0], "bob");
+    }
+
+    #[test]
+    fn test_complete_nickname_no_match() {
+        let users = vec!["alice", "bob", "charlie"];
+        let result = complete_nickname("xyz", &users, |u| u);
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_complete_nickname_case_insensitive() {
+        let users = vec!["Alice", "BOB", "Charlie"];
+        let result = complete_nickname("ali", &users, |u| u);
+        assert!(result.is_some());
+        let matches = result.unwrap();
+        assert_eq!(matches[0], "Alice"); // Preserves original casing
+    }
+
+    #[test]
+    fn test_complete_nickname_uppercase_prefix() {
+        let users = vec!["alice", "bob"];
+        let result = complete_nickname("ALI", &users, |u| u);
+        assert!(result.is_some());
+        let matches = result.unwrap();
+        assert_eq!(matches[0], "alice");
+    }
+
+    #[test]
+    fn test_complete_nickname_sorted_output() {
+        let users = vec!["zebra", "alice", "middle"];
+        let result = complete_nickname("", &users, |u| u);
+        assert!(result.is_some());
+        let matches = result.unwrap();
+        assert_eq!(matches[0], "alice");
+        assert_eq!(matches[1], "middle");
+        assert_eq!(matches[2], "zebra");
+    }
+
+    #[test]
+    fn test_complete_nickname_empty_list() {
+        let users: Vec<&str> = vec![];
+        let result = complete_nickname("ali", &users, |u| u);
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_complete_nickname_unicode() {
+        let users = vec!["日本語", "alice"];
+        let result = complete_nickname("日", &users, |u| u);
+        assert!(result.is_some());
+        let matches = result.unwrap();
+        assert_eq!(matches.len(), 1);
+        assert_eq!(matches[0], "日本語");
+    }
+
+    #[test]
+    fn test_complete_nickname_with_struct() {
+        struct User {
+            nickname: String,
+            #[allow(dead_code)]
+            id: u32,
+        }
+        let users = vec![
+            User {
+                nickname: "alice".to_string(),
+                id: 1,
+            },
+            User {
+                nickname: "bob".to_string(),
+                id: 2,
+            },
+        ];
+        let result = complete_nickname("ali", &users, |u| &u.nickname);
+        assert!(result.is_some());
+        let matches = result.unwrap();
+        assert_eq!(matches[0], "alice");
+    }
+
+    // --- complete_command tests ---
+
+    #[test]
+    fn test_complete_command_empty_prefix_admin() {
+        let result = complete_command("", true, &[]);
+        assert!(result.is_some());
+        let matches = result.unwrap();
+        // Admin should see all commands and aliases
+        assert!(matches.len() > 10);
+    }
+
+    #[test]
+    fn test_complete_command_empty_prefix_no_perms() {
+        let result = complete_command("", false, &[]);
+        assert!(result.is_some());
+        let matches = result.unwrap();
+        // Should at least see help, clear, etc.
+        assert!(matches.iter().any(|c| c == "help"));
+        assert!(matches.iter().any(|c| c == "clear"));
+    }
+
+    #[test]
+    fn test_complete_command_partial_match() {
+        let result = complete_command("he", true, &[]);
+        assert!(result.is_some());
+        let matches = result.unwrap();
+        assert!(matches.iter().any(|c| c == "help"));
+    }
+
+    #[test]
+    fn test_complete_command_no_match() {
+        let result = complete_command("xyz", true, &[]);
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_complete_command_case_insensitive() {
+        let result = complete_command("HE", true, &[]);
+        assert!(result.is_some());
+        let matches = result.unwrap();
+        assert!(matches.iter().any(|c| c == "help"));
+    }
+
+    #[test]
+    fn test_complete_command_includes_aliases() {
+        let result = complete_command("", true, &[]);
+        assert!(result.is_some());
+        let matches = result.unwrap();
+        // "h" and "?" are aliases for help
+        assert!(matches.iter().any(|c| c == "h"));
+        assert!(matches.iter().any(|c| c == "?"));
+    }
+
+    #[test]
+    fn test_complete_command_alias_match() {
+        let result = complete_command("h", true, &[]);
+        assert!(result.is_some());
+        let matches = result.unwrap();
+        // Should match "h" alias and "help" command
+        assert!(matches.iter().any(|c| c == "h"));
+        assert!(matches.iter().any(|c| c == "help"));
+    }
+
+    #[test]
+    fn test_complete_command_permission_gated() {
+        // Without permissions, shouldn't see kick
+        let result = complete_command("ki", false, &[]);
+        assert!(result.is_none());
+
+        // With permission, should see kick
+        let perms = vec!["user_kick".to_string()];
+        let result = complete_command("ki", false, &perms);
+        assert!(result.is_some());
+        let matches = result.unwrap();
+        assert!(matches.iter().any(|c| c == "kick"));
+    }
+
+    #[test]
+    fn test_complete_command_sorted() {
+        let result = complete_command("", true, &[]);
+        assert!(result.is_some());
+        let matches = result.unwrap();
+        // Verify sorted order
+        for i in 1..matches.len() {
+            assert!(
+                matches[i - 1].to_lowercase() <= matches[i].to_lowercase(),
+                "Commands not sorted: {} should come before {}",
+                matches[i - 1],
+                matches[i]
+            );
+        }
+    }
+
+    // --- command_names_for_completion tests ---
+
+    #[test]
+    fn test_command_names_admin_gets_all() {
+        let names = command_names_for_completion(true, &[]);
+        // Should have more names than commands (due to aliases)
+        assert!(names.len() > COMMANDS.len());
+    }
+
+    #[test]
+    fn test_command_names_no_perms_gets_public() {
+        let names = command_names_for_completion(false, &[]);
+        assert!(names.iter().any(|n| n == "help"));
+        assert!(names.iter().any(|n| n == "clear"));
+        // Should not have permission-gated commands
+        assert!(!names.iter().any(|n| n == "kick"));
+        assert!(!names.iter().any(|n| n == "broadcast"));
+    }
+
+    #[test]
+    fn test_command_names_with_permission() {
+        let perms = vec!["user_kick".to_string()];
+        let names = command_names_for_completion(false, &perms);
+        assert!(names.iter().any(|n| n == "kick"));
+    }
+
+    #[test]
+    fn test_command_names_sorted() {
+        let names = command_names_for_completion(true, &[]);
+        for i in 1..names.len() {
+            assert!(
+                names[i - 1].to_lowercase() <= names[i].to_lowercase(),
+                "Names not sorted: {} should come before {}",
+                names[i - 1],
+                names[i]
+            );
+        }
     }
 }

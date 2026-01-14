@@ -71,7 +71,7 @@ impl std::fmt::Debug for ConnectionInfo {
 /// State for tab completion in chat input
 #[derive(Debug, Clone)]
 pub struct TabCompletionState {
-    /// List of matching nicknames (sorted alphabetically)
+    /// List of matches (sorted alphabetically)
     pub matches: Vec<String>,
     /// Current index in the matches list
     pub index: usize,
@@ -202,6 +202,8 @@ pub struct ServerConnection {
     pub channel_tabs: Vec<String>,
     /// Channel state by lowercase channel name
     pub channels: HashMap<String, ChannelState>,
+    /// Known channels for tab completion (joined + seen from /channels, sorted)
+    pub known_channels: Vec<String>,
     /// User message tabs in creation order (nicknames)
     pub user_message_tabs: Vec<String>,
     /// User message history per user (keyed by nickname)
@@ -342,6 +344,7 @@ impl ServerConnection {
             console_messages: Vec::new(),
             channel_tabs: Vec::new(),
             channels: HashMap::new(),
+            known_channels: Vec::new(),
             user_message_tabs: Vec::new(),
             user_messages: HashMap::new(),
             pending_channel_leave: None,

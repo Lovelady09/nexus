@@ -72,8 +72,22 @@ impl NexusApp {
                 data.members.unwrap_or_default(),
             );
             let channel_lower = channel_name.to_lowercase();
-            conn.channels.insert(channel_lower, channel_state);
+            conn.channels.insert(channel_lower.clone(), channel_state);
             conn.channel_tabs.push(channel_name.clone());
+
+            // Add to known_channels for tab completion (sorted, deduplicated)
+            if !conn
+                .known_channels
+                .iter()
+                .any(|c| c.to_lowercase() == channel_lower)
+            {
+                let pos = conn
+                    .known_channels
+                    .iter()
+                    .position(|c| c.to_lowercase() > channel_lower)
+                    .unwrap_or(conn.known_channels.len());
+                conn.known_channels.insert(pos, channel_name.clone());
+            }
         }
 
         // Set active tab to the newly joined channel
@@ -227,6 +241,28 @@ impl NexusApp {
         }
 
         let channels = channels.unwrap_or_default();
+
+        // Cache channel names for tab completion (merge with existing, deduplicate, sort)
+        if let Some(conn) = self.connections.get_mut(&connection_id) {
+            for channel in &channels {
+                let name = &channel.name;
+                // Insert in sorted position if not already present (case-insensitive)
+                let name_lower = name.to_lowercase();
+                if !conn
+                    .known_channels
+                    .iter()
+                    .any(|c| c.to_lowercase() == name_lower)
+                {
+                    // Find insertion point for sorted order
+                    let pos = conn
+                        .known_channels
+                        .iter()
+                        .position(|c| c.to_lowercase() > name_lower)
+                        .unwrap_or(conn.known_channels.len());
+                    conn.known_channels.insert(pos, name.clone());
+                }
+            }
+        }
 
         if channels.is_empty() {
             return self

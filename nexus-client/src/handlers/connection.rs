@@ -5,7 +5,9 @@ use iced::widget::{Id, operation, scrollable};
 use nexus_common::protocol::ClientMessage;
 use nexus_common::validators::{self, MessageError};
 
-use crate::commands::{self, ParseResult};
+use crate::commands::{
+    self, ParseResult, complete_channel, complete_command, complete_nickname, last_word,
+};
 use crate::i18n::{get_locale, t, t_args};
 use crate::network::{ConnectionParams, ProxyConfig};
 use crate::types::{
@@ -373,42 +375,53 @@ impl NexusApp {
             }
         }
 
-        // If input is empty or ends with whitespace, just focus the field
-        if conn.message_input.is_empty() || conn.message_input.ends_with(char::is_whitespace) {
+        // If input is empty, just focus the field
+        if conn.message_input.is_empty() {
             self.focused_field = InputId::ChatInput;
             return operation::focus(Id::from(InputId::ChatInput));
         }
 
-        // Find the word at the end of input (the prefix to complete)
-        let start_pos = conn
-            .message_input
-            .rfind(char::is_whitespace)
-            .map_or(0, |i| i + 1);
-        let prefix_lower = conn.message_input[start_pos..].to_lowercase();
+        // Determine completion type based on input context
+        let input = &conn.message_input;
 
-        // Find matching nicknames (case-insensitive prefix match)
-        let mut matches: Vec<String> = conn
-            .online_users
-            .iter()
-            .filter(|u| u.nickname.to_lowercase().starts_with(&prefix_lower))
-            .map(|u| u.nickname.clone())
-            .collect();
-
-        if matches.is_empty() {
+        // Case 1: Command completion - input is "/" or "/prefix" with no space
+        if input.starts_with('/') && !input.contains(' ') {
+            if let Some(matches) = complete_command(&input[1..], conn.is_admin, &conn.permissions) {
+                conn.message_input = format!("/{}", matches[0]);
+                conn.tab_completion = Some(TabCompletionState::new(matches, 1)); // 1 to keep the /
+                return operation::move_cursor_to_end(Id::from(InputId::ChatInput));
+            }
             return Task::none();
         }
 
-        // Sort matches alphabetically for consistent ordering
-        matches.sort_unstable_by_key(|a| a.to_lowercase());
+        // Find the word at the end of input
+        let (start_pos, word) = last_word(input);
 
-        // Apply first match using truncate-and-append
-        conn.message_input.truncate(start_pos);
-        conn.message_input.push_str(&matches[0]);
+        // Case 2: Channel completion - word starts with #
+        if word.starts_with('#') {
+            if let Some(matches) = complete_channel(word, &conn.known_channels) {
+                conn.message_input.truncate(start_pos);
+                conn.message_input.push_str(&matches[0]);
+                conn.tab_completion = Some(TabCompletionState::new(matches, start_pos));
+                return operation::move_cursor_to_end(Id::from(InputId::ChatInput));
+            }
+            return Task::none();
+        }
 
-        // Store completion state for cycling
-        conn.tab_completion = Some(TabCompletionState::new(matches, start_pos));
+        // Case 3: Nickname completion - default
+        if word.is_empty() {
+            self.focused_field = InputId::ChatInput;
+            return operation::focus(Id::from(InputId::ChatInput));
+        }
 
-        operation::move_cursor_to_end(Id::from(InputId::ChatInput))
+        if let Some(matches) = complete_nickname(word, &conn.online_users, |u| &u.nickname) {
+            conn.message_input.truncate(start_pos);
+            conn.message_input.push_str(&matches[0]);
+            conn.tab_completion = Some(TabCompletionState::new(matches, start_pos));
+            return operation::move_cursor_to_end(Id::from(InputId::ChatInput));
+        }
+
+        Task::none()
     }
 
     /// Handle send chat message button press
