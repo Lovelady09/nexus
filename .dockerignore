@@ -3,12 +3,35 @@ target/
 
 # Git
 .git/
+.gitignore
+.gitattributes
 
-# GitHub Actions
+# GitHub
 .github/
 
-# AI assistant context
+# Documentation
+docs/
 CLAUDE.md
 
-# Jekyll config
+# Client (only Cargo.toml needed for workspace)
+nexus-client/*
+!nexus-client/Cargo.toml
+
+# IDE / Editor
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Jekyll
 _config.yml
+
+# Local development
+.env
+.env.*
+*.log

@@ -60,7 +60,7 @@ FROM debian:bookworm-slim
 
 # OCI labels (metadata-action sets source, revision, created, url, version automatically)
 LABEL org.opencontainers.image.title="Nexus BBS Server" \
-  org.opencontainers.image.description="A modern BBS server inspired by Hotline" \
+  org.opencontainers.image.description="A modern BBS server with chat, file sharing, and news - inspired by Hotline, KDX, and Wired" \
   org.opencontainers.image.licenses="MIT"
 
 RUN apt-get update && \
@@ -72,6 +72,9 @@ RUN apt-get update && \
 COPY --from=builder /build/target/release/nexusd /usr/local/bin/
 COPY LICENSE README.md /usr/share/doc/nexusd/
 USER nexus
+
+# Data volume for database, certificates, and files
+VOLUME /home/nexus/.local/share/nexusd
 
 # Expose all ports (TCP and WebSocket)
 # 7500: Main BBS port
