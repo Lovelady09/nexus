@@ -214,6 +214,7 @@ err-ban-self = U kunt uzelf niet verbannen
 err-ban-admin-by-nickname = Beheerders kunnen niet worden verbannen
 err-ban-admin-by-ip = Dit IP-adres kan niet worden verbannen
 err-ban-invalid-target = Ongeldig doel (gebruik bijnaam, IP-adres of CIDR-bereik)
+err-target-too-long = Doel is te lang (max { $max_length } tekens)
 err-ban-invalid-duration = Ongeldig duurformaat (gebruik 10m, 4h, 7d of 0 voor permanent)
 err-ban-not-found = Geen verbanning gevonden voor '{ $target }'
 err-reason-too-long = Verbanningsreden is te lang (max { $max_length } tekens)

@@ -6,12 +6,13 @@ use std::net::IpAddr;
 use tokio::io::AsyncWrite;
 
 use nexus_common::protocol::ServerMessage;
-use nexus_common::validators::{self, TrustReasonError};
+use nexus_common::validators::{self, DurationError, TargetError, TrustReasonError};
 
 use super::duration::parse_duration;
 use super::{
     HandlerContext, err_authentication, err_not_logged_in, err_permission_denied,
-    err_reason_invalid, err_reason_too_long, err_trust_invalid_duration, err_trust_invalid_target,
+    err_reason_invalid, err_reason_too_long, err_target_too_long, err_trust_invalid_duration,
+    err_trust_invalid_target,
 };
 use crate::db::Permission;
 use crate::ip_rule_cache::parse_ip_or_cidr;
@@ -40,6 +41,34 @@ where
             .send_error_and_disconnect(&err_not_logged_in(ctx.locale), Some("TrustCreate"))
             .await;
     };
+
+    // Validate target length
+    if let Err(e) = validators::validate_target(&target) {
+        let error_msg = match e {
+            TargetError::Empty => err_trust_invalid_target(ctx.locale),
+            TargetError::TooLong => err_target_too_long(ctx.locale, validators::MAX_TARGET_LENGTH),
+        };
+        let response = ServerMessage::TrustCreateResponse {
+            success: false,
+            error: Some(error_msg),
+            ips: None,
+            nickname: None,
+        };
+        return ctx.send_message(&response).await;
+    }
+
+    // Validate duration length if provided
+    if let Some(ref d) = duration
+        && let Err(DurationError::TooLong) = validators::validate_duration(d)
+    {
+        let response = ServerMessage::TrustCreateResponse {
+            success: false,
+            error: Some(err_trust_invalid_duration(ctx.locale)),
+            ips: None,
+            nickname: None,
+        };
+        return ctx.send_message(&response).await;
+    }
 
     // Validate reason if provided
     if let Some(ref r) = reason
@@ -419,5 +448,103 @@ mod tests {
         assert!(parse_duration(&Some("invalid".to_string())).is_err());
         assert!(parse_duration(&Some("10x".to_string())).is_err());
         assert!(parse_duration(&Some("m".to_string())).is_err());
+    }
+
+    #[tokio::test]
+    async fn test_trustcreate_target_too_long() {
+        let mut test_ctx = create_test_context().await;
+
+        // Create admin user
+        let session_id = login_user(&mut test_ctx, "admin", "password", &[], true).await;
+
+        // Create a target that's too long
+        let long_target = "x".repeat(validators::MAX_TARGET_LENGTH + 1);
+
+        let result = handle_trust_create(
+            long_target,
+            None,
+            None,
+            Some(session_id),
+            &mut test_ctx.handler_context(),
+        )
+        .await;
+
+        assert!(result.is_ok());
+
+        let response = read_server_message(&mut test_ctx).await;
+        if let ServerMessage::TrustCreateResponse { success, error, .. } = response {
+            assert!(!success);
+            assert!(error.is_some());
+        } else {
+            panic!("Expected TrustCreateResponse, got: {:?}", response);
+        }
+    }
+
+    #[tokio::test]
+    async fn test_trustcreate_target_empty() {
+        let mut test_ctx = create_test_context().await;
+
+        // Create admin user
+        let session_id = login_user(&mut test_ctx, "admin", "password", &[], true).await;
+
+        let result = handle_trust_create(
+            "".to_string(),
+            None,
+            None,
+            Some(session_id),
+            &mut test_ctx.handler_context(),
+        )
+        .await;
+
+        assert!(result.is_ok());
+
+        let response = read_server_message(&mut test_ctx).await;
+        if let ServerMessage::TrustCreateResponse { success, error, .. } = response {
+            assert!(!success);
+            assert!(error.is_some());
+        } else {
+            panic!("Expected TrustCreateResponse, got: {:?}", response);
+        }
+    }
+
+    #[tokio::test]
+    async fn test_trustcreate_duration_too_long() {
+        let mut test_ctx = create_test_context().await;
+
+        // Create admin user
+        let session_id = login_user(&mut test_ctx, "admin", "password", &[], true).await;
+
+        // Create a duration that's too long
+        let long_duration = "x".repeat(validators::MAX_DURATION_LENGTH + 1);
+
+        let result = handle_trust_create(
+            "192.168.1.100".to_string(),
+            Some(long_duration),
+            None,
+            Some(session_id),
+            &mut test_ctx.handler_context(),
+        )
+        .await;
+
+        assert!(result.is_ok());
+
+        let response = read_server_message(&mut test_ctx).await;
+        if let ServerMessage::TrustCreateResponse { success, error, .. } = response {
+            assert!(!success);
+            assert!(error.is_some());
+        } else {
+            panic!("Expected TrustCreateResponse, got: {:?}", response);
+        }
+
+        // Verify no trust was created
+        assert!(
+            test_ctx
+                .db
+                .trusts
+                .get_trust_by_ip("192.168.1.100")
+                .await
+                .unwrap()
+                .is_none()
+        );
     }
 }

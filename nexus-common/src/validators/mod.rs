@@ -11,6 +11,7 @@ mod channel_list;
 mod chat_topic;
 mod data_uri;
 mod dir_name;
+mod duration;
 mod error;
 mod features;
 mod file_path;
@@ -28,6 +29,7 @@ mod server_image;
 mod server_name;
 mod sha256;
 mod status;
+mod target;
 mod trust_reason;
 mod username;
 mod version;
@@ -46,7 +48,11 @@ pub use channel_list::{
 pub use chat_topic::{ChatTopicError, MAX_CHAT_TOPIC_LENGTH, validate_chat_topic};
 pub use data_uri::{ALLOWED_IMAGE_MIME_TYPES, DataUriError, validate_image_data_uri};
 pub use dir_name::{DirNameError, MAX_DIR_NAME_LENGTH, validate_dir_name};
-pub use error::MAX_ERROR_LENGTH;
+pub use duration::{DurationError, MAX_DURATION_LENGTH, validate_duration};
+pub use error::{
+    MAX_COMMAND_LENGTH, MAX_ERROR_KIND_LENGTH, MAX_ERROR_LENGTH, MAX_NEWS_ACTION_LENGTH,
+    TRANSFER_ID_LENGTH,
+};
 pub use features::{FeaturesError, MAX_FEATURE_LENGTH, MAX_FEATURES_COUNT, validate_features};
 pub use file_path::{FilePathError, MAX_FILE_PATH_LENGTH, validate_file_path};
 pub use ip_rule_reason::{IpRuleReasonError, MAX_IP_RULE_REASON_LENGTH, validate_ip_rule_reason};
@@ -70,6 +76,7 @@ pub use server_image::{MAX_SERVER_IMAGE_DATA_URI_LENGTH, ServerImageError, valid
 pub use server_name::{MAX_SERVER_NAME_LENGTH, ServerNameError, validate_server_name};
 pub use sha256::{SHA256_HEX_LENGTH, Sha256Error, validate_sha256};
 pub use status::{MAX_STATUS_LENGTH, StatusError, validate_status};
+pub use target::{MAX_TARGET_LENGTH, TargetError, validate_target};
 pub use trust_reason::{MAX_TRUST_REASON_LENGTH, TrustReasonError, validate_trust_reason};
 pub use username::{MAX_USERNAME_LENGTH, UsernameError, validate_username};
 pub use version::{MAX_VERSION_LENGTH, VersionError, validate_version};

@@ -214,6 +214,7 @@ err-ban-self = Вы не можете заблокировать себя
 err-ban-admin-by-nickname = Невозможно заблокировать администраторов
 err-ban-admin-by-ip = Невозможно заблокировать этот IP
 err-ban-invalid-target = Недопустимая цель (используйте никнейм, IP-адрес или диапазон CIDR)
+err-target-too-long = Цель слишком длинная (максимум { $max_length } символов)
 err-ban-invalid-duration = Недопустимый формат продолжительности (используйте 10m, 4h, 7d или 0 для постоянной)
 err-ban-not-found = Блокировка для '{ $target }' не найдена
 err-reason-too-long = Причина блокировки слишком длинная (максимум { $max_length } символов)

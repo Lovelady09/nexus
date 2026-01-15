@@ -215,6 +215,7 @@ err-ban-self = No puede banearse a sí mismo
 err-ban-admin-by-nickname = No se puede banear a los administradores
 err-ban-admin-by-ip = No se puede banear esta IP
 err-ban-invalid-target = Objetivo inválido (use apodo, dirección IP o rango CIDR)
+err-target-too-long = El objetivo es demasiado largo (máximo { $max_length } caracteres)
 err-ban-invalid-duration = Formato de duración inválido (use 10m, 4h, 7d o 0 para permanente)
 err-ban-not-found = No se encontró ban para '{ $target }'
 err-reason-too-long = El motivo del ban es demasiado largo (máximo { $max_length } caracteres)

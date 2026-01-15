@@ -2,9 +2,10 @@
 
 use iced::Task;
 use nexus_common::protocol::ClientMessage;
+use nexus_common::validators::{self, TargetError};
 
 use crate::NexusApp;
-use crate::i18n::t_args;
+use crate::i18n::{t, t_args};
 use crate::types::{ChatMessage, Message};
 
 /// Execute the /untrust command
@@ -34,6 +35,18 @@ pub fn execute(
     };
 
     let target = &args[0];
+
+    // Validate target length
+    if let Err(e) = validators::validate_target(target) {
+        let error_msg = match e {
+            TargetError::Empty => t("err-target-empty"),
+            TargetError::TooLong => t_args(
+                "err-target-too-long",
+                &[("max", &validators::MAX_TARGET_LENGTH.to_string())],
+            ),
+        };
+        return app.add_active_tab_message(connection_id, ChatMessage::error(error_msg));
+    }
 
     let msg = ClientMessage::TrustDelete {
         target: target.clone(),

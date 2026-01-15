@@ -954,6 +954,15 @@ pub fn err_ban_invalid_target(locale: &str) -> String {
     t(locale, "err-ban-invalid-target")
 }
 
+/// Get translated "target too long" error
+pub fn err_target_too_long(locale: &str, max_length: usize) -> String {
+    t_args(
+        locale,
+        "err-target-too-long",
+        &[("max_length", &max_length.to_string())],
+    )
+}
+
 /// Get translated "ban invalid duration" error (invalid duration format)
 pub fn err_ban_invalid_duration(locale: &str) -> String {
     t(locale, "err-ban-invalid-duration")

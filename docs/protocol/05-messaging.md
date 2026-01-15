@@ -125,6 +125,7 @@ Delivered to the recipient when a private message is sent.
 |-------|------|----------|-------------|
 | `from_nickname` | string | Yes | Sender's display name |
 | `from_admin` | boolean | Yes | Whether sender is an admin |
+| `from_shared` | boolean | Yes | Whether sender is on a shared account |
 | `to_nickname` | string | Yes | Recipient's display name |
 | `message` | string | Yes | Message content |
 | `action` | string | No | Action type: `"Normal"` (default) or `"Me"` |
@@ -135,6 +136,7 @@ Delivered to the recipient when a private message is sent.
 {
   "from_nickname": "alice",
   "from_admin": false,
+  "from_shared": false,
   "to_nickname": "bob",
   "message": "Hey, are you there?"
 }
@@ -146,6 +148,7 @@ Delivered to the recipient when a private message is sent.
 {
   "from_nickname": "alice",
   "from_admin": false,
+  "from_shared": false,
   "to_nickname": "bob",
   "message": "waves at you",
   "action": "Me"
@@ -158,6 +161,7 @@ Delivered to the recipient when a private message is sent.
 {
   "from_nickname": "admin",
   "from_admin": true,
+  "from_shared": false,
   "to_nickname": "bob",
   "message": "Please follow the server rules."
 }
@@ -338,6 +342,7 @@ Note: Broadcast validation errors disconnect the client (more strict), while pri
 - The sender receives their own broadcast as a `ServerBroadcast` (for confirmation)
 - Private messages are delivered to all sessions of the recipient (for regular accounts)
 - `from_admin` in `UserMessage` allows clients to highlight admin messages differently
+- `from_shared` in `UserMessage` indicates messages from shared account users (displayed with muted styling)
 - `session_id` in `ServerBroadcast` can be used to identify the sender
 
 ## Next Step

@@ -214,6 +214,7 @@ err-ban-self = Sie können sich nicht selbst sperren
 err-ban-admin-by-nickname = Administratoren können nicht gesperrt werden
 err-ban-admin-by-ip = Diese IP kann nicht gesperrt werden
 err-ban-invalid-target = Ungültiges Ziel (Nickname, IP-Adresse oder CIDR-Bereich verwenden)
+err-target-too-long = Ziel ist zu lang (maximal { $max_length } Zeichen)
 err-ban-invalid-duration = Ungültiges Dauerformat (verwenden Sie 10m, 4h, 7d oder 0 für permanent)
 err-ban-not-found = Keine Sperre für '{ $target }' gefunden
 err-reason-too-long = Sperrgrund ist zu lang (maximal { $max_length } Zeichen)

@@ -7,10 +7,11 @@ use ipnet::IpNet;
 use tokio::io::AsyncWrite;
 
 use nexus_common::protocol::ServerMessage;
+use nexus_common::validators::{self, TargetError};
 
 use super::{
     HandlerContext, err_authentication, err_not_logged_in, err_permission_denied,
-    err_trust_not_found,
+    err_target_too_long, err_trust_not_found,
 };
 use crate::db::Permission;
 
@@ -35,6 +36,21 @@ where
             .send_error_and_disconnect(&err_not_logged_in(ctx.locale), Some("TrustDelete"))
             .await;
     };
+
+    // Validate target length
+    if let Err(e) = validators::validate_target(&target) {
+        let error_msg = match e {
+            TargetError::Empty => err_trust_not_found(ctx.locale, &target),
+            TargetError::TooLong => err_target_too_long(ctx.locale, validators::MAX_TARGET_LENGTH),
+        };
+        let response = ServerMessage::TrustDeleteResponse {
+            success: false,
+            error: Some(error_msg),
+            ips: None,
+            nickname: None,
+        };
+        return ctx.send_message(&response).await;
+    }
 
     // Get requesting user from session
     let requesting_user = match ctx.user_manager.get_user_by_session_id(session_id).await {
@@ -515,6 +531,59 @@ mod tests {
             let mut cache = test_ctx.ip_rule_cache.write().unwrap();
             assert!(!cache.is_trusted("192.168.1.50".parse().unwrap()));
             assert!(cache.is_trusted("192.168.2.1".parse().unwrap()));
+        }
+    }
+
+    #[tokio::test]
+    async fn test_trustdelete_target_too_long() {
+        let mut test_ctx = create_test_context().await;
+
+        // Create admin user
+        let session_id = login_user(&mut test_ctx, "admin", "password", &[], true).await;
+
+        // Create a target that's too long
+        let long_target = "x".repeat(validators::MAX_TARGET_LENGTH + 1);
+
+        let result = handle_trust_delete(
+            long_target,
+            Some(session_id),
+            &mut test_ctx.handler_context(),
+        )
+        .await;
+
+        assert!(result.is_ok());
+
+        let response = read_server_message(&mut test_ctx).await;
+        if let ServerMessage::TrustDeleteResponse { success, error, .. } = response {
+            assert!(!success);
+            assert!(error.is_some());
+        } else {
+            panic!("Expected TrustDeleteResponse, got: {:?}", response);
+        }
+    }
+
+    #[tokio::test]
+    async fn test_trustdelete_target_empty() {
+        let mut test_ctx = create_test_context().await;
+
+        // Create admin user
+        let session_id = login_user(&mut test_ctx, "admin", "password", &[], true).await;
+
+        let result = handle_trust_delete(
+            "".to_string(),
+            Some(session_id),
+            &mut test_ctx.handler_context(),
+        )
+        .await;
+
+        assert!(result.is_ok());
+
+        let response = read_server_message(&mut test_ctx).await;
+        if let ServerMessage::TrustDeleteResponse { success, error, .. } = response {
+            assert!(!success);
+            assert!(error.is_some());
+        } else {
+            panic!("Expected TrustDeleteResponse, got: {:?}", response);
         }
     }
 }

@@ -214,6 +214,7 @@ err-ban-self = 自分自身をBANすることはできません
 err-ban-admin-by-nickname = 管理者をBANすることはできません
 err-ban-admin-by-ip = このIPをBANすることはできません
 err-ban-invalid-target = 無効なターゲット（ニックネーム、IPアドレス、またはCIDR範囲を使用）
+err-target-too-long = ターゲットが長すぎます（最大{ $max_length }文字）
 err-ban-invalid-duration = 無効な期間形式です（10m、4h、7d、または0で永久）
 err-ban-not-found = '{ $target }' のBANが見つかりません
 err-reason-too-long = BAN理由が長すぎます（最大{ $max_length }文字）

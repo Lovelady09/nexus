@@ -214,6 +214,7 @@ err-ban-self = 您不能封鎖自己
 err-ban-admin-by-nickname = 無法封鎖管理員
 err-ban-admin-by-ip = 無法封鎖此IP
 err-ban-invalid-target = 無效的目標（使用暱稱、IP位址或CIDR範圍）
+err-target-too-long = 目標過長（最多 { $max_length } 個字元）
 err-ban-invalid-duration = 無效的時長格式（使用 10m、4h、7d 或 0 表示永久）
 err-ban-not-found = 未找到 '{ $target }' 的封鎖記錄
 err-reason-too-long = 封鎖原因過長（最多 { $max_length } 個字元）

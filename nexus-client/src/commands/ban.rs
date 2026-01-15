@@ -2,10 +2,11 @@
 
 use iced::Task;
 use nexus_common::protocol::ClientMessage;
+use nexus_common::validators::{self, TargetError};
 
 use super::duration::is_duration_format;
 use crate::NexusApp;
-use crate::i18n::t_args;
+use crate::i18n::{t, t_args};
 use crate::types::{ChatMessage, Message};
 
 /// Execute the /ban command
@@ -39,12 +40,32 @@ pub fn execute(
 
     let target = args[0].clone();
 
+    // Validate target length
+    if let Err(e) = validators::validate_target(&target) {
+        let error_msg = match e {
+            TargetError::Empty => t("err-target-empty"),
+            TargetError::TooLong => t_args(
+                "err-target-too-long",
+                &[("max", &validators::MAX_TARGET_LENGTH.to_string())],
+            ),
+        };
+        return app.add_active_tab_message(connection_id, ChatMessage::error(error_msg));
+    }
+
     // Parse optional duration and reason
     // Duration format: "10m", "4h", "7d", "0" (permanent)
     // If first remaining arg looks like a duration, use it; rest is reason
     let (duration, reason) = if args.len() > 1 {
         let potential_duration = &args[1];
         if is_duration_format(potential_duration) {
+            // Validate duration length
+            if validators::validate_duration(potential_duration).is_err() {
+                let error_msg = t_args(
+                    "err-duration-too-long",
+                    &[("max", &validators::MAX_DURATION_LENGTH.to_string())],
+                );
+                return app.add_active_tab_message(connection_id, ChatMessage::error(error_msg));
+            }
             // "0" means permanent with reason following
             let dur = if potential_duration == "0" {
                 None

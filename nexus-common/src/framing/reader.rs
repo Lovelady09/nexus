@@ -572,7 +572,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_frame_reader_payload_exceeds_type_max() {
-        // ChatSend has a base limit of 1101 bytes, padded 20% to 1321
+        // ChatSend has a base limit of 1119 bytes, padded 20% to 1342
         // Create a payload that claims to be 2000 bytes (well over limit)
         let data = b"NX|8|ChatSend|a1b2c3d4e5f6|2000|";
         let cursor = Cursor::new(data.as_slice());
@@ -585,7 +585,7 @@ mod tests {
             Err(FrameError::PayloadLengthExceedsTypeMax {
                 message_type,
                 length: 2000,
-                max: 1321  // 1101 * 1.2 = 1321
+                max: 1342  // 1119 * 1.2 = 1342
             }) if message_type == "ChatSend"
         ));
     }
