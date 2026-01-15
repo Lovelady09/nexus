@@ -19,6 +19,8 @@ pub enum Permission {
     TrustDelete,
     /// Permission to view list of trusted IPs
     TrustList,
+    /// Permission to view active connections
+    ConnectionMonitor,
     /// Permission to use UserList command
     UserList,
     /// Permission to use UserInfo command
@@ -109,6 +111,7 @@ impl Permission {
             "trust_create" => Some(Permission::TrustCreate),
             "trust_delete" => Some(Permission::TrustDelete),
             "trust_list" => Some(Permission::TrustList),
+            "connection_monitor" => Some(Permission::ConnectionMonitor),
             "user_list" => Some(Permission::UserList),
             "user_info" => Some(Permission::UserInfo),
             "chat_send" => Some(Permission::ChatSend),
@@ -429,6 +432,7 @@ mod tests {
             Permission::ChatSend,
             Permission::ChatTopic,
             Permission::ChatTopicEdit,
+            Permission::ConnectionMonitor,
             Permission::FileCopy,
             Permission::FileCreateDir,
             Permission::FileDelete,

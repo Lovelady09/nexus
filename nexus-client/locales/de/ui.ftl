@@ -190,9 +190,10 @@ permission-file_upload = Datei hochladen
 permission-ban_create = Sperre erstellen
 permission-ban_delete = Sperre aufheben
 permission-ban_list = Sperrliste
-permission-trust_create = Vertrauen erstellen
-permission-trust_delete = Vertrauen aufheben
+permission-trust_create = Vertrauen Erstellen
+permission-trust_delete = Vertrauen Löschen
 permission-trust_list = Vertrauensliste
+permission-connection_monitor = Verbindungsmonitor
 
 # =============================================================================
 # Tooltips
@@ -213,7 +214,8 @@ tooltip-files-hide-hidden = Versteckte Dateien ausblenden
 tooltip-files-new-directory = Neues Verzeichnis
 tooltip-files-paste = Einfügen
 tooltip-files-search = Dateien suchen
-tooltip-manage-users = Benutzer verwalten
+tooltip-manage-users = Benutzer Verwalten
+tooltip-connection-monitor = Verbindungsmonitor
 tooltip-server-info = Server-Info
 tooltip-about = Über
 tooltip-transfers = Übertragungen
@@ -250,6 +252,20 @@ tooltip-delete = Löschen
 context-menu-download = Herunterladen
 context-menu-upload = Hochladen
 context-menu-open = Öffnen
+
+# =============================================================================
+# Connection Monitor
+# =============================================================================
+
+panel-connection-monitor = Verbindungsmonitor
+panel-active-connections = Aktive Verbindungen: { $count }
+col-nickname = Spitzname
+col-username = Benutzername
+col-ip-address = IP-Adresse
+col-time = Zeit
+menu-copy = Kopieren
+connection-monitor-loading = Verbindungen werden geladen…
+connection-monitor-no-connections = Keine Verbindungen
 
 # =============================================================================
 # Empty States

@@ -525,6 +525,9 @@ where
         ClientMessage::TrustList => {
             handlers::handle_trust_list(conn_state.session_id, ctx).await?;
         }
+        ClientMessage::ConnectionMonitor => {
+            handlers::handle_connection_monitor(conn_state.session_id, ctx).await?;
+        }
         ClientMessage::FileSearch { query, root } => {
             handlers::handle_file_search(query, root, conn_state.session_id, ctx).await?;
         }

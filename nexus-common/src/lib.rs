@@ -18,7 +18,7 @@ pub use error_kind::{
 };
 
 /// Version information for the Nexus protocol
-pub const PROTOCOL_VERSION: &str = "0.5.0";
+pub const PROTOCOL_VERSION: &str = "0.5.1";
 
 /// Default port for Nexus BBS connections
 pub const DEFAULT_PORT: u16 = 7500;
@@ -92,6 +92,7 @@ pub const ALL_PERMISSIONS: &[&str] = &[
     "chat_send",
     "chat_topic",
     "chat_topic_edit",
+    "connection_monitor",
     "file_copy",
     "file_create_dir",
     "file_delete",
@@ -233,8 +234,8 @@ mod tests {
 
     #[test]
     fn test_all_permissions_count() {
-        // Verify we have the expected number of permissions (38)
-        assert_eq!(ALL_PERMISSIONS.len(), 38);
+        // Verify we have the expected number of permissions (39)
+        assert_eq!(ALL_PERMISSIONS.len(), 39);
     }
 
     #[test]

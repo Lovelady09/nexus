@@ -128,3 +128,8 @@ pub(crate) const PERMISSION_TRUST_DELETE: &str = "trust_delete";
 
 /// Permission to view trusted IP list
 pub(crate) const PERMISSION_TRUST_LIST: &str = "trust_list";
+
+// === Connection Monitor Permissions ===
+
+/// Permission to view active connections
+pub(crate) const PERMISSION_CONNECTION_MONITOR: &str = "connection_monitor";

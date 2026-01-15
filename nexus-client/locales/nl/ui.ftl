@@ -191,9 +191,10 @@ permission-file_upload = Bestand Uploaden
 permission-ban_create = Ban Aanmaken
 permission-ban_delete = Ban Verwijderen
 permission-ban_list = Banlijst
-permission-trust_create = Vertrouwen Aanmaken
+permission-trust_create = Vertrouwen Toevoegen
 permission-trust_delete = Vertrouwen Verwijderen
 permission-trust_list = Vertrouwenslijst
+permission-connection_monitor = Verbindingsmonitor
 
 # =============================================================================
 # Tooltips
@@ -215,7 +216,8 @@ tooltip-files-new-directory = Nieuwe Map
 tooltip-files-paste = Plakken
 tooltip-files-search = Bestanden zoeken
 tooltip-manage-users = Gebruikers Beheren
-tooltip-server-info = Server Info
+tooltip-connection-monitor = Verbindingsmonitor
+tooltip-server-info = Server-Info
 tooltip-about = Over
 tooltip-transfers = Overdrachten
 tooltip-download-all = Alles Downloaden
@@ -251,6 +253,20 @@ tooltip-delete = Verwijderen
 context-menu-download = Downloaden
 context-menu-upload = Uploaden
 context-menu-open = Openen
+
+# =============================================================================
+# Connection Monitor
+# =============================================================================
+
+panel-connection-monitor = Verbindingsmonitor
+panel-active-connections = Actieve Verbindingen: { $count }
+col-nickname = Bijnaam
+col-username = Gebruikersnaam
+col-ip-address = IP-Adres
+col-time = Tijd
+menu-copy = Kopiëren
+connection-monitor-loading = Verbindingen laden…
+connection-monitor-no-connections = Geen verbindingen
 
 # =============================================================================
 # Empty States

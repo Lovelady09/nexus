@@ -193,6 +193,7 @@ permission-ban_list = 封禁列表
 permission-trust_create = 创建信任
 permission-trust_delete = 删除信任
 permission-trust_list = 信任列表
+permission-connection_monitor = 连接监视器
 
 # =============================================================================
 # Tooltips
@@ -213,7 +214,8 @@ tooltip-files-hide-hidden = 隐藏隐藏文件
 tooltip-files-new-directory = 新建文件夹
 tooltip-files-paste = 粘贴
 tooltip-files-search = 搜索文件
-tooltip-manage-users = 用户管理
+tooltip-manage-users = 管理用户
+tooltip-connection-monitor = 连接监视器
 tooltip-server-info = 服务器信息
 tooltip-about = 关于
 tooltip-transfers = 传输
@@ -250,6 +252,20 @@ tooltip-delete = 删除
 context-menu-download = 下载
 context-menu-upload = 上传
 context-menu-open = 打开
+
+# =============================================================================
+# Connection Monitor
+# =============================================================================
+
+panel-connection-monitor = 连接监视器
+panel-active-connections = 活跃连接: { $count }
+col-nickname = 昵称
+col-username = 用户名
+col-ip-address = IP地址
+col-time = 时间
+menu-copy = 复制
+connection-monitor-loading = 正在加载连接…
+connection-monitor-no-connections = 无连接
 
 # =============================================================================
 # Empty States

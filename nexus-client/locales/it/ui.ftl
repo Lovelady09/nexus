@@ -193,6 +193,7 @@ permission-ban_list = Lista Ban
 permission-trust_create = Crea Fiducia
 permission-trust_delete = Elimina Fiducia
 permission-trust_list = Lista Fiducia
+permission-connection_monitor = Monitor Connessioni
 
 # =============================================================================
 # Tooltips
@@ -214,6 +215,7 @@ tooltip-files-new-directory = Nuova Directory
 tooltip-files-paste = Incolla
 tooltip-files-search = Cerca file
 tooltip-manage-users = Gestisci Utenti
+tooltip-connection-monitor = Monitor Connessioni
 tooltip-server-info = Info Server
 tooltip-about = Informazioni
 tooltip-transfers = Trasferimenti
@@ -250,6 +252,20 @@ tooltip-delete = Elimina
 context-menu-download = Scarica
 context-menu-upload = Carica
 context-menu-open = Apri
+
+# =============================================================================
+# Connection Monitor
+# =============================================================================
+
+panel-connection-monitor = Monitor Connessioni
+panel-active-connections = Connessioni Attive: { $count }
+col-nickname = Soprannome
+col-username = Nome Utente
+col-ip-address = Indirizzo IP
+col-time = Tempo
+menu-copy = Copia
+connection-monitor-loading = Caricamento connessioni…
+connection-monitor-no-connections = Nessuna connessione
 
 # =============================================================================
 # Empty States

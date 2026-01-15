@@ -248,6 +248,23 @@ pub enum Message {
     ToggleTransfers,
     /// Transfers panel: Close button pressed
     CloseTransfers,
+    /// Toolbar: Toggle Connection Monitor panel
+    ToggleConnectionMonitor,
+    /// Connection Monitor panel: Close button pressed
+    CloseConnectionMonitor,
+    /// Connection Monitor panel: Refresh button pressed
+    RefreshConnectionMonitor,
+    /// Connection Monitor panel: Response received from server
+    ConnectionMonitorResponse {
+        connection_id: usize,
+        success: bool,
+        error: Option<String>,
+        connections: Option<Vec<nexus_common::protocol::ConnectionInfo>>,
+    },
+    /// Connection Monitor panel: Copy value to clipboard
+    ConnectionMonitorCopy(String),
+    /// Connection Monitor panel: Sort by column
+    ConnectionMonitorSortBy(crate::types::ConnectionMonitorSortColumn),
     /// Toolbar: Show Server Info panel
     ShowServerInfo,
     /// Settings panel: Use 24-hour time format toggled

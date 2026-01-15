@@ -13,9 +13,9 @@ use uuid::Uuid;
 use nexus_common::protocol::ChannelJoinInfo;
 
 use super::{
-    ActivePanel, ChannelState, ChatMessage, ChatTab, DisconnectDialogState, FilesManagementState,
-    NewsManagementState, PasswordChangeState, ResponseRouting, ScrollState, ServerInfoEditState,
-    ServerInfoTab, UserInfo, UserManagementState,
+    ActivePanel, ChannelState, ChatMessage, ChatTab, ConnectionMonitorState, DisconnectDialogState,
+    FilesManagementState, NewsManagementState, PasswordChangeState, ResponseRouting, ScrollState,
+    ServerInfoEditState, ServerInfoTab, UserInfo, UserManagementState,
 };
 use crate::image::CachedImage;
 
@@ -255,6 +255,8 @@ pub struct ServerConnection {
     pub tab_completion: Option<TabCompletionState>,
     /// Files management panel state
     pub files_management: FilesManagementState,
+    /// Connection monitor panel state
+    pub connection_monitor: ConnectionMonitorState,
     /// Pending kick message (set when we receive a kick error, used on disconnect)
     pub pending_kick_message: Option<String>,
     /// Disconnect dialog state (Some when dialog is open)
@@ -370,6 +372,7 @@ impl ServerConnection {
             news_markdown_cache: HashMap::new(),
             tab_completion: None,
             files_management: FilesManagementState::default(),
+            connection_monitor: ConnectionMonitorState::default(),
             pending_kick_message: None,
             disconnect_dialog: None,
         }

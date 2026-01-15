@@ -331,6 +331,8 @@ pub enum ClientMessage {
     },
     /// Request list of trusted IPs
     TrustList,
+    /// Request list of active connections (admin/connection_monitor permission)
+    ConnectionMonitor,
     /// Search files in the file area
     FileSearch {
         /// Search query (minimum 3 characters, literal match, case-insensitive)
@@ -346,6 +348,23 @@ pub enum ClientMessage {
 /// Helper for skip_serializing_if on ChatAction
 fn is_normal_action(action: &ChatAction) -> bool {
     matches!(action, ChatAction::Normal)
+}
+
+/// Information about an active connection (used in ConnectionMonitorResponse)
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ConnectionInfo {
+    /// Display name (always populated; equals username for regular accounts)
+    pub nickname: String,
+    /// Account username
+    pub username: String,
+    /// Remote IP address
+    pub ip: String,
+    /// Unix timestamp when session logged in
+    pub login_time: i64,
+    /// Whether the user is an admin
+    pub is_admin: bool,
+    /// Whether this is a shared account
+    pub is_shared: bool,
 }
 
 /// Server response messages
@@ -829,6 +848,14 @@ pub enum ServerMessage {
         error: Option<String>,
         #[serde(skip_serializing_if = "Option::is_none")]
         entries: Option<Vec<TrustInfo>>,
+    },
+    /// Response to ConnectionMonitor request
+    ConnectionMonitorResponse {
+        success: bool,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        error: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        connections: Option<Vec<ConnectionInfo>>,
     },
     /// Response to FileSearch request
     FileSearchResponse {
@@ -1396,6 +1423,7 @@ impl std::fmt::Debug for ClientMessage {
                 .field("target", target)
                 .finish(),
             ClientMessage::TrustList => f.debug_struct("TrustList").finish(),
+            ClientMessage::ConnectionMonitor => f.debug_struct("ConnectionMonitor").finish(),
             ClientMessage::FileSearch { query, root } => f
                 .debug_struct("FileSearch")
                 .field("query", query)

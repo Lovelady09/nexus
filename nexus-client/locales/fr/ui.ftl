@@ -194,6 +194,7 @@ permission-ban_list = Liste des Bannissements
 permission-trust_create = Créer Confiance
 permission-trust_delete = Supprimer Confiance
 permission-trust_list = Liste de Confiance
+permission-connection_monitor = Moniteur de Connexions
 
 # =============================================================================
 # Tooltips
@@ -215,7 +216,8 @@ tooltip-files-new-directory = Nouveau Dossier
 tooltip-files-paste = Coller
 tooltip-files-search = Rechercher des fichiers
 tooltip-manage-users = Gérer les Utilisateurs
-tooltip-server-info = Infos Serveur
+tooltip-connection-monitor = Moniteur de Connexions
+tooltip-server-info = Info Serveur
 tooltip-about = À propos
 tooltip-transfers = Transferts
 tooltip-download-all = Tout Télécharger
@@ -251,6 +253,20 @@ tooltip-delete = Supprimer
 context-menu-download = Télécharger
 context-menu-upload = Téléverser
 context-menu-open = Ouvrir
+
+# =============================================================================
+# Connection Monitor
+# =============================================================================
+
+panel-connection-monitor = Moniteur de Connexions
+panel-active-connections = Connexions Actives: { $count }
+col-nickname = Pseudo
+col-username = Utilisateur
+col-ip-address = Adresse IP
+col-time = Temps
+menu-copy = Copier
+connection-monitor-loading = Chargement des connexions…
+connection-monitor-no-connections = Aucune connexion
 
 # =============================================================================
 # Empty States

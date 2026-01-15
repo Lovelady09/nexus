@@ -145,7 +145,7 @@ The protocol version follows [Semantic Versioning](https://semver.org/):
 - **Minor** - New features (client minor ≤ server minor)
 - **Patch** - Bug fixes (ignored for compatibility)
 
-Current version: `0.5.0`
+Current version: `0.5.1`
 
 ## Documents
 
@@ -163,6 +163,7 @@ Current version: `0.5.0`
 | [10-errors.md](10-errors.md) | Error handling |
 | [11-bans.md](11-bans.md) | IP bans and CIDR ranges |
 | [12-trusts.md](12-trusts.md) | IP trust list (ban bypass) |
+| [13-connection-monitor.md](13-connection-monitor.md) | Connection monitor (active sessions) |
 
 ## ServerInfo Fields
 

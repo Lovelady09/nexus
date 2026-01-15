@@ -192,7 +192,8 @@ permission-ban_delete = 刪除封鎖
 permission-ban_list = 封鎖列表
 permission-trust_create = 建立信任
 permission-trust_delete = 刪除信任
-permission-trust_list = 信任列表
+permission-trust_list = 信任清單
+permission-connection_monitor = 連線監視器
 
 # =============================================================================
 # Tooltips
@@ -213,7 +214,8 @@ tooltip-files-hide-hidden = 隱藏隱藏檔案
 tooltip-files-new-directory = 新增資料夾
 tooltip-files-paste = 貼上
 tooltip-files-search = 搜尋檔案
-tooltip-manage-users = 使用者管理
+tooltip-manage-users = 管理使用者
+tooltip-connection-monitor = 連線監視器
 tooltip-server-info = 伺服器資訊
 tooltip-about = 關於
 tooltip-transfers = 傳輸
@@ -250,6 +252,20 @@ tooltip-delete = 刪除
 context-menu-download = 下載
 context-menu-upload = 上傳
 context-menu-open = 開啟
+
+# =============================================================================
+# Connection Monitor
+# =============================================================================
+
+panel-connection-monitor = 連線監視器
+panel-active-connections = 活躍連線: { $count }
+col-nickname = 暱稱
+col-username = 使用者名稱
+col-ip-address = IP位址
+col-time = 時間
+menu-copy = 複製
+connection-monitor-loading = 正在載入連線…
+connection-monitor-no-connections = 無連線
 
 # =============================================================================
 # Empty States

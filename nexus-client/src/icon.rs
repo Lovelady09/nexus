@@ -1,6 +1,6 @@
 // Generated automatically by iced_fontello at build time.
 // Do not edit manually. Source: ../fonts/icons.toml
-// 274b099e380d8e52bbb0facd6aa99778d84642f1183490f5d6a5c7564a057fa6
+// ed6577ae888ad459ba3999093089852388c0286c7a0bc4e750663e17b9704111
 use iced::Font;
 use iced::widget::{Text, text};
 
@@ -24,6 +24,10 @@ pub fn cog<'a>() -> Text<'a> {
 
 pub fn collapse_left<'a>() -> Text<'a> {
     icon("\u{F191}")
+}
+
+pub fn desktop<'a>() -> Text<'a> {
+    icon("\u{F108}")
 }
 
 pub fn down_dir<'a>() -> Text<'a> {

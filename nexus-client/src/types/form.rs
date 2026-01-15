@@ -5,7 +5,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use crate::config::events::EventType;
 
 use nexus_common::framing::MessageId;
-use nexus_common::protocol::{NewsItem, UserInfo};
+use nexus_common::protocol::{ConnectionInfo, NewsItem, UserInfo};
 use nexus_common::{ALL_PERMISSIONS, DEFAULT_PORT};
 
 use crate::avatar::generate_identicon;
@@ -263,6 +263,56 @@ impl NewsManagementState {
     pub fn enter_confirm_delete_mode(&mut self, id: i64) {
         self.mode = NewsManagementMode::ConfirmDelete { id };
         self.delete_error = None;
+    }
+}
+
+// =============================================================================
+// Connection Monitor State
+// =============================================================================
+
+/// Column to sort connections by
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Hash)]
+pub enum ConnectionMonitorSortColumn {
+    /// Sort by nickname (default)
+    #[default]
+    Nickname,
+    /// Sort by username
+    Username,
+    /// Sort by IP address
+    Ip,
+    /// Sort by connection time
+    Connected,
+}
+
+#[derive(Debug, Clone)]
+pub struct ConnectionMonitorState {
+    /// Active connections (None = not loaded, Some(Ok) = loaded, Some(Err) = error)
+    pub connections: Option<Result<Vec<ConnectionInfo>, String>>,
+    /// Whether a refresh is in progress
+    pub loading: bool,
+    /// Current sort column
+    pub sort_column: ConnectionMonitorSortColumn,
+    /// Sort ascending (true) or descending (false)
+    pub sort_ascending: bool,
+}
+
+impl Default for ConnectionMonitorState {
+    fn default() -> Self {
+        Self {
+            connections: None,
+            loading: false,
+            sort_column: ConnectionMonitorSortColumn::Nickname,
+            sort_ascending: true,
+        }
+    }
+}
+
+impl ConnectionMonitorState {
+    /// Reset to initial state
+    pub fn reset(&mut self) {
+        self.connections = None;
+        self.loading = false;
+        // Keep sort settings across refreshes
     }
 }
 

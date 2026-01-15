@@ -328,6 +328,7 @@ pub fn client_message_type(message: &ClientMessage) -> &'static str {
         ClientMessage::TrustCreate { .. } => "TrustCreate",
         ClientMessage::TrustDelete { .. } => "TrustDelete",
         ClientMessage::TrustList => "TrustList",
+        ClientMessage::ConnectionMonitor => "ConnectionMonitor",
         ClientMessage::FileSearch { .. } => "FileSearch",
         ClientMessage::FileReindex => "FileReindex",
     }
@@ -396,6 +397,7 @@ pub fn server_message_type(message: &ServerMessage) -> &'static str {
         ServerMessage::TrustCreateResponse { .. } => "TrustCreateResponse",
         ServerMessage::TrustDeleteResponse { .. } => "TrustDeleteResponse",
         ServerMessage::TrustListResponse { .. } => "TrustListResponse",
+        ServerMessage::ConnectionMonitorResponse { .. } => "ConnectionMonitorResponse",
         ServerMessage::FileSearchResponse { .. } => "FileSearchResponse",
         ServerMessage::FileReindexResponse { .. } => "FileReindexResponse",
     }

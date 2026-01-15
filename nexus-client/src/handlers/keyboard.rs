@@ -295,6 +295,9 @@ impl NexusApp {
                         return self.update(Message::CancelFiles);
                     }
                     ActivePanel::Transfers => return self.update(Message::CloseTransfers),
+                    ActivePanel::ConnectionMonitor => {
+                        return self.update(Message::CloseConnectionMonitor);
+                    }
                     ActivePanel::None => {}
                 }
             }

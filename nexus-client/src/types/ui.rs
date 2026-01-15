@@ -15,6 +15,8 @@ pub enum ActivePanel {
     Broadcast,
     /// Change Password panel
     ChangePassword,
+    /// Connection Monitor panel (view active connections)
+    ConnectionMonitor,
     /// Settings panel
     Settings,
     /// Server Info panel

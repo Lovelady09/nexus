@@ -23,14 +23,14 @@ use crate::style::{
     FILE_LIST_ICON_SIZE, FILE_LIST_ICON_SPACING, FILE_SIZE_COLUMN_WIDTH,
     FILE_TOOLBAR_BUTTON_PADDING, FILE_TOOLBAR_ICON_SIZE, ICON_BUTTON_PADDING, INPUT_PADDING,
     NO_SPACING, SCROLLBAR_PADDING, SEPARATOR_HEIGHT, SIDEBAR_ACTION_ICON_SIZE, SMALL_PADDING,
-    SMALL_SPACING, SORT_ICON_RIGHT_MARGIN, SORT_ICON_SIZE, SPACER_SIZE_MEDIUM, SPACER_SIZE_SMALL,
-    TAB_CONTENT_PADDING, TEXT_SIZE, TITLE_SIZE, TOOLTIP_BACKGROUND_PADDING, TOOLTIP_GAP,
-    TOOLTIP_PADDING, TOOLTIP_TEXT_SIZE, chat_tab_active_style, close_button_on_primary_style,
-    content_background_style, context_menu_button_style, context_menu_container_style,
-    context_menu_item_danger_style, disabled_icon_button_style, drop_overlay_style,
-    error_text_style, muted_text_style, panel_title, separator_style, shaped_text,
-    shaped_text_wrapped, tooltip_container_style, transparent_icon_button_style,
-    upload_folder_style,
+    SMALL_SPACING, SORT_ICON_LEFT_MARGIN, SORT_ICON_RIGHT_MARGIN, SORT_ICON_SIZE,
+    SPACER_SIZE_MEDIUM, SPACER_SIZE_SMALL, TAB_CONTENT_PADDING, TEXT_SIZE, TITLE_SIZE,
+    TOOLTIP_BACKGROUND_PADDING, TOOLTIP_GAP, TOOLTIP_PADDING, TOOLTIP_TEXT_SIZE,
+    chat_tab_active_style, close_button_on_primary_style, content_background_style,
+    context_menu_button_style, context_menu_container_style, context_menu_item_danger_style,
+    disabled_icon_button_style, drop_overlay_style, error_text_style, muted_text_style,
+    panel_title, separator_style, shaped_text, shaped_text_wrapped, tooltip_container_style,
+    transparent_icon_button_style, upload_folder_style,
 };
 use crate::types::{
     ClipboardOperation, FileSortColumn, FileTab, FilesManagementState, InputId, Message,
@@ -662,6 +662,7 @@ fn lazy_search_results_table(deps: SearchResultsDeps) -> Element<'static, Messag
                         .size(TEXT_SIZE)
                         .style(muted_text_style),
                     Space::new().width(Fill),
+                    Space::new().width(SORT_ICON_LEFT_MARGIN),
                     sort_icon.size(SORT_ICON_SIZE).style(muted_text_style),
                     Space::new().width(SORT_ICON_RIGHT_MARGIN),
                 ]
@@ -738,6 +739,7 @@ fn lazy_search_results_table(deps: SearchResultsDeps) -> Element<'static, Messag
                         .size(TEXT_SIZE)
                         .style(muted_text_style),
                     Space::new().width(Fill),
+                    Space::new().width(SORT_ICON_LEFT_MARGIN),
                     sort_icon.size(SORT_ICON_SIZE).style(muted_text_style),
                     Space::new().width(SORT_ICON_RIGHT_MARGIN),
                 ]
@@ -791,6 +793,7 @@ fn lazy_search_results_table(deps: SearchResultsDeps) -> Element<'static, Messag
                         .size(TEXT_SIZE)
                         .style(muted_text_style),
                     Space::new().width(Fill),
+                    Space::new().width(SORT_ICON_LEFT_MARGIN),
                     sort_icon.size(SORT_ICON_SIZE).style(muted_text_style),
                     Space::new().width(SORT_ICON_RIGHT_MARGIN),
                 ]
@@ -840,6 +843,7 @@ fn lazy_search_results_table(deps: SearchResultsDeps) -> Element<'static, Messag
                         .size(TEXT_SIZE)
                         .style(muted_text_style),
                     Space::new().width(Fill),
+                    Space::new().width(SORT_ICON_LEFT_MARGIN),
                     sort_icon.size(SORT_ICON_SIZE).style(muted_text_style),
                     Space::new().width(SORT_ICON_RIGHT_MARGIN),
                 ]
@@ -1326,6 +1330,7 @@ fn lazy_file_table(deps: FileTableDeps) -> Element<'static, Message> {
                         .size(TEXT_SIZE)
                         .style(muted_text_style),
                     Space::new().width(Fill),
+                    Space::new().width(SORT_ICON_LEFT_MARGIN),
                     sort_icon.size(SORT_ICON_SIZE).style(muted_text_style),
                     Space::new().width(SORT_ICON_RIGHT_MARGIN),
                 ]
@@ -1442,6 +1447,7 @@ fn lazy_file_table(deps: FileTableDeps) -> Element<'static, Message> {
                         .size(TEXT_SIZE)
                         .style(muted_text_style),
                     Space::new().width(Fill),
+                    Space::new().width(SORT_ICON_LEFT_MARGIN),
                     sort_icon.size(SORT_ICON_SIZE).style(muted_text_style),
                     Space::new().width(SORT_ICON_RIGHT_MARGIN),
                 ]
@@ -1487,6 +1493,7 @@ fn lazy_file_table(deps: FileTableDeps) -> Element<'static, Message> {
                         .size(TEXT_SIZE)
                         .style(muted_text_style),
                     Space::new().width(Fill),
+                    Space::new().width(SORT_ICON_LEFT_MARGIN),
                     sort_icon.size(SORT_ICON_SIZE).style(muted_text_style),
                     Space::new().width(SORT_ICON_RIGHT_MARGIN),
                 ]

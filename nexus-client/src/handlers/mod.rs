@@ -3,6 +3,7 @@
 mod bookmarks;
 mod broadcast;
 mod connection;
+mod connection_monitor;
 mod files;
 mod fingerprint;
 mod keyboard;

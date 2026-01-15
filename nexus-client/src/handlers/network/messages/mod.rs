@@ -463,6 +463,17 @@ impl NexusApp {
                 self.handle_file_reindex_response(connection_id, success, error)
             }
 
+            ServerMessage::ConnectionMonitorResponse {
+                success,
+                error,
+                connections,
+            } => Task::done(Message::ConnectionMonitorResponse {
+                connection_id,
+                success,
+                error,
+                connections,
+            }),
+
             ServerMessage::FileSearchResponse {
                 success,
                 error,

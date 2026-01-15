@@ -193,6 +193,7 @@ permission-ban_list = BANリスト
 permission-trust_create = 信頼作成
 permission-trust_delete = 信頼削除
 permission-trust_list = 信頼リスト
+permission-connection_monitor = 接続モニター
 
 # =============================================================================
 # Tooltips
@@ -212,8 +213,9 @@ tooltip-files-show-hidden = 隠しファイルを表示
 tooltip-files-hide-hidden = 隠しファイルを非表示
 tooltip-files-new-directory = 新規ディレクトリ
 tooltip-files-paste = 貼り付け
-tooltip-files-search = ファイルを検索
+tooltip-files-search = ファイル検索
 tooltip-manage-users = ユーザー管理
+tooltip-connection-monitor = 接続モニター
 tooltip-server-info = サーバー情報
 tooltip-about = アプリについて
 tooltip-transfers = 転送
@@ -250,6 +252,20 @@ tooltip-delete = 削除
 context-menu-download = ダウンロード
 context-menu-upload = アップロード
 context-menu-open = 開く
+
+# =============================================================================
+# Connection Monitor
+# =============================================================================
+
+panel-connection-monitor = 接続モニター
+panel-active-connections = アクティブ接続: { $count }
+col-nickname = ニックネーム
+col-username = ユーザー名
+col-ip-address = IPアドレス
+col-time = 時間
+menu-copy = コピー
+connection-monitor-loading = 接続を読み込み中…
+connection-monitor-no-connections = 接続なし
 
 # =============================================================================
 # Empty States

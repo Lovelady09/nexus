@@ -5,12 +5,13 @@ use iced::widget::{
 };
 use iced::{Center, Element, Fill};
 
+use super::connection_monitor::connection_monitor_view;
 use super::constants::{
-    PERMISSION_FILE_COPY, PERMISSION_FILE_CREATE_DIR, PERMISSION_FILE_DELETE,
-    PERMISSION_FILE_DOWNLOAD, PERMISSION_FILE_INFO, PERMISSION_FILE_LIST, PERMISSION_FILE_MOVE,
-    PERMISSION_FILE_RENAME, PERMISSION_FILE_ROOT, PERMISSION_FILE_SEARCH, PERMISSION_FILE_UPLOAD,
-    PERMISSION_NEWS_LIST, PERMISSION_USER_BROADCAST, PERMISSION_USER_CREATE,
-    PERMISSION_USER_DELETE, PERMISSION_USER_EDIT, PERMISSION_USER_LIST,
+    PERMISSION_CONNECTION_MONITOR, PERMISSION_FILE_COPY, PERMISSION_FILE_CREATE_DIR,
+    PERMISSION_FILE_DELETE, PERMISSION_FILE_DOWNLOAD, PERMISSION_FILE_INFO, PERMISSION_FILE_LIST,
+    PERMISSION_FILE_MOVE, PERMISSION_FILE_RENAME, PERMISSION_FILE_ROOT, PERMISSION_FILE_SEARCH,
+    PERMISSION_FILE_UPLOAD, PERMISSION_NEWS_LIST, PERMISSION_USER_BROADCAST,
+    PERMISSION_USER_CREATE, PERMISSION_USER_DELETE, PERMISSION_USER_EDIT, PERMISSION_USER_LIST,
 };
 use super::disconnect_dialog::disconnect_dialog_view;
 use super::files::{FilePermissions, files_view};
@@ -353,6 +354,7 @@ fn build_toolbar(state: ToolbarState) -> Element<'static, Message> {
         PERMISSION_USER_EDIT,
         PERMISSION_USER_DELETE,
     ]);
+    let has_connection_monitor = state.has_permission(PERMISSION_CONNECTION_MONITOR);
 
     let toolbar = container(
         row![
@@ -482,6 +484,37 @@ fn build_toolbar(state: ToolbarState) -> Element<'static, Message> {
                         container(shaped_text(t("tooltip-manage-users")).size(TOOLTIP_TEXT_SIZE))
                             .padding(TOOLTIP_BACKGROUND_PADDING)
                             .style(tooltip_container_style),
+                        tooltip::Position::Bottom,
+                    )
+                    .gap(TOOLTIP_GAP)
+                    .padding(TOOLTIP_PADDING)
+                },
+                // Connection Monitor button
+                if state.is_connected && has_connection_monitor {
+                    tooltip(
+                        button(icon::desktop().size(TOOLBAR_ICON_SIZE))
+                            .on_press(Message::ToggleConnectionMonitor)
+                            .style(toolbar_button_style(
+                                active_panel == ActivePanel::ConnectionMonitor,
+                            )),
+                        container(
+                            shaped_text(t("tooltip-connection-monitor")).size(TOOLTIP_TEXT_SIZE),
+                        )
+                        .padding(TOOLTIP_BACKGROUND_PADDING)
+                        .style(tooltip_container_style),
+                        tooltip::Position::Bottom,
+                    )
+                    .gap(TOOLTIP_GAP)
+                    .padding(TOOLTIP_PADDING)
+                } else {
+                    tooltip(
+                        button(icon::desktop().size(TOOLBAR_ICON_SIZE))
+                            .style(disabled_icon_button_style),
+                        container(
+                            shaped_text(t("tooltip-connection-monitor")).size(TOOLTIP_TEXT_SIZE),
+                        )
+                        .padding(TOOLTIP_BACKGROUND_PADDING)
+                        .style(tooltip_container_style),
                         tooltip::Position::Bottom,
                     )
                     .gap(TOOLTIP_GAP)
@@ -773,6 +806,13 @@ fn server_content_view<'a>(ctx: ServerContentContext<'a>) -> Element<'a, Message
             .width(Fill)
             .height(Fill)
             .into(),
+        ActivePanel::ConnectionMonitor => stack![
+            chat,
+            connection_monitor_view(&ctx.conn.connection_monitor, ctx.theme.clone())
+        ]
+        .width(Fill)
+        .height(Fill)
+        .into(),
         ActivePanel::None => chat,
     };
 

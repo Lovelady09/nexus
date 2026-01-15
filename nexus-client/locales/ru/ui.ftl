@@ -192,7 +192,8 @@ permission-ban_delete = Удалить Бан
 permission-ban_list = Список Банов
 permission-trust_create = Создать Доверие
 permission-trust_delete = Удалить Доверие
-permission-trust_list = Список Доверенных
+permission-trust_list = Список Доверия
+permission-connection_monitor = Монитор Подключений
 
 # =============================================================================
 # Tooltips
@@ -214,7 +215,8 @@ tooltip-files-new-directory = Новая Папка
 tooltip-files-paste = Вставить
 tooltip-files-search = Поиск файлов
 tooltip-manage-users = Управление Пользователями
-tooltip-server-info = Информация о сервере
+tooltip-connection-monitor = Монитор Подключений
+tooltip-server-info = Информация о Сервере
 tooltip-about = О программе
 tooltip-transfers = Передачи
 tooltip-download-all = Скачать всё
@@ -250,6 +252,20 @@ tooltip-delete = Удалить
 context-menu-download = Скачать
 context-menu-upload = Загрузить
 context-menu-open = Открыть
+
+# =============================================================================
+# Connection Monitor
+# =============================================================================
+
+panel-connection-monitor = Монитор Подключений
+panel-active-connections = Активные Подключения: { $count }
+col-nickname = Псевдоним
+col-username = Пользователь
+col-ip-address = IP-Адрес
+col-time = Время
+menu-copy = Копировать
+connection-monitor-loading = Загрузка подключений…
+connection-monitor-no-connections = Нет подключений
 
 # =============================================================================
 # Empty States

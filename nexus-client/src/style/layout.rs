@@ -193,6 +193,15 @@ pub const SEPARATOR_HEIGHT: f32 = 1.0;
 /// Border width (standard)
 pub const BORDER_WIDTH: f32 = 1.0;
 
+/// Size for sort indicator icons in table column headers
+pub const SORT_ICON_SIZE: f32 = 12.0;
+
+/// Left margin for sort icons (spacing between column text and icon)
+pub const SORT_ICON_LEFT_MARGIN: f32 = 8.0;
+
+/// Right margin for sort icons (prevents scrollbar overlap on rightmost column)
+pub const SORT_ICON_RIGHT_MARGIN: f32 = 12.0;
+
 /// User list panel width
 pub const USER_LIST_PANEL_WIDTH: f32 = 180.0;
 
@@ -316,14 +325,8 @@ pub const FILE_INFO_ICON_SIZE: f32 = 64.0;
 /// Spacing between icon and name in file info header
 pub const FILE_INFO_ICON_SPACING: f32 = 12.0;
 
-/// Size for sort indicator icons in column headers
-pub const SORT_ICON_SIZE: f32 = 12.0;
-
 /// Icon size for drag-and-drop overlay
 pub const DROP_OVERLAY_ICON_SIZE: f32 = 64.0;
-
-/// Right margin for sort icons (prevents scrollbar overlap on rightmost column)
-pub const SORT_ICON_RIGHT_MARGIN: f32 = 12.0;
 
 /// Maximum length for breadcrumb segment display names (in characters)
 pub const BREADCRUMB_MAX_SEGMENT_LENGTH: usize = 32;

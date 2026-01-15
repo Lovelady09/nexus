@@ -5,6 +5,7 @@ mod bookmark;
 mod broadcast;
 mod chat;
 mod connection;
+mod connection_monitor;
 pub(crate) mod constants;
 mod disconnect_dialog;
 pub(crate) mod files;

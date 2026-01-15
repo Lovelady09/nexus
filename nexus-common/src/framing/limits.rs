@@ -322,6 +322,9 @@ const TRUST_DELETE_SIZE: usize =
 /// TrustList: {"type":"TrustList"}
 const TRUST_LIST_SIZE: usize = json_type_base("TrustList");
 
+/// ConnectionMonitor: {"type":"ConnectionMonitor"}
+const CONNECTION_MONITOR_SIZE: usize = json_type_base("ConnectionMonitor");
+
 // -----------------------------------------------------------------------------
 // Client messages - News
 // -----------------------------------------------------------------------------
@@ -968,6 +971,12 @@ static MESSAGE_TYPE_LIMITS: LazyLock<HashMap<&'static str, u64>> = LazyLock::new
     m.insert("TrustDelete", pad_limit(TRUST_DELETE_SIZE as u64));
     m.insert("TrustList", pad_limit(TRUST_LIST_SIZE as u64));
 
+    // Connection monitor client message
+    m.insert(
+        "ConnectionMonitor",
+        pad_limit(CONNECTION_MONITOR_SIZE as u64),
+    );
+
     // News client messages (self-documenting via const calculations)
     m.insert("NewsList", pad_limit(NEWS_LIST_SIZE as u64));
     m.insert("NewsShow", pad_limit(NEWS_SHOW_SIZE as u64));
@@ -1101,6 +1110,9 @@ static MESSAGE_TYPE_LIMITS: LazyLock<HashMap<&'static str, u64>> = LazyLock::new
         pad_limit(TRUST_DELETE_RESPONSE_SIZE as u64),
     );
     m.insert("TrustListResponse", 0); // unlimited (server-trusted, can have many trusts)
+
+    // Connection monitor server message
+    m.insert("ConnectionMonitorResponse", 0); // unlimited (server-trusted, can have many connections)
 
     // News server messages (self-documenting via const calculations)
     m.insert("NewsListResponse", 0); // unlimited (server-trusted, can have many items)
@@ -1646,8 +1658,8 @@ mod tests {
         //
         // Note: Some type names are shared between client and server enums
         // (UserMessage, FileStart, FileStartResponse, FileData, FileHashing), so they're only counted once in the HashMap.
-        const CLIENT_MESSAGE_COUNT: usize = 48; // Added 6 News + 7 File + 6 Transfer + 3 Away/Status + 3 Ban + 3 Trust + 2 FileSearch + 4 Chat channel client messages
-        const SERVER_MESSAGE_COUNT: usize = 61; // Added 7 News + 8 File + 7 Transfer + 3 Away/Status + 3 Ban + 3 Trust + 2 FileSearch + 6 Chat channel server messages
+        const CLIENT_MESSAGE_COUNT: usize = 49; // Added 6 News + 7 File + 6 Transfer + 3 Away/Status + 3 Ban + 3 Trust + 2 FileSearch + 4 Chat channel + 1 ConnectionMonitor client messages
+        const SERVER_MESSAGE_COUNT: usize = 62; // Added 7 News + 8 File + 7 Transfer + 3 Away/Status + 3 Ban + 3 Trust + 2 FileSearch + 6 Chat channel + 1 ConnectionMonitor server messages
         const SHARED_MESSAGE_COUNT: usize = 5; // UserMessage, FileStart, FileStartResponse, FileData, FileHashing
         const TOTAL_MESSAGE_COUNT: usize =
             CLIENT_MESSAGE_COUNT + SERVER_MESSAGE_COUNT - SHARED_MESSAGE_COUNT;

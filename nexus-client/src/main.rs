@@ -492,6 +492,23 @@ impl NexusApp {
             Message::ToggleTransfers => self.handle_toggle_transfers(),
             Message::CloseTransfers => self.handle_close_transfers(),
 
+            // Connection Monitor
+            Message::ToggleConnectionMonitor => self.handle_toggle_connection_monitor(),
+            Message::CloseConnectionMonitor => self.handle_close_connection_monitor(),
+            Message::RefreshConnectionMonitor => self.handle_refresh_connection_monitor(),
+            Message::ConnectionMonitorResponse {
+                connection_id,
+                success,
+                error,
+                connections,
+            } => {
+                self.handle_connection_monitor_response(connection_id, success, error, connections)
+            }
+            Message::ConnectionMonitorCopy(value) => self.handle_connection_monitor_copy(value),
+            Message::ConnectionMonitorSortBy(column) => {
+                self.handle_connection_monitor_sort_by(column)
+            }
+
             // Server info
             Message::CancelEditServerInfo => self.handle_cancel_edit_server_info(),
             Message::ClearServerImagePressed => self.handle_clear_server_image_pressed(),

@@ -193,6 +193,7 @@ permission-ban_list = 차단 목록
 permission-trust_create = 신뢰 생성
 permission-trust_delete = 신뢰 삭제
 permission-trust_list = 신뢰 목록
+permission-connection_monitor = 연결 모니터
 
 # =============================================================================
 # Tooltips
@@ -214,6 +215,7 @@ tooltip-files-new-directory = 새 디렉터리
 tooltip-files-paste = 붙여넣기
 tooltip-files-search = 파일 검색
 tooltip-manage-users = 사용자 관리
+tooltip-connection-monitor = 연결 모니터
 tooltip-server-info = 서버 정보
 tooltip-about = 정보
 tooltip-transfers = 전송
@@ -250,6 +252,20 @@ tooltip-delete = 삭제
 context-menu-download = 다운로드
 context-menu-upload = 업로드
 context-menu-open = 열기
+
+# =============================================================================
+# Connection Monitor
+# =============================================================================
+
+panel-connection-monitor = 연결 모니터
+panel-active-connections = 활성 연결: { $count }
+col-nickname = 닉네임
+col-username = 사용자명
+col-ip-address = IP 주소
+col-time = 시간
+menu-copy = 복사
+connection-monitor-loading = 연결 로드 중…
+connection-monitor-no-connections = 연결 없음
 
 # =============================================================================
 # Empty States
