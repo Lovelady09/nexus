@@ -191,8 +191,8 @@ pub const MSG_DATABASE: &str = "Database: ";
 /// Certificates path display
 pub const MSG_CERTIFICATES: &str = "Certificates: ";
 
-/// Listening address display
-pub const MSG_LISTENING: &str = "Listening on ";
+/// BBS port listening display
+pub const MSG_LISTENING: &str = "BBS port: ";
 
 /// Transfer port listening display
 pub const MSG_TRANSFER_LISTENING: &str = "Transfer port: ";
@@ -202,9 +202,6 @@ pub const MSG_WS_LISTENING: &str = "WebSocket port: ";
 
 /// WebSocket transfer port listening display
 pub const MSG_WS_TRANSFER_LISTENING: &str = "WebSocket transfer port: ";
-
-/// TLS enabled indicator
-pub const MSG_TLS_ENABLED: &str = " (TLS enabled)";
 
 /// Certificate fingerprint display
 pub const MSG_CERT_FINGERPRINT: &str = "Certificate fingerprint (SHA-256): ";

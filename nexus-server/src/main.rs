@@ -825,7 +825,7 @@ async fn setup_network(
             std::process::exit(1);
         }
     };
-    println!("{}{}{}", MSG_LISTENING, addr, MSG_TLS_ENABLED);
+    println!("{}{}", MSG_LISTENING, addr);
 
     // Create transfer port listener
     let transfer_addr = SocketAddr::new(bind, transfer_port);
@@ -836,10 +836,7 @@ async fn setup_network(
             std::process::exit(1);
         }
     };
-    println!(
-        "{}{}{}",
-        MSG_TRANSFER_LISTENING, transfer_addr, MSG_TLS_ENABLED
-    );
+    println!("{}{}", MSG_TRANSFER_LISTENING, transfer_addr);
 
     // Create WebSocket listeners if enabled
     let (ws_listener, ws_transfer_listener) = if let (Some(ws_port), Some(ws_transfer_port)) =
@@ -854,7 +851,7 @@ async fn setup_network(
                 std::process::exit(1);
             }
         };
-        println!("{}{}{}", MSG_WS_LISTENING, ws_addr, MSG_TLS_ENABLED);
+        println!("{}{}", MSG_WS_LISTENING, ws_addr);
 
         // Create WebSocket transfer listener
         let ws_transfer_addr = SocketAddr::new(bind, ws_transfer_port);
@@ -865,10 +862,7 @@ async fn setup_network(
                 std::process::exit(1);
             }
         };
-        println!(
-            "{}{}{}",
-            MSG_WS_TRANSFER_LISTENING, ws_transfer_addr, MSG_TLS_ENABLED
-        );
+        println!("{}{}", MSG_WS_TRANSFER_LISTENING, ws_transfer_addr);
 
         (Some(ws_listener), Some(ws_transfer_listener))
     } else {
