@@ -4,6 +4,7 @@
 
 use chat_channel::ChatJoinResponseData;
 use files::FileListResponseData;
+use user_message::UserMessageParams;
 
 mod ban_create;
 mod ban_delete;
@@ -247,17 +248,19 @@ impl NexusApp {
             ServerMessage::UserMessage {
                 from_nickname,
                 from_admin,
+                from_shared,
                 to_nickname,
                 message,
                 action,
-            } => self.handle_user_message(
+            } => self.handle_user_message(UserMessageParams {
                 connection_id,
                 from_nickname,
                 from_admin,
+                from_shared,
                 to_nickname,
                 message,
                 action,
-            ),
+            }),
 
             ServerMessage::UserMessageResponse {
                 success,

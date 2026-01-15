@@ -557,6 +557,8 @@ pub enum ServerMessage {
     UserMessage {
         from_nickname: String,
         from_admin: bool,
+        #[serde(default)]
+        from_shared: bool,
         to_nickname: String,
         message: String,
         #[serde(default, skip_serializing_if = "is_normal_action")]
@@ -1847,6 +1849,7 @@ mod tests {
         let msg = ServerMessage::UserMessage {
             from_nickname: "Nick1".to_string(),
             from_admin: false,
+            from_shared: false,
             to_nickname: "alice".to_string(),
             message: "Hello!".to_string(),
             action: ChatAction::Normal,
@@ -2693,6 +2696,7 @@ mod tests {
         let server_json = serde_json::to_string(&ServerMessage::UserMessage {
             from_nickname: "bob".to_string(),
             from_admin: false,
+            from_shared: false,
             to_nickname: "alice".to_string(),
             message: "Hello!".to_string(),
             action: ChatAction::Normal,

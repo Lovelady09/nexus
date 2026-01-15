@@ -127,6 +127,7 @@ where
     let broadcast = ServerMessage::UserMessage {
         from_nickname: requesting_user_session.nickname.clone(),
         from_admin: requesting_user_session.is_admin,
+        from_shared: requesting_user_session.is_shared,
         to_nickname: target_session.nickname.clone(),
         message,
         action,

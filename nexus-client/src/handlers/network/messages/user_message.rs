@@ -11,17 +11,30 @@ use crate::events::{EventContext, emit_event};
 use crate::i18n::t_args;
 use crate::types::{ChatMessage, ChatTab, Message, ResponseRouting};
 
+/// Parameters for handling an incoming private message
+pub struct UserMessageParams {
+    pub connection_id: usize,
+    pub from_nickname: String,
+    pub from_admin: bool,
+    pub from_shared: bool,
+    pub to_nickname: String,
+    pub message: String,
+    pub action: ChatAction,
+}
+
 impl NexusApp {
     /// Handle incoming private message
-    pub fn handle_user_message(
-        &mut self,
-        connection_id: usize,
-        from_nickname: String,
-        from_admin: bool,
-        to_nickname: String,
-        message: String,
-        action: ChatAction,
-    ) -> Task<Message> {
+    pub fn handle_user_message(&mut self, params: UserMessageParams) -> Task<Message> {
+        let UserMessageParams {
+            connection_id,
+            from_nickname,
+            from_admin,
+            from_shared,
+            to_nickname,
+            message,
+            action,
+        } = params;
+
         // First pass: get info we need for notification (immutable borrow)
         let notification_info = {
             let Some(conn) = self.connections.get(&connection_id) else {
@@ -46,18 +59,10 @@ impl NexusApp {
                 from_nickname.clone()
             };
 
-            // Look up is_shared status
-            let is_shared = conn
-                .online_users
-                .iter()
-                .find(|u| u.nickname == from_nickname)
-                .map(|u| u.is_shared)
-                .unwrap_or(false);
-
-            (should_notify, other_user, is_shared)
+            (should_notify, other_user)
         };
 
-        let (should_notify, other_user, is_shared) = notification_info;
+        let (should_notify, other_user) = notification_info;
 
         // Emit notification event (only for messages from others)
         if should_notify {
@@ -82,7 +87,7 @@ impl NexusApp {
             message,
             Local::now(),
             from_admin,
-            is_shared,
+            from_shared,
             action,
         );
         conn.user_messages

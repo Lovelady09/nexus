@@ -175,25 +175,6 @@ fn styled_message<'a>(
     text_widget.into()
 }
 
-/// Check if a nickname (display name) belongs to an admin in the online users list
-///
-/// Used for server chat messages where admin status isn't embedded in the message.
-/// For private messages, use the `is_admin` field on `ChatMessage` instead.
-fn is_admin_by_nickname(conn: &ServerConnection, nickname: &str) -> bool {
-    conn.online_users
-        .iter()
-        .any(|u| u.nickname == nickname && u.is_admin)
-}
-
-/// Check if a nickname (display name) belongs to a shared account user.
-///
-/// For private messages, use the `is_shared` field on `ChatMessage` instead.
-fn is_shared_by_nickname(conn: &ServerConnection, nickname: &str) -> bool {
-    conn.online_users
-        .iter()
-        .any(|u| u.nickname == nickname && u.is_shared)
-}
-
 // ============================================================================
 // Tab Button
 // ============================================================================
@@ -490,18 +471,6 @@ fn build_message_list<'a>(
 
     for msg in messages {
         let time_str = timestamp_settings.format(&msg.get_timestamp());
-        // For private messages, use the stored is_admin/is_shared flags.
-        // For server chat, fall back to looking up in online users.
-        let sender_is_admin = if msg.is_admin {
-            true
-        } else {
-            is_admin_by_nickname(conn, &msg.nickname)
-        };
-        let sender_is_shared = if msg.is_shared {
-            true
-        } else {
-            is_shared_by_nickname(conn, &msg.nickname)
-        };
 
         // Split message into lines to prevent spoofing via embedded newlines
         // Each line is displayed with the same timestamp/username prefix
@@ -512,8 +481,8 @@ fn build_message_list<'a>(
                 line,
                 message_type: msg.message_type,
                 theme,
-                is_admin: sender_is_admin,
-                is_shared: sender_is_shared,
+                is_admin: msg.is_admin,
+                is_shared: msg.is_shared,
                 font_size,
                 action: msg.action,
             });

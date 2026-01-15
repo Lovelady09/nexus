@@ -39,6 +39,16 @@ const LOGIN_RESPONSE_BASE: usize = 724000;
 /// Includes ServerInfo with transfer_port, max_transfers_per_ip, file_reindex_interval, persistent_channels, and auto_join_channels fields
 const PERMISSIONS_UPDATED_BASE: usize = 702011;
 
+/// UserMessage (server variant) field sizes:
+/// - type overhead: ~25 bytes
+/// - from_nickname: MAX_NICKNAME_LENGTH (64) + quotes + key = ~80
+/// - from_admin: "from_admin":false = ~18
+/// - from_shared: "from_shared":false = ~19
+/// - to_nickname: MAX_NICKNAME_LENGTH (64) + quotes + key = ~78
+/// - message: MAX_MESSAGE_LENGTH (1024) + quotes + key = ~1038
+/// - action: skipped when Normal (default)
+const USER_MESSAGE_SERVER_BASE: usize = 80 + 18 + 19 + 78 + 1038;
+
 /// Apply 20% padding to a limit for safety margin
 const fn pad_limit(base: u64) -> u64 {
     // Use integer math: multiply by 6 and divide by 5 equals 1.2x
@@ -160,7 +170,7 @@ static MESSAGE_TYPE_LIMITS: LazyLock<HashMap<&'static str, u64>> = LazyLock::new
     m.insert("UserInfoResponse", pad_limit(181634)); // includes is_away + status (128) + channels (100 * ~36)
     m.insert("UserKickResponse", pad_limit(612));
     m.insert("UserListResponse", 0); // unlimited (server-trusted)
-    m.insert("UserMessage", pad_limit(1178)); // shared type: server (1178) > client (1108)
+    m.insert("UserMessage", pad_limit(USER_MESSAGE_SERVER_BASE as u64)); // shared type: server > client
     m.insert("UserMessageResponse", pad_limit(725)); // includes is_away + status (128)
     m.insert("UserUpdated", pad_limit(176568)); // includes is_away + status (128)
     m.insert("UserAwayResponse", pad_limit(2102)); // success + error (2048) + overhead
@@ -259,7 +269,7 @@ mod tests {
 
     /// Helper to get serialized JSON size of a message
     fn json_size<T: serde::Serialize>(msg: &T) -> usize {
-        serde_json::to_vec(msg).unwrap().len()
+        serde_json::to_string(msg).unwrap().len()
     }
 
     /// Helper to create a string of given length
@@ -1293,11 +1303,11 @@ mod tests {
         let msg = ServerMessage::UserMessage {
             from_nickname: str_of_len(MAX_NICKNAME_LENGTH),
             from_admin: false,
+            from_shared: false,
             to_nickname: str_of_len(MAX_NICKNAME_LENGTH),
             message: str_of_len(MAX_MESSAGE_LENGTH),
             action: ChatAction::Normal,
         };
-        // Server variant defines the limit since it's larger
         assert!(
             json_size(&msg) <= max_payload_for_type("UserMessage") as usize,
             "{} size {} exceeds limit {}",
