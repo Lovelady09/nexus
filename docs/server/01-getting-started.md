@@ -104,11 +104,11 @@ You'll see output like:
 ```
 Nexus BBS Server v0.5.0
 Database: ~/.local/share/nexusd/nexus.db
+File area: ~/.local/share/nexusd/files
+Certificate fingerprint (SHA-256): AB:CD:12:34:...
 Certificates: ~/.local/share/nexusd
-File root: ~/.local/share/nexusd/files
-Listening on 0.0.0.0:7500 (TLS)
-Transfer port: 0.0.0.0:7501 (TLS)
-Certificate fingerprint: SHA256:abc123...
+BBS port: 0.0.0.0:7500
+Transfer port: 0.0.0.0:7501
 ```
 
 The server automatically:

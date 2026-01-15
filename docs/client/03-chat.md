@@ -281,9 +281,12 @@ Notifications are suppressed when you're viewing that specific channel.
 ## Chat History
 
 - Messages are stored per-connection, per-tab
+- History is limited by the **Max Scrollback** setting (default: 5000 messages per tab)
+- When the limit is reached, oldest messages are automatically removed
 - History is cleared when you disconnect
 - Scroll up to view older messages
 - Use `/clear` to clear the current tab's history
+- Adjust scrollback limit in Settings > Chat
 
 ## Session Membership
 

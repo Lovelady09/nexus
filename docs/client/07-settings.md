@@ -64,6 +64,15 @@ Leave blank to be prompted for a nickname when connecting to shared accounts.
 
 ## Chat Tab
 
+### Max Scrollback
+
+Limits how many messages are kept in each chat tab's history. When the limit is reached, oldest messages are removed as new ones arrive.
+
+- Default: 5000 messages per tab
+- Set to 0 for unlimited (not recommended for long sessions)
+
+This affects all chat tabs: Console, channels, and private messages.
+
 ### Font Size
 
 Adjust the chat message font size (9–16 points). Default is 13.
