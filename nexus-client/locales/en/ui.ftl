@@ -92,6 +92,7 @@ label-permissions = Permissions:
 label-expected-fingerprint = Expected fingerprint:
 label-received-fingerprint = Received fingerprint:
 label-theme = Theme:
+label-max-scrollback = Max Scrollback:
 label-chat-font-size = Font Size:
 label-show-connection-events = Show Connect/Disconnect Events
 label-show-channel-events = Show Join/Leave Events

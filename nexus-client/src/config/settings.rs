@@ -90,6 +90,9 @@ pub const DEFAULT_DOWNLOAD_LIMIT: u8 = 2;
 /// Default upload limit per server (0 = unlimited)
 pub const DEFAULT_UPLOAD_LIMIT: u8 = 2;
 
+/// Default maximum scrollback lines per chat tab
+pub const DEFAULT_MAX_SCROLLBACK: usize = 5000;
+
 /// Minimum allowed chat font size
 pub const CHAT_FONT_SIZE_MIN: u8 = 9;
 
@@ -214,6 +217,15 @@ pub struct Settings {
     /// Last selected event type in Settings > Events tab
     #[serde(default)]
     pub selected_event_type: EventType,
+
+    /// Maximum scrollback lines per chat tab (0 = unlimited)
+    #[serde(default = "default_max_scrollback")]
+    pub max_scrollback: usize,
+}
+
+/// Default value for max_scrollback setting
+const fn default_max_scrollback() -> usize {
+    DEFAULT_MAX_SCROLLBACK
 }
 
 impl Default for Settings {
@@ -243,6 +255,7 @@ impl Default for Settings {
             upload_limit: default_upload_limit(),
             event_settings: EventSettings::default(),
             selected_event_type: EventType::default(),
+            max_scrollback: default_max_scrollback(),
         }
     }
 }
@@ -270,6 +283,7 @@ impl std::fmt::Debug for Settings {
             )
             .field("nickname", &self.nickname)
             .field("proxy", &self.proxy)
+            .field("max_scrollback", &self.max_scrollback)
             .finish()
     }
 }

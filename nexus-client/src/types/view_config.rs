@@ -100,6 +100,9 @@ pub struct ViewConfig<'a> {
     /// Maximum concurrent uploads per server (0 = unlimited)
     pub upload_limit: u8,
 
+    /// Maximum scrollback lines per chat tab (0 = unlimited)
+    pub max_scrollback: usize,
+
     /// Whether to show the drag-and-drop overlay (files being dragged over window)
     pub show_drop_overlay: bool,
 

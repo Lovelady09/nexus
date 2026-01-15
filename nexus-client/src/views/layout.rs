@@ -55,6 +55,8 @@ struct ServerContentContext<'a> {
     show_connection_events: bool,
     /// Whether to show channel join/leave events
     show_join_leave_events: bool,
+    /// Maximum scrollback lines per chat tab (0 = unlimited)
+    max_scrollback: usize,
     /// Chat font size
     chat_font_size: u8,
     /// Timestamp display settings
@@ -231,6 +233,7 @@ pub fn main_layout<'a>(config: ViewConfig<'a>) -> Element<'a, Message> {
                 theme: config.theme.clone(),
                 show_connection_events: config.show_connection_events,
                 show_join_leave_events: config.show_join_leave_events,
+                max_scrollback: config.max_scrollback,
                 chat_font_size: config.chat_font_size,
                 timestamp_settings: TimestampSettings {
                     show_timestamps: config.show_timestamps,
@@ -266,6 +269,7 @@ pub fn main_layout<'a>(config: ViewConfig<'a>) -> Element<'a, Message> {
                         current_theme: config.theme.clone(),
                         show_connection_events: config.show_connection_events,
                         show_join_leave_events: config.show_join_leave_events,
+                        max_scrollback: config.max_scrollback,
                         chat_font_size: config.chat_font_size,
                         timestamp_settings: TimestampSettings {
                             show_timestamps: config.show_timestamps,
@@ -673,6 +677,7 @@ fn server_content_view<'a>(ctx: ServerContentContext<'a>) -> Element<'a, Message
                 current_theme: ctx.theme.clone(),
                 show_connection_events: ctx.show_connection_events,
                 show_join_leave_events: ctx.show_join_leave_events,
+                max_scrollback: ctx.max_scrollback,
                 chat_font_size: ctx.chat_font_size,
                 timestamp_settings: ctx.timestamp_settings,
                 settings_form: ctx.settings_form,

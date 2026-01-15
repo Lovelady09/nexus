@@ -95,6 +95,7 @@ label-permissions = Permisos:
 label-expected-fingerprint = Huella esperada:
 label-received-fingerprint = Huella recibida:
 label-theme = Tema
+label-max-scrollback = Historial máximo:
 label-chat-font-size = Tamaño de fuente:
 label-show-connection-events = Mostrar eventos de conexión/desconexión
 label-show-channel-events = Mostrar eventos de entrada/salida

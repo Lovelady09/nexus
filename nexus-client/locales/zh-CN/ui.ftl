@@ -94,6 +94,7 @@ label-permissions = 权限：
 label-expected-fingerprint = 预期指纹：
 label-received-fingerprint = 收到的指纹：
 label-theme = 主题
+label-max-scrollback = 最大历史记录：
 label-chat-font-size = 字体大小：
 label-show-connection-events = 显示连接/断开事件
 label-show-channel-events = 显示加入/离开事件

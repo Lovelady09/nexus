@@ -6,6 +6,16 @@ use crate::NexusApp;
 use crate::i18n::t_args;
 use crate::types::{ChatMessage, ChatTab, Message};
 
+/// Truncate a message list to respect max_scrollback setting.
+/// Removes oldest messages (from the front) when limit is exceeded.
+/// A limit of 0 means unlimited.
+fn truncate_scrollback(messages: &mut Vec<ChatMessage>, max_scrollback: usize) {
+    if max_scrollback > 0 && messages.len() > max_scrollback {
+        let excess = messages.len() - max_scrollback;
+        messages.drain(0..excess);
+    }
+}
+
 impl NexusApp {
     /// Add a message to the user's current active tab and auto-scroll
     ///
@@ -52,6 +62,10 @@ impl NexusApp {
         };
 
         conn.console_messages.push(message);
+        truncate_scrollback(
+            &mut conn.console_messages,
+            self.config.settings.max_scrollback,
+        );
 
         // Mark Console tab as unread if not currently viewing it
         if conn.active_chat_tab != ChatTab::Console {
@@ -84,10 +98,9 @@ impl NexusApp {
         };
 
         // Get or create the message list for this user
-        conn.user_messages
-            .entry(nickname.to_string())
-            .or_default()
-            .push(message);
+        let user_msgs = conn.user_messages.entry(nickname.to_string()).or_default();
+        user_msgs.push(message);
+        truncate_scrollback(user_msgs, self.config.settings.max_scrollback);
 
         // Add to user_message_tabs if not already present (creates the tab in UI)
         if !conn.user_message_tabs.contains(&nickname.to_string()) {
@@ -136,6 +149,10 @@ impl NexusApp {
 
         if let Some(channel_state) = conn.get_channel_state_mut(channel) {
             channel_state.messages.push(message);
+            truncate_scrollback(
+                &mut channel_state.messages,
+                self.config.settings.max_scrollback,
+            );
         }
 
         // Mark channel tab as unread if not currently viewing it

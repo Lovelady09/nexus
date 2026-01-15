@@ -420,6 +420,7 @@ impl NexusApp {
             // Settings
             Message::CancelSettings => self.handle_cancel_settings(),
             Message::ChatFontSizeSelected(size) => self.handle_chat_font_size_selected(size),
+            Message::MaxScrollbackChanged(value) => self.handle_max_scrollback_changed(value),
             Message::ClearAvatarPressed => self.handle_clear_avatar_pressed(),
             Message::ConnectionNotificationsToggled(enabled) => {
                 self.handle_connection_notifications_toggled(enabled)
@@ -806,6 +807,7 @@ impl NexusApp {
             queue_transfers: self.config.settings.queue_transfers,
             download_limit: self.config.settings.download_limit,
             upload_limit: self.config.settings.upload_limit,
+            max_scrollback: self.config.settings.max_scrollback,
             show_drop_overlay: self.dragging_files && self.can_accept_file_drop(),
             event_settings: &self.config.settings.event_settings,
             notifications_enabled: self.config.settings.notifications_enabled,

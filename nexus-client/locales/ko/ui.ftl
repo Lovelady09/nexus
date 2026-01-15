@@ -94,6 +94,7 @@ label-permissions = 권한:
 label-expected-fingerprint = 예상 지문:
 label-received-fingerprint = 수신된 지문:
 label-theme = 테마
+label-max-scrollback = 최대 스크롤백:
 label-chat-font-size = 글꼴 크기:
 label-show-connection-events = 연결/연결 해제 이벤트 표시
 label-show-channel-events = 입장/퇴장 이벤트 표시

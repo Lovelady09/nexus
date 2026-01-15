@@ -188,6 +188,8 @@ pub enum Message {
     CancelSettings,
     /// Settings panel: Chat font size selected from picker
     ChatFontSizeSelected(u8),
+    /// Settings panel: Max scrollback lines changed
+    MaxScrollbackChanged(usize),
     /// Settings panel: Clear avatar button pressed
     ClearAvatarPressed,
     /// Settings panel: Connection notifications checkbox toggled

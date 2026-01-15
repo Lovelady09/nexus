@@ -38,6 +38,8 @@ pub struct SettingsViewData<'a> {
     pub show_connection_events: bool,
     /// Show channel join/leave events in chat
     pub show_join_leave_events: bool,
+    /// Maximum scrollback lines per chat tab (0 = unlimited)
+    pub max_scrollback: usize,
     /// Font size for chat messages
     pub chat_font_size: u8,
     /// Timestamp display settings
@@ -104,6 +106,7 @@ pub fn settings_view<'a>(data: SettingsViewData<'a>) -> Element<'a, Message> {
     let general_content =
         general_tab_content(data.current_theme, avatar, default_avatar, data.nickname);
     let chat_content = chat_tab_content(
+        data.max_scrollback,
         data.chat_font_size,
         data.show_connection_events,
         data.show_join_leave_events,
@@ -286,6 +289,7 @@ fn general_tab_content<'a>(
 
 /// Build the Chat tab content (font size, notifications, timestamps)
 fn chat_tab_content(
+    max_scrollback: usize,
     chat_font_size: u8,
     show_connection_events: bool,
     show_join_leave_events: bool,
@@ -295,6 +299,20 @@ fn chat_tab_content(
 
     // Space between tab bar and first content
     items.push(Space::new().height(SPACER_SIZE_MEDIUM).into());
+
+    // Max scrollback input row (0 = unlimited)
+    let scrollback_label = shaped_text(t("label-max-scrollback")).size(TEXT_SIZE);
+    let scrollback_input: Element<'_, Message> = NumberInput::new(
+        &max_scrollback,
+        0..=usize::MAX,
+        Message::MaxScrollbackChanged,
+    )
+    .padding(INPUT_PADDING)
+    .into();
+    let scrollback_row = row![scrollback_label, scrollback_input]
+        .spacing(ELEMENT_SPACING)
+        .align_y(Center);
+    items.push(scrollback_row.into());
 
     // Chat font size picker row
     let font_size_label = shaped_text(t("label-chat-font-size")).size(TEXT_SIZE);

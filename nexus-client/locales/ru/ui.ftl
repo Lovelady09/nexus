@@ -94,6 +94,7 @@ label-permissions = Разрешения:
 label-expected-fingerprint = Ожидаемый отпечаток:
 label-received-fingerprint = Полученный отпечаток:
 label-theme = Тема
+label-max-scrollback = Макс. история:
 label-chat-font-size = Размер шрифта:
 label-show-connection-events = Показывать события подключения/отключения
 label-show-channel-events = Показывать события входа/выхода

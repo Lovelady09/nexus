@@ -136,6 +136,12 @@ impl NexusApp {
         Task::none()
     }
 
+    /// Handle max scrollback lines change
+    pub fn handle_max_scrollback_changed(&mut self, value: usize) -> Task<Message> {
+        self.config.settings.max_scrollback = value;
+        Task::none()
+    }
+
     // ==================== Timestamps ====================
 
     /// Handle show timestamps toggle

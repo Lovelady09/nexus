@@ -94,6 +94,7 @@ label-permissions = 権限:
 label-expected-fingerprint = 期待されるフィンガープリント:
 label-received-fingerprint = 受信したフィンガープリント:
 label-theme = テーマ
+label-max-scrollback = 最大履歴:
 label-chat-font-size = フォントサイズ:
 label-show-connection-events = 接続/切断イベントを表示
 label-show-channel-events = 参加/退出イベントを表示

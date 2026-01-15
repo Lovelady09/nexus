@@ -95,6 +95,7 @@ label-permissions = Machtigingen:
 label-expected-fingerprint = Verwachte vingerafdruk:
 label-received-fingerprint = Ontvangen vingerafdruk:
 label-theme = Thema
+label-max-scrollback = Max. scrollback:
 label-chat-font-size = Lettergrootte:
 label-show-connection-events = Verbindings-/verbrekingsgebeurtenissen weergeven
 label-show-channel-events = Deelname-/vertrekgebeurtenissen weergeven
