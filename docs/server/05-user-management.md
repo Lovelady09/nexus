@@ -85,6 +85,7 @@ Permissions control what actions users can perform. Admins have all permissions 
 | `user_create` | Create new user accounts |
 | `user_edit` | Edit user accounts |
 | `user_delete` | Delete user accounts |
+| `connection_monitor` | View all active connections |
 
 ### News Permissions
 

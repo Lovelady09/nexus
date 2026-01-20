@@ -72,6 +72,28 @@ This guide covers common issues when running the Nexus BBS server.
 2. Manually forward ports 7500 and 7501
 3. The server continues without UPnP — it's optional
 
+## Monitoring Active Connections
+
+### Connection Monitor
+
+Use the **Connection Monitor** panel to view all active connections in real-time:
+
+1. Click the Connection Monitor icon in the toolbar (requires `connection_monitor` permission)
+2. View the table showing Nickname, Username, IP Address, and connection duration
+3. Right-click any row for quick actions:
+   - **Info** — View user details
+   - **Copy** — Copy cell value
+   - **Kick** — Disconnect the user
+   - **Ban** — Block the user's IP
+
+This is useful for:
+- Identifying suspicious connections
+- Checking who is online from which IP
+- Managing shared account sessions
+- Quick moderation actions
+
+**Note:** Admins automatically have the `connection_monitor` permission.
+
 ## Authentication Issues
 
 ### "Invalid username or password"

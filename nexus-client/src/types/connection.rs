@@ -235,6 +235,8 @@ pub struct ServerConnection {
     pub user_management: UserManagementState,
     /// User info panel data (None = loading, Some(Ok) = loaded, Some(Err) = error)
     pub user_info_data: Option<Result<UserInfoDetailed, String>>,
+    /// Panel to return to when closing User Info (e.g., ConnectionMonitor)
+    pub user_info_return_panel: Option<ActivePanel>,
     /// Password change form state (Some when changing password, None otherwise)
     pub password_change_state: Option<PasswordChangeState>,
     /// Cached avatar handles for rendering (prevents flickering)
@@ -362,6 +364,7 @@ impl ServerConnection {
             broadcast_error: None,
             user_management: UserManagementState::default(),
             user_info_data: None,
+            user_info_return_panel: None,
             password_change_state: None,
             avatar_cache: HashMap::new(),
             server_info_edit: None,

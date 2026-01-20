@@ -1,7 +1,8 @@
 //! Connection Monitor panel view
 //!
 //! Displays a table of active connections with columns for nickname, username,
-//! IP address, and connection time. Supports right-click context menu for copying values.
+//! IP address, and connection time. Supports right-click context menu for Info,
+//! Copy, Kick, and Ban actions (permission-gated).
 
 use std::hash::{Hash, Hasher};
 
@@ -11,23 +12,35 @@ use iced::{Center, Element, Fill, Right, Theme, alignment};
 use iced_aw::ContextMenu;
 use nexus_common::protocol::ConnectionInfo;
 
+use super::constants::{PERMISSION_BAN_CREATE, PERMISSION_USER_INFO, PERMISSION_USER_KICK};
 use crate::i18n::t;
 use crate::i18n::t_args;
 use crate::icon;
 use crate::style::{
     CONTENT_MAX_WIDTH, CONTENT_PADDING, CONTEXT_MENU_ITEM_PADDING, CONTEXT_MENU_MIN_WIDTH,
-    CONTEXT_MENU_PADDING, ICON_BUTTON_PADDING, NO_SPACING, SCROLLBAR_PADDING, SEPARATOR_HEIGHT,
-    SIDEBAR_ACTION_ICON_SIZE, SORT_ICON_LEFT_MARGIN, SORT_ICON_RIGHT_MARGIN, SORT_ICON_SIZE,
-    SPACER_SIZE_LARGE, SPACER_SIZE_MEDIUM, SPACER_SIZE_SMALL, TEXT_SIZE, TITLE_SIZE,
-    TOOLTIP_BACKGROUND_PADDING, TOOLTIP_GAP, TOOLTIP_PADDING, TOOLTIP_TEXT_SIZE, chat,
-    content_background_style, context_menu_button_style, context_menu_container_style,
-    error_text_style, muted_text_style, shaped_text, shaped_text_wrapped, tooltip_container_style,
-    transparent_icon_button_style,
+    CONTEXT_MENU_PADDING, CONTEXT_MENU_SEPARATOR_HEIGHT, CONTEXT_MENU_SEPARATOR_MARGIN,
+    ICON_BUTTON_PADDING, NO_SPACING, SCROLLBAR_PADDING, SEPARATOR_HEIGHT, SIDEBAR_ACTION_ICON_SIZE,
+    SORT_ICON_LEFT_MARGIN, SORT_ICON_RIGHT_MARGIN, SORT_ICON_SIZE, SPACER_SIZE_LARGE,
+    SPACER_SIZE_MEDIUM, SPACER_SIZE_SMALL, TEXT_SIZE, TITLE_SIZE, TOOLTIP_BACKGROUND_PADDING,
+    TOOLTIP_GAP, TOOLTIP_PADDING, TOOLTIP_TEXT_SIZE, chat, content_background_style,
+    context_menu_button_style, context_menu_container_style, context_menu_item_danger_style,
+    error_text_style, muted_text_style, separator_style, shaped_text, shaped_text_wrapped,
+    tooltip_container_style, transparent_icon_button_style,
 };
-use crate::types::{ConnectionMonitorSortColumn, ConnectionMonitorState, Message};
+use crate::types::{
+    ConnectionMonitorSortColumn, ConnectionMonitorState, Message, ServerConnection,
+};
 
 // Column width for fixed-size connected time column
 const CONNECTED_COLUMN_WIDTH: f32 = 80.0;
+
+/// Permissions for connection monitor context menu
+#[derive(Clone, Copy, Hash)]
+struct ConnectionMonitorPermissions {
+    user_info: bool,
+    user_kick: bool,
+    ban_create: bool,
+}
 
 /// Dependencies for lazy table rendering
 #[derive(Clone)]
@@ -37,6 +50,7 @@ struct ConnectionTableDeps {
     sort_ascending: bool,
     admin_color: iced::Color,
     shared_color: iced::Color,
+    permissions: ConnectionMonitorPermissions,
 }
 
 impl Hash for ConnectionTableDeps {
@@ -52,6 +66,7 @@ impl Hash for ConnectionTableDeps {
         }
         self.sort_column.hash(state);
         self.sort_ascending.hash(state);
+        self.permissions.hash(state);
         // Colors don't need hashing - they're derived from theme which doesn't change per-render
     }
 }
@@ -76,14 +91,100 @@ fn format_connected_time(login_time: i64) -> String {
     }
 }
 
-/// Build a context menu with a single copy action for a value
-fn build_copy_menu(value: String) -> Element<'static, Message> {
-    container(
+/// Build a context menu with Info, Copy, Kick, Ban actions
+///
+/// Menu structure:
+/// - Info (if user_info permission, hidden for self)
+/// - ─── separator ─── (if Info visible)
+/// - Copy (always)
+/// - ─── separator ─── (if Kick or Ban visible)
+/// - Kick (if user_kick permission, hidden for admin rows)
+/// - Ban (if ban_create permission, hidden for admin rows)
+fn build_context_menu(
+    nickname: String,
+    value: String,
+    is_admin_row: bool,
+    permissions: ConnectionMonitorPermissions,
+) -> Element<'static, Message> {
+    let mut menu_items: Vec<Element<'_, Message>> = vec![];
+
+    // Info (if permission) - available for all users
+    let show_info = permissions.user_info;
+    if show_info {
+        let nickname_for_info = nickname.clone();
+        menu_items.push(
+            button(shaped_text(t("menu-info")).size(TEXT_SIZE))
+                .padding(CONTEXT_MENU_ITEM_PADDING)
+                .width(Fill)
+                .style(context_menu_button_style)
+                .on_press(Message::ConnectionMonitorInfo(nickname_for_info))
+                .into(),
+        );
+    }
+
+    // First separator (after Info, before Copy)
+    if show_info {
+        menu_items.push(
+            container(Space::new())
+                .width(Fill)
+                .height(CONTEXT_MENU_SEPARATOR_HEIGHT)
+                .style(separator_style)
+                .into(),
+        );
+    }
+
+    // Copy (always available)
+    menu_items.push(
         button(shaped_text(t("menu-copy")).size(TEXT_SIZE))
             .padding(CONTEXT_MENU_ITEM_PADDING)
             .width(Fill)
             .style(context_menu_button_style)
-            .on_press(Message::ConnectionMonitorCopy(value)),
+            .on_press(Message::ConnectionMonitorCopy(value))
+            .into(),
+    );
+
+    // Kick/Ban only shown for non-admin rows
+    let show_kick = permissions.user_kick && !is_admin_row;
+    let show_ban = permissions.ban_create && !is_admin_row;
+
+    // Second separator (after Copy, before Kick/Ban)
+    if show_kick || show_ban {
+        menu_items.push(
+            container(Space::new())
+                .width(Fill)
+                .height(CONTEXT_MENU_SEPARATOR_HEIGHT)
+                .style(separator_style)
+                .into(),
+        );
+    }
+
+    // Kick (if permission and not admin row) - danger style
+    if show_kick {
+        let nickname_for_kick = nickname.clone();
+        menu_items.push(
+            button(shaped_text(t("menu-kick")).size(TEXT_SIZE))
+                .padding(CONTEXT_MENU_ITEM_PADDING)
+                .width(Fill)
+                .style(context_menu_item_danger_style)
+                .on_press(Message::ConnectionMonitorKick(nickname_for_kick))
+                .into(),
+        );
+    }
+
+    // Ban (if permission and not admin row) - danger style
+    if show_ban {
+        menu_items.push(
+            button(shaped_text(t("menu-ban")).size(TEXT_SIZE))
+                .padding(CONTEXT_MENU_ITEM_PADDING)
+                .width(Fill)
+                .style(context_menu_item_danger_style)
+                .on_press(Message::ConnectionMonitorBan(nickname))
+                .into(),
+        );
+    }
+
+    container(
+        iced::widget::Column::with_children(menu_items).spacing(CONTEXT_MENU_SEPARATOR_MARGIN),
     )
     .width(CONTEXT_MENU_MIN_WIDTH)
     .padding(CONTEXT_MENU_PADDING)
@@ -93,7 +194,9 @@ fn build_copy_menu(value: String) -> Element<'static, Message> {
 
 /// Build the lazy connection table using table widget
 fn lazy_connection_table(deps: ConnectionTableDeps) -> Element<'static, Message> {
-    lazy(deps, |deps| {
+    let permissions = deps.permissions;
+
+    lazy(deps, move |deps| {
         // Nickname column header
         let nickname_header_content: Element<'static, Message> =
             if deps.sort_column == ConnectionMonitorSortColumn::Nickname {
@@ -133,6 +236,8 @@ fn lazy_connection_table(deps: ConnectionTableDeps) -> Element<'static, Message>
         let shared_color = deps.shared_color;
         let nickname_column = table::column(nickname_header, move |conn: ConnectionInfo| {
             let nickname_for_menu = conn.nickname.clone();
+            let nickname_for_value = conn.nickname.clone();
+            let is_admin_row = conn.is_admin;
 
             // Apply color based on user type: admin (red), shared (muted), regular (default)
             let content: Element<'static, Message> = if conn.is_admin {
@@ -154,8 +259,15 @@ fn lazy_connection_table(deps: ConnectionTableDeps) -> Element<'static, Message>
                     .into()
             };
 
-            // Wrap in context menu
-            ContextMenu::new(content, move || build_copy_menu(nickname_for_menu.clone()))
+            // Wrap in context menu with full actions
+            ContextMenu::new(content, move || {
+                build_context_menu(
+                    nickname_for_menu.clone(),
+                    nickname_for_value.clone(),
+                    is_admin_row,
+                    permissions,
+                )
+            })
         })
         .width(Fill);
 
@@ -195,7 +307,9 @@ fn lazy_connection_table(deps: ConnectionTableDeps) -> Element<'static, Message>
 
         // Username column - with admin/shared coloring
         let username_column = table::column(username_header, move |conn: ConnectionInfo| {
-            let username_for_menu = conn.username.clone();
+            let nickname_for_menu = conn.nickname.clone();
+            let username_for_value = conn.username.clone();
+            let is_admin_row = conn.is_admin;
 
             // Apply color based on user type: admin (red), shared (muted), regular (muted)
             let content: Element<'static, Message> = if conn.is_admin {
@@ -217,7 +331,14 @@ fn lazy_connection_table(deps: ConnectionTableDeps) -> Element<'static, Message>
                     .into()
             };
 
-            ContextMenu::new(content, move || build_copy_menu(username_for_menu.clone()))
+            ContextMenu::new(content, move || {
+                build_context_menu(
+                    nickname_for_menu.clone(),
+                    username_for_value.clone(),
+                    is_admin_row,
+                    permissions,
+                )
+            })
         })
         .width(Fill);
 
@@ -256,15 +377,25 @@ fn lazy_connection_table(deps: ConnectionTableDeps) -> Element<'static, Message>
             .into();
 
         // IP Address column
-        let ip_column = table::column(ip_header, |conn: ConnectionInfo| {
-            let ip_for_menu = conn.ip.clone();
+        let ip_column = table::column(ip_header, move |conn: ConnectionInfo| {
+            let nickname_for_menu = conn.nickname.clone();
+            let ip_for_value = conn.ip.clone();
+            let is_admin_row = conn.is_admin;
+
             let content: Element<'static, Message> = shaped_text(conn.ip)
                 .size(TEXT_SIZE)
                 .style(muted_text_style)
                 .wrapping(Wrapping::WordOrGlyph)
                 .into();
 
-            ContextMenu::new(content, move || build_copy_menu(ip_for_menu.clone()))
+            ContextMenu::new(content, move || {
+                build_context_menu(
+                    nickname_for_menu.clone(),
+                    ip_for_value.clone(),
+                    is_admin_row,
+                    permissions,
+                )
+            })
         })
         .width(Fill);
 
@@ -352,10 +483,18 @@ fn sort_connections(
 }
 
 /// Render the Connection Monitor panel
-pub fn connection_monitor_view(
-    state: &ConnectionMonitorState,
+pub fn connection_monitor_view<'a>(
+    conn: &'a ServerConnection,
+    state: &'a ConnectionMonitorState,
     theme: Theme,
-) -> Element<'_, Message> {
+) -> Element<'a, Message> {
+    // Build permissions struct for context menu
+    let permissions = ConnectionMonitorPermissions {
+        user_info: conn.has_permission(PERMISSION_USER_INFO),
+        user_kick: conn.has_permission(PERMISSION_USER_KICK),
+        ban_create: conn.has_permission(PERMISSION_BAN_CREATE),
+    };
+
     // Refresh button with tooltip
     let refresh_btn: Element<'_, Message> = {
         let refresh_icon = container(icon::refresh().size(SIDEBAR_ACTION_ICON_SIZE))
@@ -464,6 +603,7 @@ pub fn connection_monitor_view(
                     sort_ascending: state.sort_ascending,
                     admin_color: chat::admin(&theme),
                     shared_color: chat::shared(&theme),
+                    permissions,
                 };
 
                 lazy_connection_table(deps)

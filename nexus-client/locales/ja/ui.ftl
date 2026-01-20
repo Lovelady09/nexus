@@ -263,7 +263,10 @@ col-nickname = ニックネーム
 col-username = ユーザー名
 col-ip-address = IPアドレス
 col-time = 時間
+menu-info = 情報
 menu-copy = コピー
+menu-kick = キック
+menu-ban = 禁止
 connection-monitor-loading = 接続を読み込み中…
 connection-monitor-no-connections = 接続なし
 

@@ -85,8 +85,17 @@ impl NexusApp {
 
     // ==================== User Info ====================
 
-    /// Close User Info panel
+    /// Close User Info panel and return to previous panel if set
     pub fn handle_close_user_info(&mut self) -> Task<Message> {
+        if let Some(conn_id) = self.active_connection
+            && let Some(conn) = self.connections.get_mut(&conn_id)
+        {
+            // Check if we should return to a different panel (e.g., ConnectionMonitor)
+            if let Some(return_panel) = conn.user_info_return_panel.take() {
+                conn.active_panel = return_panel;
+                return Task::none();
+            }
+        }
         self.handle_show_chat_view()
     }
 

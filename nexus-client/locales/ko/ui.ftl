@@ -263,7 +263,10 @@ col-nickname = 닉네임
 col-username = 사용자명
 col-ip-address = IP 주소
 col-time = 시간
+menu-info = 정보
 menu-copy = 복사
+menu-kick = 추방
+menu-ban = 차단
 connection-monitor-loading = 연결 로드 중…
 connection-monitor-no-connections = 연결 없음
 

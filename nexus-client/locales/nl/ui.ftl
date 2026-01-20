@@ -262,9 +262,12 @@ panel-connection-monitor = Verbindingsmonitor
 panel-active-connections = Actieve Verbindingen: { $count }
 col-nickname = Bijnaam
 col-username = Gebruikersnaam
-col-ip-address = IP-Adres
+col-ip-address = IP-adres
 col-time = Tijd
+menu-info = Info
 menu-copy = Kopiëren
+menu-kick = Verwijderen
+menu-ban = Blokkeren
 connection-monitor-loading = Verbindingen laden…
 connection-monitor-no-connections = Geen verbindingen
 

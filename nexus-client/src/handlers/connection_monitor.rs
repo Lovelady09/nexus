@@ -5,7 +5,11 @@ use nexus_common::protocol::ClientMessage;
 
 use crate::NexusApp;
 use crate::i18n::t;
-use crate::types::{ActivePanel, ConnectionMonitorSortColumn, Message};
+use crate::types::{
+    ActivePanel, ConnectionMonitorSortColumn, DisconnectAction, DisconnectDialogState, Message,
+    PendingRequests, ResponseRouting,
+};
+use crate::views::constants::{PERMISSION_BAN_CREATE, PERMISSION_USER_INFO, PERMISSION_USER_KICK};
 
 impl NexusApp {
     /// Toggle the Connection Monitor panel
@@ -93,6 +97,75 @@ impl NexusApp {
     /// Copy a value to the clipboard
     pub fn handle_connection_monitor_copy(&mut self, value: String) -> Task<Message> {
         iced::clipboard::write(value)
+    }
+
+    /// Open User Info panel for the selected user
+    pub fn handle_connection_monitor_info(&mut self, nickname: String) -> Task<Message> {
+        if let Some(conn_id) = self.active_connection
+            && let Some(conn) = self.connections.get_mut(&conn_id)
+        {
+            // Check permission (admins always have access)
+            if !conn.has_permission(PERMISSION_USER_INFO) {
+                return Task::none();
+            }
+
+            // Clear previous data and password change state, set return panel, then open
+            conn.user_info_data = None;
+            conn.password_change_state = None;
+            conn.user_info_return_panel = Some(ActivePanel::ConnectionMonitor);
+            conn.active_panel = ActivePanel::UserInfo;
+
+            // Send UserInfo request to server and track it
+            match conn.send(ClientMessage::UserInfo {
+                nickname: nickname.clone(),
+            }) {
+                Ok(message_id) => {
+                    conn.pending_requests
+                        .track(message_id, ResponseRouting::PopulateUserInfoPanel(nickname));
+                }
+                Err(e) => {
+                    let error_msg = format!("{}: {}", t("err-send-failed"), e);
+                    conn.user_info_data = Some(Err(error_msg));
+                }
+            }
+        }
+        Task::none()
+    }
+
+    /// Open Disconnect Dialog with Kick pre-selected
+    pub fn handle_connection_monitor_kick(&mut self, nickname: String) -> Task<Message> {
+        if let Some(conn_id) = self.active_connection
+            && let Some(conn) = self.connections.get_mut(&conn_id)
+        {
+            // Check permission
+            if !conn.has_permission(PERMISSION_USER_KICK) {
+                return Task::none();
+            }
+
+            conn.disconnect_dialog = Some(DisconnectDialogState::with_action(
+                nickname,
+                DisconnectAction::Kick,
+            ));
+        }
+        Task::none()
+    }
+
+    /// Open Disconnect Dialog with Ban pre-selected
+    pub fn handle_connection_monitor_ban(&mut self, nickname: String) -> Task<Message> {
+        if let Some(conn_id) = self.active_connection
+            && let Some(conn) = self.connections.get_mut(&conn_id)
+        {
+            // Check permission
+            if !conn.has_permission(PERMISSION_BAN_CREATE) {
+                return Task::none();
+            }
+
+            conn.disconnect_dialog = Some(DisconnectDialogState::with_action(
+                nickname,
+                DisconnectAction::Ban,
+            ));
+        }
+        Task::none()
     }
 
     /// Handle sort column change

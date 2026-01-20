@@ -263,7 +263,10 @@ col-nickname = Alcunha
 col-username = Utilizador
 col-ip-address = Endereço IP
 col-time = Tempo
+menu-info = Info
 menu-copy = Copiar
+menu-kick = Expulsar
+menu-ban = Banir
 connection-monitor-loading = A carregar ligações…
 connection-monitor-no-connections = Sem ligações
 

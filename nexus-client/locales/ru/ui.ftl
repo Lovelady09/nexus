@@ -263,7 +263,10 @@ col-nickname = Псевдоним
 col-username = Пользователь
 col-ip-address = IP-Адрес
 col-time = Время
+menu-info = Информация
 menu-copy = Копировать
+menu-kick = Выгнать
+menu-ban = Заблокировать
 connection-monitor-loading = Загрузка подключений…
 connection-monitor-no-connections = Нет подключений
 

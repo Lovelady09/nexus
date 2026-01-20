@@ -504,6 +504,13 @@ impl NexusApp {
             } => {
                 self.handle_connection_monitor_response(connection_id, success, error, connections)
             }
+            Message::ConnectionMonitorInfo(nickname) => {
+                self.handle_connection_monitor_info(nickname)
+            }
+            Message::ConnectionMonitorKick(nickname) => {
+                self.handle_connection_monitor_kick(nickname)
+            }
+            Message::ConnectionMonitorBan(nickname) => self.handle_connection_monitor_ban(nickname),
             Message::ConnectionMonitorCopy(value) => self.handle_connection_monitor_copy(value),
             Message::ConnectionMonitorSortBy(column) => {
                 self.handle_connection_monitor_sort_by(column)

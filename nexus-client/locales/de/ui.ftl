@@ -264,6 +264,9 @@ col-username = Benutzername
 col-ip-address = IP-Adresse
 col-time = Zeit
 menu-copy = Kopieren
+menu-info = Info
+menu-kick = Rauswerfen
+menu-ban = Sperren
 connection-monitor-loading = Verbindungen werden geladen…
 connection-monitor-no-connections = Keine Verbindungen
 

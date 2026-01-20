@@ -808,7 +808,7 @@ fn server_content_view<'a>(ctx: ServerContentContext<'a>) -> Element<'a, Message
             .into(),
         ActivePanel::ConnectionMonitor => stack![
             chat,
-            connection_monitor_view(&ctx.conn.connection_monitor, ctx.theme.clone())
+            connection_monitor_view(ctx.conn, &ctx.conn.connection_monitor, ctx.theme.clone())
         ]
         .width(Fill)
         .height(Fill)

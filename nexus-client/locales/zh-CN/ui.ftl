@@ -263,7 +263,10 @@ col-nickname = 昵称
 col-username = 用户名
 col-ip-address = IP地址
 col-time = 时间
+menu-info = 信息
 menu-copy = 复制
+menu-kick = 踢出
+menu-ban = 封禁
 connection-monitor-loading = 正在加载连接…
 connection-monitor-no-connections = 无连接
 

@@ -112,6 +112,17 @@ impl DisconnectDialogState {
             error: None,
         }
     }
+
+    /// Create a new disconnect dialog with a specific action pre-selected
+    pub fn with_action(nickname: String, action: DisconnectAction) -> Self {
+        Self {
+            nickname,
+            action,
+            duration: BanDuration::OneHour,
+            reason: String::new(),
+            error: None,
+        }
+    }
 }
 
 // =============================================================================

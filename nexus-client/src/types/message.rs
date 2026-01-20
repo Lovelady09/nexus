@@ -261,9 +261,15 @@ pub enum Message {
         error: Option<String>,
         connections: Option<Vec<nexus_common::protocol::ConnectionInfo>>,
     },
-    /// Connection Monitor panel: Copy value to clipboard
+    /// Connection monitor: Show user info for the selected user
+    ConnectionMonitorInfo(String),
+    /// Connection monitor: Kick the selected user (opens disconnect dialog with Kick pre-selected)
+    ConnectionMonitorKick(String),
+    /// Connection monitor: Ban the selected user (opens disconnect dialog with Ban pre-selected)
+    ConnectionMonitorBan(String),
+    /// Connection monitor: Copy value to clipboard
     ConnectionMonitorCopy(String),
-    /// Connection Monitor panel: Sort by column
+    /// Connection monitor: Sort by column
     ConnectionMonitorSortBy(crate::types::ConnectionMonitorSortColumn),
     /// Toolbar: Show Server Info panel
     ShowServerInfo,
