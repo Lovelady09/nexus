@@ -11,7 +11,7 @@ mod chat_list;
 mod chat_secret;
 mod chat_topic_update;
 mod connection_monitor;
-mod duration;
+pub(crate) mod duration;
 pub mod errors;
 mod file_copy;
 mod file_create_dir;
@@ -113,6 +113,7 @@ use crate::connection_tracker::ConnectionTracker;
 use crate::db::Database;
 use crate::files::FileIndex;
 use crate::ip_rule_cache::IpRuleCache;
+use crate::transfers::TransferRegistry;
 use crate::users::UserManager;
 
 /// Context passed to all handlers with shared resources
@@ -140,6 +141,8 @@ pub struct HandlerContext<'a, W> {
     pub file_index: Arc<FileIndex>,
     /// Channel manager for multi-channel chat
     pub channel_manager: &'a ChannelManager,
+    /// Transfer registry for disconnecting active transfers on ban
+    pub transfer_registry: Arc<TransferRegistry>,
 }
 
 impl<'a, W: AsyncWrite + Unpin> HandlerContext<'a, W> {

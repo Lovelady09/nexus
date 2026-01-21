@@ -24,6 +24,8 @@ mod auth;
 mod download;
 mod hash;
 mod helpers;
+pub mod registry;
+mod transfer;
 mod types;
 mod upload;
 
@@ -41,11 +43,13 @@ use crate::handlers::err_file_area_not_configured;
 use auth::{handle_transfer_handshake, handle_transfer_login, handle_transfer_request};
 use download::handle_download;
 use helpers::send_error_and_close;
-use types::TransferContext;
+use registry::TransferDirection;
+use transfer::Transfer;
 use types::TransferRequest;
 use upload::handle_upload;
 
 // Re-export public types
+pub use registry::TransferRegistry;
 pub use types::TransferParams;
 
 /// Handle a transfer connection (file downloads and uploads on port 7501)
@@ -79,6 +83,7 @@ where
         debug,
         file_root,
         file_index,
+        transfer_registry,
     } = params;
 
     if debug {
@@ -142,21 +147,65 @@ where
         }
     };
 
-    // Create transfer context
-    let mut ctx = TransferContext {
-        frame_reader: &mut frame_reader,
-        frame_writer: &mut frame_writer,
-        user: &user,
-        file_root,
-        locale: &locale,
-        peer_addr,
-        debug,
-        file_index: &file_index,
+    // Determine transfer direction, path, and size for registry metadata
+    let (direction, path, total_size) = match &request {
+        TransferRequest::Download(p) => {
+            // For downloads, size is unknown until path resolution (set to 0, updated later)
+            (TransferDirection::Download, p.path.clone(), 0)
+        }
+        TransferRequest::Upload(p) => (
+            TransferDirection::Upload,
+            p.destination.clone(),
+            p.total_size,
+        ),
     };
 
+    // Register with transfer registry for ban signal handling
+    // We do this after authentication so we have the user's locale for error messages
+    let (transfer_id, info, ban_rx) = transfer_registry.register(
+        peer_addr,
+        user.nickname.clone(),
+        user.username.clone(),
+        user.is_admin,
+        user.is_shared,
+        direction,
+        path,
+        total_size,
+    );
+
+    // Create Transfer struct that owns the connection and handles ban signals
+    // The Transfer is automatically unregistered when dropped via RAII guard
+    let mut transfer = Transfer::new(
+        frame_reader,
+        frame_writer,
+        ban_rx,
+        info,
+        user,
+        locale,
+        debug,
+        file_root,
+        &file_index,
+        &transfer_registry,
+        transfer_id,
+    );
+
     // Dispatch to appropriate handler
-    match request {
-        TransferRequest::Download(params) => handle_download(&mut ctx, params).await,
-        TransferRequest::Upload(params) => handle_upload(&mut ctx, params).await,
+    let result = match request {
+        TransferRequest::Download(params) => handle_download(&mut transfer, params).await,
+        TransferRequest::Upload(params) => handle_upload(&mut transfer, params).await,
+    };
+
+    if debug {
+        let elapsed = transfer.elapsed();
+        let bytes = transfer.bytes_transferred();
+        eprintln!(
+            "Transfer {} complete: {} bytes in {:.2}s from {}",
+            transfer.id(),
+            bytes,
+            elapsed.as_secs_f64(),
+            peer_addr
+        );
     }
+
+    result
 }

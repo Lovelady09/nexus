@@ -7,12 +7,10 @@ use std::net::SocketAddr;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
-
-use nexus_common::framing::{FrameReader, FrameWriter};
-
 use crate::db::{Database, Permission};
 use crate::files::FileIndex;
+
+use super::registry::TransferRegistry;
 
 /// Parameters for handling a transfer connection
 pub struct TransferParams {
@@ -21,6 +19,8 @@ pub struct TransferParams {
     pub debug: bool,
     pub file_root: Option<&'static Path>,
     pub file_index: Arc<FileIndex>,
+    /// Transfer registry for ban signal handling
+    pub transfer_registry: Arc<TransferRegistry>,
 }
 
 /// Information about a file to transfer (for downloads)
@@ -35,8 +35,10 @@ pub(crate) struct FileInfo {
 
 /// Authenticated user information (minimal for transfer port)
 pub(crate) struct AuthenticatedUser {
+    pub nickname: String,
     pub username: String,
     pub is_admin: bool,
+    pub is_shared: bool,
     pub permissions: HashSet<Permission>,
 }
 
@@ -58,22 +60,6 @@ pub(crate) struct UploadParams {
     pub file_count: u64,
     pub total_size: u64,
     pub root: bool,
-}
-
-/// Context for handling a transfer (download or upload)
-pub(crate) struct TransferContext<'a, R, W>
-where
-    R: AsyncReadExt + Unpin,
-    W: AsyncWriteExt + Unpin,
-{
-    pub frame_reader: &'a mut FrameReader<R>,
-    pub frame_writer: &'a mut FrameWriter<W>,
-    pub user: &'a AuthenticatedUser,
-    pub file_root: &'a Path,
-    pub locale: &'a str,
-    pub peer_addr: SocketAddr,
-    pub debug: bool,
-    pub file_index: &'a Arc<FileIndex>,
 }
 
 /// Parameters for receiving a file upload

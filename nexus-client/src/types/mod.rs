@@ -19,10 +19,11 @@ pub use connection::{
 pub use display::{ChatMessage, ChatTab, MessageType, ScrollState, UserInfo};
 pub use form::{
     BanDuration, ClipboardItem, ClipboardOperation, ConnectionFormState,
-    ConnectionMonitorSortColumn, ConnectionMonitorState, DisconnectAction, DisconnectDialogState,
-    FileSortColumn, FileTab, FilesManagementState, NewsManagementMode, NewsManagementState,
-    PasswordChangeState, PendingOverwrite, ServerInfoEditState, ServerInfoParams, ServerInfoTab,
-    SettingsFormState, SettingsTab, TabId, UserManagementMode, UserManagementState,
+    ConnectionMonitorSortColumn, ConnectionMonitorState, ConnectionMonitorTab, DisconnectAction,
+    DisconnectDialogState, FileSortColumn, FileTab, FilesManagementState, NewsManagementMode,
+    NewsManagementState, PasswordChangeState, PendingOverwrite, ServerInfoEditState,
+    ServerInfoParams, ServerInfoTab, SettingsFormState, SettingsTab, TabId, TransferSortColumn,
+    UserManagementMode, UserManagementState,
 };
 pub use message::Message;
 pub use nexus_common::protocol::ServerMessage;

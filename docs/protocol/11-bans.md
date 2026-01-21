@@ -273,6 +273,18 @@ When a ban is created, affected sessions are immediately disconnected:
 - For CIDR ranges: disconnect all sessions whose IP falls within the range
 - Disconnect message uses the **banned user's locale**
 
+### File Transfer Termination
+
+Active file transfers (port 7501) are also terminated when a ban is created:
+
+- The server tracks all active transfers by IP address via `TransferRegistry`
+- When a ban is created, matching transfers receive a ban signal via oneshot channel
+- Streaming methods check for bans between 64KB chunks
+- When banned, the connection is closed immediately (no error message - client receives ban reason on BBS connection)
+- Trusted IPs are skipped (trust bypasses ban)
+
+This ensures that banned users cannot continue ongoing downloads or uploads.
+
 ## Admin Protection
 
 - Cannot ban yourself → `err-ban-self`

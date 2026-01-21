@@ -467,11 +467,13 @@ impl NexusApp {
                 success,
                 error,
                 connections,
+                transfers,
             } => Task::done(Message::ConnectionMonitorResponse {
                 connection_id,
                 success,
                 error,
                 connections,
+                transfers,
             }),
 
             ServerMessage::FileSearchResponse {

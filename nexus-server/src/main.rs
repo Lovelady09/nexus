@@ -36,7 +36,7 @@ use connection_tracker::ConnectionTracker;
 use constants::*;
 use files::FileIndex;
 use ip_rule_cache::IpRuleCache;
-use transfers::TransferParams;
+use transfers::{TransferParams, TransferRegistry};
 use users::UserManager;
 
 #[tokio::main]
@@ -172,6 +172,9 @@ async fn main() {
     // Trigger initial index build in background
     file_index.trigger_reindex();
 
+    // Create transfer registry for tracking active transfers (enables ban disconnection)
+    let transfer_registry = Arc::new(TransferRegistry::new());
+
     // Create channel manager for multi-channel chat
     let channel_manager = ChannelManager::new(database.channels.clone(), user_manager.clone());
 
@@ -298,6 +301,7 @@ async fn main() {
                             ip_rule_cache: ip_rule_cache.clone(),
                             file_index: file_index.clone(),
                             channel_manager: channel_manager.clone(),
+                            transfer_registry: transfer_registry.clone(),
                         };
                         let tls_acceptor = tls_acceptor.clone();
 
@@ -375,6 +379,7 @@ async fn main() {
                             debug,
                             file_root: Some(file_root),
                             file_index: file_index.clone(),
+                            transfer_registry: transfer_registry.clone(),
                         };
                         let tls_acceptor = tls_acceptor.clone();
 
@@ -460,6 +465,7 @@ async fn main() {
                             ip_rule_cache: ip_rule_cache.clone(),
                             file_index: file_index.clone(),
                             channel_manager: channel_manager.clone(),
+                            transfer_registry: transfer_registry.clone(),
                         };
                         let tls_acceptor = tls_acceptor.clone();
                         let ip_rule_cache_for_check = ip_rule_cache.clone();
@@ -531,6 +537,7 @@ async fn main() {
                             debug,
                             file_root: Some(file_root),
                             file_index: file_index.clone(),
+                            transfer_registry: transfer_registry.clone(),
                         };
                         let tls_acceptor = tls_acceptor.clone();
                         let ip_rule_cache_for_check = ip_rule_cache.clone();

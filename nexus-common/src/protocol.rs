@@ -359,12 +359,41 @@ pub struct ConnectionInfo {
     pub username: String,
     /// Remote IP address
     pub ip: String,
+    /// Remote port
+    pub port: u16,
     /// Unix timestamp when session logged in
     pub login_time: i64,
     /// Whether the user is an admin
     pub is_admin: bool,
     /// Whether this is a shared account
     pub is_shared: bool,
+}
+
+/// Information about an active file transfer (used in ConnectionMonitorResponse)
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TransferInfo {
+    /// Display name (always populated; equals username for regular accounts)
+    pub nickname: String,
+    /// Account username
+    pub username: String,
+    /// Remote IP address
+    pub ip: String,
+    /// Remote port (distinguishes WebSocket 7503 vs TCP 7501)
+    pub port: u16,
+    /// Whether the user is an admin
+    pub is_admin: bool,
+    /// Whether this is a shared account
+    pub is_shared: bool,
+    /// Transfer direction ("download" or "upload")
+    pub direction: String,
+    /// Path being transferred
+    pub path: String,
+    /// Total size in bytes (0 if unknown)
+    pub total_size: u64,
+    /// Bytes transferred so far
+    pub bytes_transferred: u64,
+    /// Unix timestamp when transfer started
+    pub started_at: i64,
 }
 
 /// Server response messages
@@ -856,6 +885,8 @@ pub enum ServerMessage {
         error: Option<String>,
         #[serde(skip_serializing_if = "Option::is_none")]
         connections: Option<Vec<ConnectionInfo>>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        transfers: Option<Vec<TransferInfo>>,
     },
     /// Response to FileSearch request
     FileSearchResponse {

@@ -1,38 +1,41 @@
 //! Connection Monitor panel view
 //!
-//! Displays a table of active connections with columns for nickname, username,
-//! IP address, and connection time. Supports right-click context menu for Info,
-//! Copy, Kick, and Ban actions (permission-gated).
+//! Displays tabs for active connections and file transfers.
+//! Connections tab shows nickname, username, IP address, and connection time.
+//! Transfers tab shows user, direction, path, progress, and time.
+//! Supports right-click context menu for actions (permission-gated).
 
 use std::hash::{Hash, Hasher};
 
 use iced::widget::text::Wrapping;
 use iced::widget::{Space, button, column, container, lazy, row, scrollable, table, tooltip};
 use iced::{Center, Element, Fill, Right, Theme, alignment};
-use iced_aw::ContextMenu;
-use nexus_common::protocol::ConnectionInfo;
+use iced_aw::{ContextMenu, TabLabel, Tabs};
+use nexus_common::protocol::{ConnectionInfo, TransferInfo};
 
 use super::constants::{PERMISSION_BAN_CREATE, PERMISSION_USER_INFO, PERMISSION_USER_KICK};
 use crate::i18n::t;
-use crate::i18n::t_args;
 use crate::icon;
 use crate::style::{
     CONTENT_MAX_WIDTH, CONTENT_PADDING, CONTEXT_MENU_ITEM_PADDING, CONTEXT_MENU_MIN_WIDTH,
     CONTEXT_MENU_PADDING, CONTEXT_MENU_SEPARATOR_HEIGHT, CONTEXT_MENU_SEPARATOR_MARGIN,
     ICON_BUTTON_PADDING, NO_SPACING, SCROLLBAR_PADDING, SEPARATOR_HEIGHT, SIDEBAR_ACTION_ICON_SIZE,
     SORT_ICON_LEFT_MARGIN, SORT_ICON_RIGHT_MARGIN, SORT_ICON_SIZE, SPACER_SIZE_LARGE,
-    SPACER_SIZE_MEDIUM, SPACER_SIZE_SMALL, TEXT_SIZE, TITLE_SIZE, TOOLTIP_BACKGROUND_PADDING,
-    TOOLTIP_GAP, TOOLTIP_PADDING, TOOLTIP_TEXT_SIZE, chat, content_background_style,
-    context_menu_button_style, context_menu_container_style, context_menu_item_danger_style,
-    error_text_style, muted_text_style, separator_style, shaped_text, shaped_text_wrapped,
-    tooltip_container_style, transparent_icon_button_style,
+    SPACER_SIZE_MEDIUM, SPACER_SIZE_SMALL, TAB_LABEL_PADDING, TEXT_SIZE, TITLE_SIZE,
+    TOOLTIP_BACKGROUND_PADDING, TOOLTIP_GAP, TOOLTIP_PADDING, TOOLTIP_TEXT_SIZE, chat,
+    content_background_style, context_menu_button_style, context_menu_container_style,
+    context_menu_item_danger_style, error_text_style, muted_text_style, separator_style,
+    shaped_text, shaped_text_wrapped, tooltip_container_style, transparent_icon_button_style,
 };
 use crate::types::{
-    ConnectionMonitorSortColumn, ConnectionMonitorState, Message, ServerConnection,
+    ConnectionMonitorSortColumn, ConnectionMonitorState, ConnectionMonitorTab, Message,
+    ServerConnection, TransferSortColumn,
 };
 
-// Column width for fixed-size connected time column
-const CONNECTED_COLUMN_WIDTH: f32 = 80.0;
+// Column width for fixed-size time column (connections table)
+const TIME_COLUMN_WIDTH: f32 = 80.0;
+// Column width for direction column (transfers table - icon header and icon content)
+const DIRECTION_COLUMN_WIDTH: f32 = 30.0;
 
 /// Permissions for connection monitor context menu
 #[derive(Clone, Copy, Hash)]
@@ -42,7 +45,7 @@ struct ConnectionMonitorPermissions {
     ban_create: bool,
 }
 
-/// Dependencies for lazy table rendering
+/// Dependencies for lazy connection table rendering
 #[derive(Clone)]
 struct ConnectionTableDeps {
     connections: Vec<ConnectionInfo>,
@@ -71,14 +74,45 @@ impl Hash for ConnectionTableDeps {
     }
 }
 
+/// Dependencies for lazy transfer table rendering
+#[derive(Clone)]
+struct TransferTableDeps {
+    transfers: Vec<TransferInfo>,
+    sort_column: TransferSortColumn,
+    sort_ascending: bool,
+    admin_color: iced::Color,
+    shared_color: iced::Color,
+}
+
+impl Hash for TransferTableDeps {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.transfers.len().hash(state);
+        for transfer in &self.transfers {
+            transfer.nickname.hash(state);
+            transfer.username.hash(state);
+            transfer.ip.hash(state);
+            transfer.direction.hash(state);
+            transfer.path.hash(state);
+            transfer.total_size.hash(state);
+            transfer.bytes_transferred.hash(state);
+            transfer.started_at.hash(state);
+            transfer.is_admin.hash(state);
+            transfer.is_shared.hash(state);
+        }
+        self.sort_column.hash(state);
+        self.sort_ascending.hash(state);
+        // Colors don't need hashing - they're derived from theme which doesn't change per-render
+    }
+}
+
 /// Format a Unix timestamp as relative time (e.g., "5m", "2h", "3d")
-fn format_connected_time(login_time: i64) -> String {
+fn format_elapsed_time(timestamp: i64) -> String {
     let now = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .map(|d| d.as_secs() as i64)
         .unwrap_or(0);
 
-    let elapsed_secs = now.saturating_sub(login_time);
+    let elapsed_secs = now.saturating_sub(timestamp);
 
     if elapsed_secs < 60 {
         format!("{}s", elapsed_secs)
@@ -91,16 +125,48 @@ fn format_connected_time(login_time: i64) -> String {
     }
 }
 
-/// Build a context menu with Info, Copy, Kick, Ban actions
+/// Format bytes as human-readable size
+fn format_bytes(bytes: u64) -> String {
+    const KB: u64 = 1024;
+    const MB: u64 = KB * 1024;
+    const GB: u64 = MB * 1024;
+
+    if bytes >= GB {
+        format!("{:.1} GB", bytes as f64 / GB as f64)
+    } else if bytes >= MB {
+        format!("{:.1} MB", bytes as f64 / MB as f64)
+    } else if bytes >= KB {
+        format!("{:.1} KB", bytes as f64 / KB as f64)
+    } else {
+        format!("{} B", bytes)
+    }
+}
+
+/// Format transfer progress as "X / Y" or percentage
+fn format_progress(bytes_transferred: u64, total_size: u64) -> String {
+    if total_size == 0 {
+        format_bytes(bytes_transferred)
+    } else {
+        let percent = (bytes_transferred as f64 / total_size as f64 * 100.0).min(100.0);
+        format!(
+            "{} / {} ({:.0}%)",
+            format_bytes(bytes_transferred),
+            format_bytes(total_size),
+            percent
+        )
+    }
+}
+
+/// Build a context menu with Info, Copy, Kick, Ban actions for connections
 ///
 /// Menu structure:
-/// - Info (if user_info permission, hidden for self)
+/// - Info (if user_info permission)
 /// - ─── separator ─── (if Info visible)
 /// - Copy (always)
 /// - ─── separator ─── (if Kick or Ban visible)
 /// - Kick (if user_kick permission, hidden for admin rows)
 /// - Ban (if ban_create permission, hidden for admin rows)
-fn build_context_menu(
+fn build_connection_context_menu(
     nickname: String,
     value: String,
     is_admin_row: bool,
@@ -192,6 +258,21 @@ fn build_context_menu(
     .into()
 }
 
+/// Build a simple context menu with Copy action for transfers
+fn build_transfer_context_menu(value: String) -> Element<'static, Message> {
+    container(
+        button(shaped_text(t("menu-copy")).size(TEXT_SIZE))
+            .padding(CONTEXT_MENU_ITEM_PADDING)
+            .width(Fill)
+            .style(context_menu_button_style)
+            .on_press(Message::ConnectionMonitorCopy(value)),
+    )
+    .width(CONTEXT_MENU_MIN_WIDTH)
+    .padding(CONTEXT_MENU_PADDING)
+    .style(context_menu_container_style)
+    .into()
+}
+
 /// Build the lazy connection table using table widget
 fn lazy_connection_table(deps: ConnectionTableDeps) -> Element<'static, Message> {
     let permissions = deps.permissions;
@@ -261,7 +342,7 @@ fn lazy_connection_table(deps: ConnectionTableDeps) -> Element<'static, Message>
 
             // Wrap in context menu with full actions
             ContextMenu::new(content, move || {
-                build_context_menu(
+                build_connection_context_menu(
                     nickname_for_menu.clone(),
                     nickname_for_value.clone(),
                     is_admin_row,
@@ -332,7 +413,7 @@ fn lazy_connection_table(deps: ConnectionTableDeps) -> Element<'static, Message>
             };
 
             ContextMenu::new(content, move || {
-                build_context_menu(
+                build_connection_context_menu(
                     nickname_for_menu.clone(),
                     username_for_value.clone(),
                     is_admin_row,
@@ -389,7 +470,7 @@ fn lazy_connection_table(deps: ConnectionTableDeps) -> Element<'static, Message>
                 .into();
 
             ContextMenu::new(content, move || {
-                build_context_menu(
+                build_connection_context_menu(
                     nickname_for_menu.clone(),
                     ip_for_value.clone(),
                     is_admin_row,
@@ -435,12 +516,12 @@ fn lazy_connection_table(deps: ConnectionTableDeps) -> Element<'static, Message>
 
         // Connected time column
         let connected_column = table::column(connected_header, |conn: ConnectionInfo| {
-            let time_str = format_connected_time(conn.login_time);
+            let time_str = format_elapsed_time(conn.login_time);
             shaped_text(time_str)
                 .size(TEXT_SIZE)
                 .style(muted_text_style)
         })
-        .width(CONNECTED_COLUMN_WIDTH)
+        .width(TIME_COLUMN_WIDTH)
         .align_x(Right);
 
         // Build the table
@@ -452,6 +533,348 @@ fn lazy_connection_table(deps: ConnectionTableDeps) -> Element<'static, Message>
         ];
 
         table(columns, deps.connections.clone())
+            .width(Fill)
+            .padding_x(SPACER_SIZE_SMALL)
+            .padding_y(SPACER_SIZE_SMALL)
+            .separator_x(NO_SPACING)
+            .separator_y(SEPARATOR_HEIGHT)
+    })
+    .into()
+}
+
+/// Build the lazy transfer table using table widget
+fn lazy_transfer_table(deps: TransferTableDeps) -> Element<'static, Message> {
+    lazy(deps, move |deps| {
+        let admin_color = deps.admin_color;
+        let shared_color = deps.shared_color;
+
+        // User column header
+        let user_header_content: Element<'static, Message> =
+            if deps.sort_column == TransferSortColumn::User {
+                let sort_icon = if deps.sort_ascending {
+                    icon::down_dir()
+                } else {
+                    icon::up_dir()
+                };
+                row![
+                    shaped_text(t("col-nickname"))
+                        .size(TEXT_SIZE)
+                        .style(muted_text_style)
+                        .wrapping(Wrapping::WordOrGlyph),
+                    Space::new().width(Fill),
+                    Space::new().width(SORT_ICON_LEFT_MARGIN),
+                    sort_icon.size(SORT_ICON_SIZE).style(muted_text_style),
+                    Space::new().width(SORT_ICON_RIGHT_MARGIN),
+                ]
+                .align_y(Center)
+                .into()
+            } else {
+                shaped_text(t("col-nickname"))
+                    .size(TEXT_SIZE)
+                    .style(muted_text_style)
+                    .wrapping(Wrapping::WordOrGlyph)
+                    .into()
+            };
+        let user_header: Element<'static, Message> = button(user_header_content)
+            .padding(NO_SPACING)
+            .width(Fill)
+            .style(transparent_icon_button_style)
+            .on_press(Message::ConnectionMonitorTransferSortBy(
+                TransferSortColumn::User,
+            ))
+            .into();
+
+        // User column - with admin/shared coloring
+        let user_column = table::column(user_header, move |transfer: TransferInfo| {
+            let nickname_for_value = transfer.nickname.clone();
+
+            // Apply color based on user type
+            let content: Element<'static, Message> = if transfer.is_admin {
+                shaped_text(transfer.nickname)
+                    .size(TEXT_SIZE)
+                    .wrapping(Wrapping::WordOrGlyph)
+                    .color(admin_color)
+                    .into()
+            } else if transfer.is_shared {
+                shaped_text(transfer.nickname)
+                    .size(TEXT_SIZE)
+                    .wrapping(Wrapping::WordOrGlyph)
+                    .color(shared_color)
+                    .into()
+            } else {
+                shaped_text(transfer.nickname)
+                    .size(TEXT_SIZE)
+                    .wrapping(Wrapping::WordOrGlyph)
+                    .into()
+            };
+
+            ContextMenu::new(content, move || {
+                build_transfer_context_menu(nickname_for_value.clone())
+            })
+        })
+        .width(Fill);
+
+        // IP Address column header
+        let ip_header_content: Element<'static, Message> =
+            if deps.sort_column == TransferSortColumn::Ip {
+                let sort_icon = if deps.sort_ascending {
+                    icon::down_dir()
+                } else {
+                    icon::up_dir()
+                };
+                row![
+                    shaped_text(t("col-ip-address"))
+                        .size(TEXT_SIZE)
+                        .style(muted_text_style)
+                        .wrapping(Wrapping::Word),
+                    Space::new().width(Fill),
+                    Space::new().width(SORT_ICON_LEFT_MARGIN),
+                    sort_icon.size(SORT_ICON_SIZE).style(muted_text_style),
+                    Space::new().width(SORT_ICON_RIGHT_MARGIN),
+                ]
+                .align_y(Center)
+                .into()
+            } else {
+                shaped_text(t("col-ip-address"))
+                    .size(TEXT_SIZE)
+                    .style(muted_text_style)
+                    .wrapping(Wrapping::Word)
+                    .into()
+            };
+        let ip_header: Element<'static, Message> = button(ip_header_content)
+            .padding(NO_SPACING)
+            .width(Fill)
+            .style(transparent_icon_button_style)
+            .on_press(Message::ConnectionMonitorTransferSortBy(
+                TransferSortColumn::Ip,
+            ))
+            .into();
+
+        // IP Address column
+        let ip_column = table::column(ip_header, move |transfer: TransferInfo| {
+            let ip_for_value = transfer.ip.clone();
+
+            let content: Element<'static, Message> = shaped_text(transfer.ip)
+                .size(TEXT_SIZE)
+                .style(muted_text_style)
+                .wrapping(Wrapping::WordOrGlyph)
+                .into();
+
+            ContextMenu::new(content, move || {
+                build_transfer_context_menu(ip_for_value.clone())
+            })
+        })
+        .width(Fill);
+
+        // Direction column header (use exchange icon instead of text)
+        let direction_header_content: Element<'static, Message> =
+            if deps.sort_column == TransferSortColumn::Direction {
+                let sort_icon = if deps.sort_ascending {
+                    icon::down_dir()
+                } else {
+                    icon::up_dir()
+                };
+                row![
+                    icon::exchange().size(TEXT_SIZE).style(muted_text_style),
+                    Space::new().width(SPACER_SIZE_MEDIUM),
+                    sort_icon.size(SORT_ICON_SIZE).style(muted_text_style),
+                ]
+                .align_y(Center)
+                .into()
+            } else {
+                icon::exchange()
+                    .size(TEXT_SIZE)
+                    .style(muted_text_style)
+                    .into()
+            };
+        let direction_header: Element<'static, Message> = button(direction_header_content)
+            .padding(NO_SPACING)
+            .width(Fill)
+            .style(transparent_icon_button_style)
+            .on_press(Message::ConnectionMonitorTransferSortBy(
+                TransferSortColumn::Direction,
+            ))
+            .into();
+
+        // Direction column - show ↓ for download, ↑ for upload
+        let direction_column = table::column(direction_header, move |transfer: TransferInfo| {
+            let direction_for_value = transfer.direction.clone();
+            // "download" means server is sending to client (client downloading)
+            // "upload" means client is sending to server (client uploading)
+            let icon_element: Element<'static, Message> = if transfer.direction == "download" {
+                icon::download().size(TEXT_SIZE).into()
+            } else {
+                icon::upload().size(TEXT_SIZE).into()
+            };
+
+            ContextMenu::new(icon_element, move || {
+                build_transfer_context_menu(direction_for_value.clone())
+            })
+        })
+        .width(DIRECTION_COLUMN_WIDTH);
+
+        // Path column header
+        let path_header_content: Element<'static, Message> =
+            if deps.sort_column == TransferSortColumn::Path {
+                let sort_icon = if deps.sort_ascending {
+                    icon::down_dir()
+                } else {
+                    icon::up_dir()
+                };
+                row![
+                    shaped_text(t("col-path"))
+                        .size(TEXT_SIZE)
+                        .style(muted_text_style)
+                        .wrapping(Wrapping::Word),
+                    Space::new().width(Fill),
+                    Space::new().width(SORT_ICON_LEFT_MARGIN),
+                    sort_icon.size(SORT_ICON_SIZE).style(muted_text_style),
+                    Space::new().width(SORT_ICON_RIGHT_MARGIN),
+                ]
+                .align_y(Center)
+                .into()
+            } else {
+                shaped_text(t("col-path"))
+                    .size(TEXT_SIZE)
+                    .style(muted_text_style)
+                    .wrapping(Wrapping::Word)
+                    .into()
+            };
+        let path_header: Element<'static, Message> = button(path_header_content)
+            .padding(NO_SPACING)
+            .width(Fill)
+            .style(transparent_icon_button_style)
+            .on_press(Message::ConnectionMonitorTransferSortBy(
+                TransferSortColumn::Path,
+            ))
+            .into();
+
+        // Path column
+        let path_column = table::column(path_header, move |transfer: TransferInfo| {
+            let path_for_value = transfer.path.clone();
+
+            let content: Element<'static, Message> = shaped_text(transfer.path)
+                .size(TEXT_SIZE)
+                .style(muted_text_style)
+                .wrapping(Wrapping::WordOrGlyph)
+                .into();
+
+            ContextMenu::new(content, move || {
+                build_transfer_context_menu(path_for_value.clone())
+            })
+        })
+        .width(Fill);
+
+        // Progress column header
+        let progress_header_content: Element<'static, Message> =
+            if deps.sort_column == TransferSortColumn::Progress {
+                let sort_icon = if deps.sort_ascending {
+                    icon::down_dir()
+                } else {
+                    icon::up_dir()
+                };
+                row![
+                    shaped_text(t("col-progress"))
+                        .size(TEXT_SIZE)
+                        .style(muted_text_style)
+                        .wrapping(Wrapping::Word),
+                    Space::new().width(Fill),
+                    Space::new().width(SORT_ICON_LEFT_MARGIN),
+                    sort_icon.size(SORT_ICON_SIZE).style(muted_text_style),
+                    Space::new().width(SORT_ICON_RIGHT_MARGIN),
+                ]
+                .align_y(Center)
+                .into()
+            } else {
+                shaped_text(t("col-progress"))
+                    .size(TEXT_SIZE)
+                    .style(muted_text_style)
+                    .wrapping(Wrapping::Word)
+                    .into()
+            };
+        let progress_header: Element<'static, Message> = button(progress_header_content)
+            .padding(NO_SPACING)
+            .width(Fill)
+            .style(transparent_icon_button_style)
+            .on_press(Message::ConnectionMonitorTransferSortBy(
+                TransferSortColumn::Progress,
+            ))
+            .into();
+
+        // Progress column
+        let progress_column = table::column(progress_header, move |transfer: TransferInfo| {
+            let progress_str = format_progress(transfer.bytes_transferred, transfer.total_size);
+            let progress_for_value = progress_str.clone();
+
+            let content: Element<'static, Message> = shaped_text(progress_str)
+                .size(TEXT_SIZE)
+                .style(muted_text_style)
+                .wrapping(Wrapping::Word)
+                .into();
+
+            ContextMenu::new(content, move || {
+                build_transfer_context_menu(progress_for_value.clone())
+            })
+        })
+        .width(Fill);
+
+        // Time column header
+        let time_header_content: Element<'static, Message> =
+            if deps.sort_column == TransferSortColumn::Time {
+                let sort_icon = if deps.sort_ascending {
+                    icon::down_dir()
+                } else {
+                    icon::up_dir()
+                };
+                row![
+                    shaped_text(t("col-time"))
+                        .size(TEXT_SIZE)
+                        .style(muted_text_style)
+                        .wrapping(Wrapping::Word),
+                    Space::new().width(Fill),
+                    Space::new().width(SORT_ICON_LEFT_MARGIN),
+                    sort_icon.size(SORT_ICON_SIZE).style(muted_text_style),
+                    Space::new().width(SORT_ICON_RIGHT_MARGIN),
+                ]
+                .align_y(Center)
+                .into()
+            } else {
+                shaped_text(t("col-time"))
+                    .size(TEXT_SIZE)
+                    .style(muted_text_style)
+                    .wrapping(Wrapping::Word)
+                    .into()
+            };
+        let time_header: Element<'static, Message> = button(time_header_content)
+            .padding(NO_SPACING)
+            .width(Fill)
+            .style(transparent_icon_button_style)
+            .on_press(Message::ConnectionMonitorTransferSortBy(
+                TransferSortColumn::Time,
+            ))
+            .into();
+
+        // Time column
+        let time_column = table::column(time_header, |transfer: TransferInfo| {
+            let time_str = format_elapsed_time(transfer.started_at);
+            shaped_text(time_str)
+                .size(TEXT_SIZE)
+                .style(muted_text_style)
+                .wrapping(Wrapping::Word)
+        })
+        .width(Fill);
+
+        // Build the table
+        let columns = [
+            direction_column,
+            user_column,
+            ip_column,
+            path_column,
+            progress_column,
+            time_column,
+        ];
+
+        table(columns, deps.transfers.clone())
             .width(Fill)
             .padding_x(SPACER_SIZE_SMALL)
             .padding_y(SPACER_SIZE_SMALL)
@@ -482,76 +905,28 @@ fn sort_connections(
     });
 }
 
-/// Render the Connection Monitor panel
-pub fn connection_monitor_view<'a>(
-    conn: &'a ServerConnection,
+/// Sort transfers based on column and direction
+fn sort_transfers(transfers: &mut [TransferInfo], column: TransferSortColumn, ascending: bool) {
+    transfers.sort_by(|a, b| {
+        let cmp = match column {
+            TransferSortColumn::User => a.nickname.to_lowercase().cmp(&b.nickname.to_lowercase()),
+            TransferSortColumn::Ip => a.ip.cmp(&b.ip),
+            TransferSortColumn::Direction => a.direction.cmp(&b.direction),
+            TransferSortColumn::Path => a.path.to_lowercase().cmp(&b.path.to_lowercase()),
+            TransferSortColumn::Progress => a.bytes_transferred.cmp(&b.bytes_transferred),
+            TransferSortColumn::Time => a.started_at.cmp(&b.started_at),
+        };
+        if ascending { cmp } else { cmp.reverse() }
+    });
+}
+
+/// Build the connections tab content
+fn connections_tab_content<'a>(
     state: &'a ConnectionMonitorState,
-    theme: Theme,
+    theme: &Theme,
+    permissions: ConnectionMonitorPermissions,
 ) -> Element<'a, Message> {
-    // Build permissions struct for context menu
-    let permissions = ConnectionMonitorPermissions {
-        user_info: conn.has_permission(PERMISSION_USER_INFO),
-        user_kick: conn.has_permission(PERMISSION_USER_KICK),
-        ban_create: conn.has_permission(PERMISSION_BAN_CREATE),
-    };
-
-    // Refresh button with tooltip
-    let refresh_btn: Element<'_, Message> = {
-        let refresh_icon = container(icon::refresh().size(SIDEBAR_ACTION_ICON_SIZE))
-            .width(SIDEBAR_ACTION_ICON_SIZE)
-            .height(SIDEBAR_ACTION_ICON_SIZE)
-            .align_x(alignment::Horizontal::Center)
-            .align_y(alignment::Vertical::Center);
-
-        tooltip(
-            button(refresh_icon)
-                .on_press(Message::RefreshConnectionMonitor)
-                .padding(ICON_BUTTON_PADDING)
-                .style(transparent_icon_button_style),
-            container(shaped_text(t("tooltip-files-refresh")).size(TOOLTIP_TEXT_SIZE))
-                .padding(TOOLTIP_BACKGROUND_PADDING)
-                .style(tooltip_container_style),
-            tooltip::Position::Top,
-        )
-        .gap(TOOLTIP_GAP)
-        .padding(TOOLTIP_PADDING)
-        .into()
-    };
-
-    // Build subtitle with connection count
-    let count = match &state.connections {
-        Some(Ok(connections)) => connections.len().to_string(),
-        _ => "…".to_string(),
-    };
-    let subtitle_text = t_args("panel-active-connections", &[("count", &count)]);
-
-    // Title row with refresh button on the right
-    // Add invisible spacer on the left to balance the button width for proper centering
-    let button_width =
-        SIDEBAR_ACTION_ICON_SIZE + ICON_BUTTON_PADDING.left + ICON_BUTTON_PADDING.right;
-    let title_row: Element<'_, Message> = row![
-        Space::new().width(SCROLLBAR_PADDING),
-        Space::new().width(button_width), // Balance the refresh button on the right
-        shaped_text(t("panel-connection-monitor"))
-            .size(TITLE_SIZE)
-            .width(Fill)
-            .align_x(Center),
-        refresh_btn,
-        Space::new().width(SCROLLBAR_PADDING),
-    ]
-    .align_y(Center)
-    .into();
-
-    // Subtitle row with connection count (muted, like breadcrumbs in Files)
-    let subtitle_row: Element<'_, Message> = shaped_text(subtitle_text)
-        .size(TEXT_SIZE)
-        .width(Fill)
-        .align_x(Center)
-        .style(muted_text_style)
-        .into();
-
-    // Build content based on state
-    let content: Element<'_, Message> = match &state.connections {
+    match &state.connections {
         None => {
             // Loading state
             container(
@@ -601,22 +976,181 @@ pub fn connection_monitor_view<'a>(
                     connections: sorted_connections,
                     sort_column: state.sort_column,
                     sort_ascending: state.sort_ascending,
-                    admin_color: chat::admin(&theme),
-                    shared_color: chat::shared(&theme),
+                    admin_color: chat::admin(theme),
+                    shared_color: chat::shared(theme),
                     permissions,
                 };
 
                 lazy_connection_table(deps)
             }
         }
+    }
+}
+
+/// Build the transfers tab content
+fn transfers_tab_content<'a>(
+    state: &'a ConnectionMonitorState,
+    theme: &Theme,
+) -> Element<'a, Message> {
+    match &state.transfers {
+        None => {
+            // Loading state
+            container(
+                shaped_text(t("connection-monitor-loading"))
+                    .size(TEXT_SIZE)
+                    .style(muted_text_style),
+            )
+            .width(Fill)
+            .center_x(Fill)
+            .padding(SPACER_SIZE_SMALL)
+            .into()
+        }
+        Some(Err(error)) => {
+            // Error state
+            container(
+                shaped_text_wrapped(error)
+                    .size(TEXT_SIZE)
+                    .style(error_text_style),
+            )
+            .width(Fill)
+            .center_x(Fill)
+            .padding(SPACER_SIZE_SMALL)
+            .into()
+        }
+        Some(Ok(transfers)) => {
+            if transfers.is_empty() {
+                // Empty state
+                container(
+                    shaped_text(t("connection-monitor-no-transfers"))
+                        .size(TEXT_SIZE)
+                        .style(muted_text_style),
+                )
+                .width(Fill)
+                .center_x(Fill)
+                .padding(SPACER_SIZE_SMALL)
+                .into()
+            } else {
+                // Sort transfers based on current settings
+                let mut sorted_transfers = transfers.clone();
+                sort_transfers(
+                    &mut sorted_transfers,
+                    state.transfer_sort_column,
+                    state.transfer_sort_ascending,
+                );
+
+                let deps = TransferTableDeps {
+                    transfers: sorted_transfers,
+                    sort_column: state.transfer_sort_column,
+                    sort_ascending: state.transfer_sort_ascending,
+                    admin_color: chat::admin(theme),
+                    shared_color: chat::shared(theme),
+                };
+
+                lazy_transfer_table(deps)
+            }
+        }
+    }
+}
+
+/// Render the Connection Monitor panel
+pub fn connection_monitor_view<'a>(
+    conn: &'a ServerConnection,
+    state: &'a ConnectionMonitorState,
+    theme: Theme,
+) -> Element<'a, Message> {
+    // Build permissions struct for context menu
+    let permissions = ConnectionMonitorPermissions {
+        user_info: conn.has_permission(PERMISSION_USER_INFO),
+        user_kick: conn.has_permission(PERMISSION_USER_KICK),
+        ban_create: conn.has_permission(PERMISSION_BAN_CREATE),
     };
+
+    // Refresh button with tooltip
+    let refresh_btn: Element<'_, Message> = {
+        let refresh_icon = container(icon::refresh().size(SIDEBAR_ACTION_ICON_SIZE))
+            .width(SIDEBAR_ACTION_ICON_SIZE)
+            .height(SIDEBAR_ACTION_ICON_SIZE)
+            .align_x(alignment::Horizontal::Center)
+            .align_y(alignment::Vertical::Center);
+
+        tooltip(
+            button(refresh_icon)
+                .on_press(Message::RefreshConnectionMonitor)
+                .padding(ICON_BUTTON_PADDING)
+                .style(transparent_icon_button_style),
+            container(shaped_text(t("tooltip-files-refresh")).size(TOOLTIP_TEXT_SIZE))
+                .padding(TOOLTIP_BACKGROUND_PADDING)
+                .style(tooltip_container_style),
+            tooltip::Position::Top,
+        )
+        .gap(TOOLTIP_GAP)
+        .padding(TOOLTIP_PADDING)
+        .into()
+    };
+
+    // Title row with refresh button on the right
+    // Add invisible spacer on the left to balance the button width for proper centering
+    let button_width =
+        SIDEBAR_ACTION_ICON_SIZE + ICON_BUTTON_PADDING.left + ICON_BUTTON_PADDING.right;
+    let title_row: Element<'_, Message> = row![
+        Space::new().width(SCROLLBAR_PADDING),
+        Space::new().width(button_width), // Balance the refresh button on the right
+        shaped_text(t("panel-connection-monitor"))
+            .size(TITLE_SIZE)
+            .width(Fill)
+            .align_x(Center),
+        refresh_btn,
+        Space::new().width(SCROLLBAR_PADDING),
+    ]
+    .align_y(Center)
+    .into();
+
+    // Build tab content
+    let connections_content = connections_tab_content(state, &theme, permissions);
+    let transfers_content = transfers_tab_content(state, &theme);
+
+    // Build tab labels with counts
+    let connections_count = match &state.connections {
+        Some(Ok(conns)) => conns.len().to_string(),
+        _ => "…".to_string(),
+    };
+    let transfers_count = match &state.transfers {
+        Some(Ok(transfers)) => transfers.len().to_string(),
+        _ => "…".to_string(),
+    };
+    let connections_label = format!("{} ({})", t("tab-connections"), connections_count);
+    let transfers_label = format!("{} ({})", t("tab-transfers"), transfers_count);
+
+    // Create tabs widget with spacer under tab bar
+    let tabs = Tabs::new(Message::ConnectionMonitorTabSelected)
+        .push(
+            ConnectionMonitorTab::Connections,
+            TabLabel::Text(connections_label),
+            column![
+                Space::new().height(SPACER_SIZE_MEDIUM),
+                scrollable(connections_content).height(Fill),
+            ]
+            .height(Fill),
+        )
+        .push(
+            ConnectionMonitorTab::Transfers,
+            TabLabel::Text(transfers_label),
+            column![
+                Space::new().height(SPACER_SIZE_MEDIUM),
+                scrollable(transfers_content).height(Fill),
+            ]
+            .height(Fill),
+        )
+        .set_active_tab(&state.active_tab)
+        .tab_bar_position(iced_aw::TabBarPosition::Top)
+        .text_size(TEXT_SIZE)
+        .tab_label_padding(TAB_LABEL_PADDING);
 
     // Build the form with max_width constraint
     let form = column![
         title_row,
-        subtitle_row,
         Space::new().height(SPACER_SIZE_LARGE - SPACER_SIZE_MEDIUM),
-        container(scrollable(content)).height(Fill),
+        container(tabs).height(Fill),
     ]
     .spacing(SPACER_SIZE_MEDIUM)
     .align_x(Center)

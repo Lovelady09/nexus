@@ -24,6 +24,7 @@ use crate::connection_tracker::ConnectionTracker;
 use crate::db::Database;
 use crate::files::FileIndex;
 use crate::ip_rule_cache::IpRuleCache;
+use crate::transfers::TransferRegistry;
 use crate::users::UserManager;
 use crate::users::user::NewSessionParams;
 
@@ -96,6 +97,7 @@ pub struct TestContext {
     pub ip_rule_cache: Arc<RwLock<IpRuleCache>>,
     pub file_index: Arc<FileIndex>,
     pub channel_manager: ChannelManager,
+    pub transfer_registry: Arc<TransferRegistry>,
     /// Keep temp dir alive for tests that use file areas
     #[allow(dead_code)]
     temp_dir: TempDir,
@@ -120,6 +122,7 @@ impl TestContext {
             ip_rule_cache: self.ip_rule_cache.clone(),
             file_index: self.file_index.clone(),
             channel_manager: &self.channel_manager,
+            transfer_registry: self.transfer_registry.clone(),
         }
     }
 }
@@ -182,6 +185,9 @@ pub async fn create_test_context() -> TestContext {
     // Create channel manager for tests
     let channel_manager = ChannelManager::new(db.channels.clone(), user_manager.clone());
 
+    // Create transfer registry for tests
+    let transfer_registry = Arc::new(TransferRegistry::new());
+
     TestContext {
         frame_reader,
         frame_writer,
@@ -196,6 +202,7 @@ pub async fn create_test_context() -> TestContext {
         ip_rule_cache,
         file_index,
         channel_manager,
+        transfer_registry,
         temp_dir,
     }
 }

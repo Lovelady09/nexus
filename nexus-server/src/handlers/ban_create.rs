@@ -7,10 +7,9 @@ use ipnet::IpNet;
 use tokio::io::AsyncWrite;
 
 use nexus_common::protocol::ServerMessage;
-use nexus_common::time::{SECONDS_PER_DAY, SECONDS_PER_HOUR, SECONDS_PER_MINUTE};
 use nexus_common::validators::{self, BanReasonError, DurationError, TargetError};
 
-use super::duration::parse_duration;
+use super::duration::{format_duration_remaining, parse_duration};
 use super::{
     HandlerContext, err_authentication, err_ban_admin_by_ip, err_ban_admin_by_nickname,
     err_ban_invalid_duration, err_ban_invalid_target, err_ban_self, err_database,
@@ -294,6 +293,17 @@ where
                 .await;
 
             broadcast_disconnections(ctx.user_manager, disconnected).await;
+
+            // Also disconnect active file transfers from IPs in the CIDR range
+            ctx.transfer_registry.disconnect_matching(|ip| {
+                // Disconnect if IP is in range AND not trusted
+                net.contains(&ip)
+                    && !ctx
+                        .ip_rule_cache
+                        .read()
+                        .expect("ip rule cache lock poisoned")
+                        .is_trusted_read_only(ip)
+            });
         }
     } else {
         // For single IPs, disconnect sessions from those specific IPs
@@ -315,6 +325,18 @@ where
 
             broadcast_disconnections(ctx.user_manager, disconnected).await;
         }
+
+        // Also disconnect active file transfers from the banned IPs
+        ctx.transfer_registry.disconnect_matching(|ip| {
+            // Disconnect if IP matches any banned target AND not trusted
+            let ip_str = ip.to_string();
+            banned_targets.contains(&ip_str)
+                && !ctx
+                    .ip_rule_cache
+                    .read()
+                    .expect("ip rule cache lock poisoned")
+                    .is_trusted_read_only(ip)
+        });
     }
 
     // Send success response
@@ -428,35 +450,13 @@ fn build_ban_disconnect_message(locale: &str, expires_at: Option<i64>) -> Server
     }
 }
 
-/// Format remaining duration for display (e.g., "2h 30m")
-fn format_duration_remaining(expires_at: i64) -> String {
-    let now = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .expect("system time before Unix epoch")
-        .as_secs() as i64;
-
-    let remaining_secs = (expires_at - now).max(0);
-
-    let days = remaining_secs / SECONDS_PER_DAY as i64;
-    let hours = (remaining_secs % SECONDS_PER_DAY as i64) / SECONDS_PER_HOUR as i64;
-    let minutes = (remaining_secs % SECONDS_PER_HOUR as i64) / SECONDS_PER_MINUTE as i64;
-
-    if days > 0 {
-        format!("{}d {}h", days, hours)
-    } else if hours > 0 {
-        format!("{}h {}m", hours, minutes)
-    } else {
-        format!("{}m", minutes.max(1))
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::handlers::testing::{create_test_context, login_user, read_server_message};
 
     // =========================================================================
-    // Unit tests for parse_duration and format_duration_remaining
+    // Unit tests for parse_duration
     // =========================================================================
 
     #[test]
@@ -1480,6 +1480,148 @@ mod tests {
                 .is_ip_banned("192.168.1.100")
                 .await
                 .unwrap()
+        );
+    }
+
+    #[tokio::test]
+    async fn test_bancreate_disconnects_active_transfers() {
+        use crate::transfers::registry::TransferDirection;
+        use std::net::{IpAddr, Ipv4Addr, SocketAddr};
+
+        let mut test_ctx = create_test_context().await;
+
+        // Register a fake active transfer from an IP we'll ban
+        let banned_ip = IpAddr::V4(Ipv4Addr::new(192, 168, 1, 100));
+        let banned_addr = SocketAddr::new(banned_ip, 12345);
+        let (transfer_id, _info, mut ban_rx) = test_ctx.transfer_registry.register(
+            banned_addr,
+            "banned_user".to_string(),
+            "banned_user".to_string(),
+            false,
+            false,
+            TransferDirection::Download,
+            "/files/test.zip".to_string(),
+            0,
+        );
+
+        // Register another transfer from a different IP (should not be affected)
+        let safe_ip = IpAddr::V4(Ipv4Addr::new(192, 168, 1, 200));
+        let safe_addr = SocketAddr::new(safe_ip, 12346);
+        let (_safe_id, _safe_info, mut safe_rx) = test_ctx.transfer_registry.register(
+            safe_addr,
+            "safe_user".to_string(),
+            "safe_user".to_string(),
+            false,
+            false,
+            TransferDirection::Download,
+            "/files/other.zip".to_string(),
+            0,
+        );
+
+        // Create admin user
+        let session_id = login_user(&mut test_ctx, "admin", "password", &[], true).await;
+
+        // Ban the IP with the active transfer
+        let result = handle_ban_create(
+            "192.168.1.100".to_string(),
+            Some("1h".to_string()),
+            Some("test ban".to_string()),
+            Some(session_id),
+            &mut test_ctx.handler_context(),
+        )
+        .await;
+
+        assert!(result.is_ok());
+
+        // Verify the banned transfer received the ban signal
+        assert!(
+            ban_rx.try_recv().is_ok(),
+            "Banned transfer should receive ban signal"
+        );
+
+        // Verify the safe transfer did NOT receive a ban signal
+        let safe_result = safe_rx.try_recv();
+        assert!(
+            safe_result.is_err(),
+            "Safe transfer should not receive ban signal"
+        );
+
+        // Clean up - unregister the transfers
+        test_ctx.transfer_registry.unregister(transfer_id);
+    }
+
+    #[tokio::test]
+    async fn test_bancreate_cidr_disconnects_transfers_in_range() {
+        use crate::transfers::registry::TransferDirection;
+        use std::net::{IpAddr, Ipv4Addr, SocketAddr};
+
+        let mut test_ctx = create_test_context().await;
+
+        // Register transfers from IPs in the CIDR range we'll ban (10.0.1.0/24)
+        let ip_in_range_1 = IpAddr::V4(Ipv4Addr::new(10, 0, 1, 50));
+        let ip_in_range_2 = IpAddr::V4(Ipv4Addr::new(10, 0, 1, 200));
+        let ip_outside_range = IpAddr::V4(Ipv4Addr::new(10, 0, 2, 50));
+
+        let (_id1, _info1, mut rx1) = test_ctx.transfer_registry.register(
+            SocketAddr::new(ip_in_range_1, 12345),
+            "user1".to_string(),
+            "user1".to_string(),
+            false,
+            false,
+            TransferDirection::Download,
+            "/files/test1.zip".to_string(),
+            0,
+        );
+        let (_id2, _info2, mut rx2) = test_ctx.transfer_registry.register(
+            SocketAddr::new(ip_in_range_2, 12346),
+            "user2".to_string(),
+            "user2".to_string(),
+            false,
+            false,
+            TransferDirection::Upload,
+            "/uploads".to_string(),
+            0,
+        );
+        let (_id3, _info3, mut rx3) = test_ctx.transfer_registry.register(
+            SocketAddr::new(ip_outside_range, 12347),
+            "user3".to_string(),
+            "user3".to_string(),
+            false,
+            false,
+            TransferDirection::Download,
+            "/files/test3.zip".to_string(),
+            0,
+        );
+
+        // Create admin user
+        let session_id = login_user(&mut test_ctx, "admin", "password", &[], true).await;
+
+        // Ban the CIDR range
+        let result = handle_ban_create(
+            "10.0.1.0/24".to_string(),
+            None,
+            Some("CIDR ban test".to_string()),
+            Some(session_id),
+            &mut test_ctx.handler_context(),
+        )
+        .await;
+
+        assert!(result.is_ok());
+
+        // Verify transfers in range received ban signals
+        assert!(
+            rx1.try_recv().is_ok(),
+            "Transfer in range should receive ban signal"
+        );
+        assert!(
+            rx2.try_recv().is_ok(),
+            "Transfer in range should receive ban signal"
+        );
+
+        // Verify transfer outside range did NOT receive ban signal
+        assert!(
+            rx3.try_recv().is_err(),
+            "Transfer outside range should not receive ban signal"
         );
     }
 }

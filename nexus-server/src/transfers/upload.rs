@@ -13,7 +13,7 @@ use nexus_common::io::{read_client_message_with_full_timeout, send_server_messag
 use nexus_common::protocol::{ClientMessage, ServerMessage};
 use nexus_common::validators;
 
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
 
 use crate::db::Permission;
 use crate::files::path::{allows_upload, build_and_validate_candidate_path};
@@ -29,7 +29,8 @@ use super::helpers::{
     generate_transfer_id, path_error_to_transfer_error, resolve_area_root,
     send_upload_transfer_error, validate_transfer_path,
 };
-use super::types::{ReceiveFileParams, TransferContext, UploadParams};
+use super::transfer::{StreamError, Transfer};
+use super::types::{ReceiveFileParams, UploadParams};
 
 /// Fallback file name for keepalive messages when path has no file name
 const FALLBACK_FILE_NAME: &str = "file";
@@ -43,12 +44,12 @@ const FALLBACK_PART_FILE_NAME: &str = "file.part";
 
 /// Handle a file upload request
 pub(crate) async fn handle_upload<R, W>(
-    ctx: &mut TransferContext<'_, R, W>,
+    transfer: &mut Transfer<'_, R, W>,
     params: UploadParams,
 ) -> io::Result<()>
 where
-    R: AsyncReadExt + Unpin,
-    W: AsyncWriteExt + Unpin,
+    R: AsyncRead + Unpin,
+    W: AsyncWrite + Unpin,
 {
     let UploadParams {
         destination,
@@ -57,29 +58,31 @@ where
         root: use_root,
     } = params;
 
+    // Extract values to avoid borrow checker issues
+    let locale = transfer.locale().to_string();
+    let debug = transfer.debug();
+    let peer_addr = transfer.peer_addr();
+
     // Reject empty uploads - must have at least one file
     if file_count == 0 {
-        return send_upload_transfer_error(
-            ctx.frame_writer,
-            &TransferError::invalid(err_upload_empty(ctx.locale)),
-        )
-        .await;
+        let err = TransferError::invalid(err_upload_empty(&locale));
+        return send_upload_transfer_error(transfer.writer(), &err).await;
     }
 
     // Validate and resolve destination path
     let (area_root, resolved_destination) =
-        match validate_and_resolve_upload_destination(ctx, &destination, use_root) {
+        match validate_and_resolve_upload_destination(transfer, &destination, use_root, &locale) {
             Ok(result) => result,
-            Err(e) => return send_upload_transfer_error(ctx.frame_writer, &e).await,
+            Err(e) => return send_upload_transfer_error(transfer.writer(), &e).await,
         };
 
     // Generate transfer ID for logging
-    let transfer_id = generate_transfer_id();
+    let log_transfer_id = generate_transfer_id();
 
-    if ctx.debug {
+    if debug {
         eprintln!(
-            "Upload {transfer_id}: {} files, {} bytes to {} from {}",
-            file_count, total_size, destination, ctx.peer_addr
+            "Upload {log_transfer_id}: {} files, {} bytes to {} from {}",
+            file_count, total_size, destination, peer_addr
         );
     }
 
@@ -88,9 +91,14 @@ where
         success: true,
         error: None,
         error_kind: None,
-        transfer_id: Some(transfer_id.clone()),
+        transfer_id: Some(log_transfer_id.clone()),
     };
-    send_server_message_with_id(ctx.frame_writer, &response, MessageId::new()).await?;
+    if let Err(e) = transfer.send(&response).await {
+        if debug {
+            eprintln!("Upload {log_transfer_id}: Failed to send response: {e}");
+        }
+        return Ok(());
+    }
 
     // Receive each file
     let mut transfer_success = true;
@@ -101,17 +109,27 @@ where
         let params = ReceiveFileParams {
             area_root: &area_root,
             destination: &resolved_destination,
-            locale: ctx.locale,
-            debug: ctx.debug,
-            transfer_id: &transfer_id,
+            locale: &locale,
+            debug,
+            transfer_id: &log_transfer_id,
             file_index,
         };
-        match receive_file(ctx.frame_reader, ctx.frame_writer, params).await {
-            Ok(()) => {}
-            Err(e) => {
-                if ctx.debug {
+        match receive_file(transfer, params).await {
+            Ok(()) => {
+                // bytes_transferred is updated inside receive_file
+            }
+            Err(ReceiveFileError::Banned) => {
+                // Just close the socket - client gets ban reason on BBS connection
+                if debug {
+                    eprintln!("Upload {log_transfer_id}: Terminated by ban");
+                }
+                let _ = transfer.writer().get_mut().shutdown().await;
+                return Ok(());
+            }
+            Err(ReceiveFileError::Transfer(e)) => {
+                if debug {
                     eprintln!(
-                        "Upload {transfer_id}: Error receiving file {file_index}: {}",
+                        "Upload {log_transfer_id}: Error receiving file {file_index}: {}",
                         e.message
                     );
                 }
@@ -129,23 +147,23 @@ where
         error: transfer_error,
         error_kind: transfer_error_kind,
     };
-    send_server_message_with_id(ctx.frame_writer, &complete, MessageId::new()).await?;
+    let _ = transfer.send(&complete).await; // Best effort - connection may be closing
 
-    if ctx.debug {
+    if debug {
         if transfer_success {
-            eprintln!("Upload {transfer_id}: Complete");
+            eprintln!("Upload {log_transfer_id}: Complete");
         } else {
-            eprintln!("Upload {transfer_id}: Failed");
+            eprintln!("Upload {log_transfer_id}: Failed");
         }
     }
 
     // Mark file index as dirty on successful upload so it gets rebuilt
     if transfer_success {
-        ctx.file_index.mark_dirty();
+        transfer.file_index().mark_dirty();
     }
 
     // Close connection
-    let _ = ctx.frame_writer.get_mut().shutdown().await;
+    let _ = transfer.writer().get_mut().shutdown().await;
 
     Ok(())
 }
@@ -154,17 +172,46 @@ where
 // File Reception
 // =============================================================================
 
+/// Error type for receive_file
+enum ReceiveFileError {
+    Transfer(TransferError),
+    Banned,
+}
+
+impl From<TransferError> for ReceiveFileError {
+    fn from(e: TransferError) -> Self {
+        ReceiveFileError::Transfer(e)
+    }
+}
+
+impl From<StreamError> for ReceiveFileError {
+    fn from(e: StreamError) -> Self {
+        match e {
+            StreamError::Banned => ReceiveFileError::Banned,
+            StreamError::Io(e) => {
+                ReceiveFileError::Transfer(TransferError::io_error(e.to_string()))
+            }
+            StreamError::ConnectionClosed => {
+                ReceiveFileError::Transfer(TransferError::io_error("Connection closed"))
+            }
+        }
+    }
+}
+
+// =============================================================================
+// File Reception
+// =============================================================================
+
 /// Receive a single file from the client
 ///
-/// Returns `Ok(())` on success, or `Err((error_message, error_kind))` on failure.
+/// Returns `Ok(())` on success, or `Err(ReceiveFileError)` on failure.
 async fn receive_file<R, W>(
-    frame_reader: &mut FrameReader<R>,
-    frame_writer: &mut FrameWriter<W>,
+    transfer: &mut Transfer<'_, R, W>,
     params: ReceiveFileParams<'_>,
-) -> Result<(), TransferError>
+) -> Result<(), ReceiveFileError>
 where
-    R: AsyncReadExt + Unpin,
-    W: AsyncWriteExt + Unpin,
+    R: AsyncRead + Unpin,
+    W: AsyncWrite + Unpin,
 {
     let ReceiveFileParams {
         area_root,
@@ -177,7 +224,7 @@ where
 
     // Read FileStart from client
     let (relative_path, file_size, client_sha256) =
-        read_client_file_start(frame_reader, locale).await?;
+        read_client_file_start(transfer.reader(), locale).await?;
 
     if debug {
         eprintln!(
@@ -193,7 +240,7 @@ where
     // Check for conflicts and get existing file state
     // Sends FileHashing keepalives to client while hashing large existing files
     let (existing_size, existing_hash) = check_upload_conflicts_and_get_state(
-        frame_writer,
+        transfer.writer(),
         &target_path,
         &part_path,
         file_size,
@@ -203,7 +250,13 @@ where
     .await?;
 
     // Send FileStartResponse with our current state
-    send_file_start_response(frame_writer, existing_size, existing_hash.clone(), locale).await?;
+    send_file_start_response(
+        transfer.writer(),
+        existing_size,
+        existing_hash.clone(),
+        locale,
+    )
+    .await?;
 
     // Handle zero-byte files - NO FileData frame expected
     if file_size == 0 {
@@ -224,7 +277,7 @@ where
     }
 
     // Read FileData header and calculate offset
-    let (header, offset) = read_file_data_header(frame_reader, file_size, locale).await?;
+    let (header, offset) = read_file_data_header(transfer.reader(), file_size, locale).await?;
 
     // Check for concurrent upload conflict
     check_resume_conflict(offset, existing_size, locale)?;
@@ -238,16 +291,9 @@ where
         );
     }
 
-    // Stream file data to .part file
-    let bytes_written = stream_to_part_file(
-        frame_reader,
-        &header,
-        &target_path,
-        &part_path,
-        offset,
-        locale,
-    )
-    .await?;
+    // Stream file data to .part file with ban checking
+    let bytes_written =
+        stream_to_part_file(transfer, &header, &target_path, &part_path, offset, locale).await?;
 
     if debug {
         eprintln!(
@@ -275,43 +321,47 @@ where
 
 /// Validate and resolve upload destination path
 fn validate_and_resolve_upload_destination<R, W>(
-    ctx: &TransferContext<'_, R, W>,
+    transfer: &Transfer<'_, R, W>,
     destination: &str,
     use_root: bool,
+    locale: &str,
 ) -> Result<(PathBuf, PathBuf), TransferError>
 where
-    R: AsyncReadExt + Unpin,
-    W: AsyncWriteExt + Unpin,
+    R: AsyncRead + Unpin,
+    W: AsyncWrite + Unpin,
 {
     use crate::files::path::resolve_path;
 
+    let user = transfer.user();
+    let file_root = transfer.file_root();
+
     // Validate destination path
-    validate_transfer_path(destination, ctx.locale)?;
+    validate_transfer_path(destination, locale)?;
 
     // Check upload permission
-    check_permission(ctx.user, Permission::FileUpload, ctx.locale)?;
+    check_permission(user, Permission::FileUpload, locale)?;
 
     // Check file_root permission if using root mode
-    check_root_permission(ctx.user, use_root, ctx.locale)?;
+    check_root_permission(user, use_root, locale)?;
 
     // Resolve area root
-    let area_root = resolve_area_root(ctx.file_root, &ctx.user.username, use_root, ctx.locale)?;
+    let area_root = resolve_area_root(file_root, &user.username, use_root, locale)?;
 
     // Build candidate path
-    let candidate = build_validated_path(&area_root, destination, ctx.locale)?;
+    let candidate = build_validated_path(&area_root, destination, locale)?;
 
     // Try to resolve the destination - it may or may not exist yet
     let resolved_destination = match resolve_path(&area_root, &candidate) {
         Ok(path) => {
             // Destination exists - verify it's a directory
             if !path.is_dir() {
-                return Err(TransferError::invalid(err_upload_path_invalid(ctx.locale)));
+                return Err(TransferError::invalid(err_upload_path_invalid(locale)));
             }
 
             // Check that existing destination allows uploads
             if !allows_upload(&area_root, &path) {
                 return Err(TransferError::permission(
-                    err_upload_destination_not_allowed(ctx.locale),
+                    err_upload_destination_not_allowed(locale),
                 ));
             }
 
@@ -323,36 +373,36 @@ where
             let resolved_ancestor = loop {
                 ancestor = ancestor
                     .parent()
-                    .ok_or_else(|| TransferError::invalid(err_upload_path_invalid(ctx.locale)))?;
+                    .ok_or_else(|| TransferError::invalid(err_upload_path_invalid(locale)))?;
 
                 match resolve_path(&area_root, ancestor) {
                     Ok(resolved) => break resolved,
                     Err(crate::files::path::PathError::NotFound) => continue,
-                    Err(e) => return Err(path_error_to_transfer_error(e, ctx.locale)),
+                    Err(e) => return Err(path_error_to_transfer_error(e, locale)),
                 }
             };
 
             // Verify ancestor is a directory
             if !resolved_ancestor.is_dir() {
-                return Err(TransferError::invalid(err_upload_path_invalid(ctx.locale)));
+                return Err(TransferError::invalid(err_upload_path_invalid(locale)));
             }
 
             // Check that ancestor allows uploads (new directories inherit this)
             if !allows_upload(&area_root, &resolved_ancestor) {
                 return Err(TransferError::permission(
-                    err_upload_destination_not_allowed(ctx.locale),
+                    err_upload_destination_not_allowed(locale),
                 ));
             }
 
             // Create the destination directory and any intermediate directories
             std::fs::create_dir_all(&candidate)
-                .map_err(|_| TransferError::io_error(err_upload_write_failed(ctx.locale)))?;
+                .map_err(|_| TransferError::io_error(err_upload_write_failed(locale)))?;
 
             // Return the candidate path (now exists)
             candidate
         }
         Err(e) => {
-            return Err(path_error_to_transfer_error(e, ctx.locale));
+            return Err(path_error_to_transfer_error(e, locale));
         }
     };
 
@@ -666,23 +716,24 @@ async fn finalize_part_file_if_exists(
     Ok(())
 }
 
-/// Stream file data from client to .part file
-async fn stream_to_part_file<R>(
-    frame_reader: &mut FrameReader<R>,
+/// Stream file data from client to .part file with ban checking
+async fn stream_to_part_file<R, W>(
+    transfer: &mut Transfer<'_, R, W>,
     header: &FrameHeader,
     target_path: &Path,
     part_path: &Path,
     offset: u64,
     locale: &str,
-) -> Result<u64, TransferError>
+) -> Result<u64, ReceiveFileError>
 where
-    R: AsyncReadExt + Unpin,
+    R: AsyncRead + Unpin,
+    W: AsyncWrite + Unpin,
 {
     // Create parent directories if needed
     if let Some(parent) = target_path.parent() {
-        tokio::fs::create_dir_all(parent)
-            .await
-            .map_err(|_| TransferError::io_error(err_upload_write_failed(locale)))?;
+        tokio::fs::create_dir_all(parent).await.map_err(|_| {
+            ReceiveFileError::Transfer(TransferError::io_error(err_upload_write_failed(locale)))
+        })?;
     }
 
     // Open .part file for writing
@@ -706,23 +757,31 @@ where
         Ok(f) => f,
         Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => {
             // Race condition: another uploader created the .part file
-            return Err(TransferError::conflict(err_upload_conflict(locale)));
+            return Err(ReceiveFileError::Transfer(TransferError::conflict(
+                err_upload_conflict(locale),
+            )));
         }
         Err(_) => {
-            return Err(TransferError::io_error(err_upload_write_failed(locale)));
+            return Err(ReceiveFileError::Transfer(TransferError::io_error(
+                err_upload_write_failed(locale),
+            )));
         }
     };
 
-    // Stream data from client to .part file
-    let bytes_written = frame_reader
-        .stream_payload_to_writer(header, &mut file, DEFAULT_PROGRESS_TIMEOUT)
-        .await
-        .map_err(|_| TransferError::io_error(err_upload_connection_lost(locale)))?;
+    // Stream data from client to .part file with ban checking
+    let bytes_written = transfer
+        .stream_file_from_client(header, &mut file, DEFAULT_PROGRESS_TIMEOUT)
+        .await?;
+
+    // Check if we were banned mid-stream
+    if transfer.is_banned() {
+        return Err(ReceiveFileError::Banned);
+    }
 
     // Ensure all data is flushed to disk
-    file.sync_all()
-        .await
-        .map_err(|_| TransferError::io_error(err_upload_write_failed(locale)))?;
+    file.sync_all().await.map_err(|_| {
+        ReceiveFileError::Transfer(TransferError::io_error(err_upload_write_failed(locale)))
+    })?;
 
     Ok(bytes_written)
 }

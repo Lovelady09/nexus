@@ -264,16 +264,22 @@ context-menu-open = Open
 
 panel-connection-monitor = Connection Monitor
 panel-active-connections = Active Connections: { $count }
+tab-connections = Connections
+tab-transfers = Transfers
 col-nickname = Nickname
 col-username = Username
 col-ip-address = IP Address
 col-time = Time
+col-direction = Dir
+col-path = Path
+col-progress = Progress
 menu-info = Info
 menu-copy = Copy
 menu-kick = Kick
 menu-ban = Ban
 connection-monitor-loading = Loading connections…
 connection-monitor-no-connections = No connections
+connection-monitor-no-transfers = No active transfers
 
 # =============================================================================
 # Empty States

@@ -26,6 +26,7 @@ use crate::handlers::{
     self, HandlerContext, err_invalid_message_format, err_message_not_supported,
 };
 use crate::ip_rule_cache::IpRuleCache;
+use crate::transfers::TransferRegistry;
 use crate::users::UserManager;
 
 /// Parameters for handling a connection
@@ -41,6 +42,7 @@ pub struct ConnectionParams {
     pub ip_rule_cache: Arc<RwLock<IpRuleCache>>,
     pub file_index: Arc<FileIndex>,
     pub channel_manager: ChannelManager,
+    pub transfer_registry: Arc<TransferRegistry>,
 }
 
 /// Connection state for a single client
@@ -92,6 +94,7 @@ where
         ip_rule_cache,
         file_index,
         channel_manager,
+        transfer_registry,
     } = params;
 
     let (reader, writer) = tokio::io::split(socket);
@@ -146,6 +149,7 @@ where
                             ip_rule_cache: ip_rule_cache.clone(),
                             file_index: file_index.clone(),
                             channel_manager: &channel_manager,
+                            transfer_registry: transfer_registry.clone(),
                         };
 
                         if let Err(e) = handle_client_message(

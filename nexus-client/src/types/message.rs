@@ -260,6 +260,7 @@ pub enum Message {
         success: bool,
         error: Option<String>,
         connections: Option<Vec<nexus_common::protocol::ConnectionInfo>>,
+        transfers: Option<Vec<nexus_common::protocol::TransferInfo>>,
     },
     /// Connection monitor: Show user info for the selected user
     ConnectionMonitorInfo(String),
@@ -271,6 +272,10 @@ pub enum Message {
     ConnectionMonitorCopy(String),
     /// Connection monitor: Sort by column
     ConnectionMonitorSortBy(crate::types::ConnectionMonitorSortColumn),
+    /// Connection monitor: Tab selected
+    ConnectionMonitorTabSelected(crate::types::ConnectionMonitorTab),
+    /// Connection monitor: Sort transfers by column
+    ConnectionMonitorTransferSortBy(crate::types::TransferSortColumn),
     /// Toolbar: Show Server Info panel
     ShowServerInfo,
     /// Settings panel: Use 24-hour time format toggled

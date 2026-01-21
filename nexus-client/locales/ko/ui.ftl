@@ -259,16 +259,22 @@ context-menu-open = 열기
 
 panel-connection-monitor = 연결 모니터
 panel-active-connections = 활성 연결: { $count }
+tab-connections = 연결
+tab-transfers = 전송
 col-nickname = 닉네임
 col-username = 사용자명
 col-ip-address = IP 주소
 col-time = 시간
+col-direction = 방향
+col-path = 경로
+col-progress = 진행
 menu-info = 정보
 menu-copy = 복사
 menu-kick = 추방
 menu-ban = 차단
 connection-monitor-loading = 연결 로드 중…
 connection-monitor-no-connections = 연결 없음
+connection-monitor-no-transfers = 활성 전송 없음
 
 # =============================================================================
 # Empty States

@@ -501,9 +501,14 @@ impl NexusApp {
                 success,
                 error,
                 connections,
-            } => {
-                self.handle_connection_monitor_response(connection_id, success, error, connections)
-            }
+                transfers,
+            } => self.handle_connection_monitor_response(
+                connection_id,
+                success,
+                error,
+                connections,
+                transfers,
+            ),
             Message::ConnectionMonitorInfo(nickname) => {
                 self.handle_connection_monitor_info(nickname)
             }
@@ -514,6 +519,12 @@ impl NexusApp {
             Message::ConnectionMonitorCopy(value) => self.handle_connection_monitor_copy(value),
             Message::ConnectionMonitorSortBy(column) => {
                 self.handle_connection_monitor_sort_by(column)
+            }
+            Message::ConnectionMonitorTabSelected(tab) => {
+                self.handle_connection_monitor_tab_selected(tab)
+            }
+            Message::ConnectionMonitorTransferSortBy(column) => {
+                self.handle_connection_monitor_transfer_sort_by(column)
             }
 
             // Server info

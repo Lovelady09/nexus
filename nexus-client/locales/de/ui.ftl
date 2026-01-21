@@ -259,16 +259,22 @@ context-menu-open = Öffnen
 
 panel-connection-monitor = Verbindungsmonitor
 panel-active-connections = Aktive Verbindungen: { $count }
+tab-connections = Verbindungen
+tab-transfers = Übertragungen
 col-nickname = Spitzname
 col-username = Benutzername
 col-ip-address = IP-Adresse
 col-time = Zeit
+col-direction = Richt
+col-path = Pfad
+col-progress = Fortschritt
 menu-copy = Kopieren
 menu-info = Info
 menu-kick = Rauswerfen
 menu-ban = Sperren
 connection-monitor-loading = Verbindungen werden geladen…
 connection-monitor-no-connections = Keine Verbindungen
+connection-monitor-no-transfers = Keine aktiven Übertragungen
 
 # =============================================================================
 # Empty States

@@ -259,16 +259,22 @@ context-menu-open = Открыть
 
 panel-connection-monitor = Монитор Подключений
 panel-active-connections = Активные Подключения: { $count }
+tab-connections = Подключения
+tab-transfers = Передачи
 col-nickname = Псевдоним
 col-username = Пользователь
 col-ip-address = IP-Адрес
 col-time = Время
+col-direction = Напр
+col-path = Путь
+col-progress = Прогресс
 menu-info = Информация
 menu-copy = Копировать
 menu-kick = Выгнать
 menu-ban = Заблокировать
 connection-monitor-loading = Загрузка подключений…
 connection-monitor-no-connections = Нет подключений
+connection-monitor-no-transfers = Нет активных передач
 
 # =============================================================================
 # Empty States

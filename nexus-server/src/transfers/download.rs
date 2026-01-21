@@ -13,11 +13,13 @@ use std::path::Path;
 const FALLBACK_FILE_NAME: &str = "file";
 
 use tokio::fs::File;
-use tokio::io::{AsyncReadExt, AsyncSeekExt, AsyncWriteExt, BufReader, SeekFrom};
+use tokio::io::{
+    AsyncRead, AsyncReadExt, AsyncSeekExt, AsyncWrite, AsyncWriteExt, BufReader, SeekFrom,
+};
 
 use nexus_common::ERROR_KIND_IO_ERROR;
-use nexus_common::framing::{FrameReader, FrameWriter, MessageId};
-use nexus_common::io::{read_client_message_with_full_timeout, send_server_message_with_id};
+use nexus_common::framing::{FrameReader, FrameWriter};
+use nexus_common::io::read_client_message_with_full_timeout;
 use nexus_common::protocol::{ClientMessage, ServerMessage};
 
 use crate::constants::DEFAULT_FILENAME;
@@ -34,54 +36,60 @@ use super::helpers::{
     generate_transfer_id, path_error_to_transfer_error, resolve_area_root,
     send_download_error_and_close, send_download_transfer_error, validate_transfer_path,
 };
-use super::types::{DownloadParams, FileInfo, TransferContext};
+use super::transfer::{StreamError, Transfer};
+use super::types::{AuthenticatedUser, DownloadParams, FileInfo};
 
 /// Handle a file download request
 pub(crate) async fn handle_download<R, W>(
-    ctx: &mut TransferContext<'_, R, W>,
+    transfer: &mut Transfer<'_, R, W>,
     params: DownloadParams,
 ) -> io::Result<()>
 where
-    R: AsyncReadExt + Unpin,
-    W: AsyncWriteExt + Unpin,
+    R: AsyncRead + Unpin,
+    W: AsyncWrite + Unpin,
 {
     let DownloadParams {
         path: download_path,
         root: use_root,
     } = params;
 
+    // Extract values to avoid borrow checker issues
+    let locale = transfer.locale().to_string();
+    let username = transfer.user().username.clone();
+    let is_admin = transfer.user().is_admin;
+    let debug = transfer.debug();
+    let peer_addr = transfer.peer_addr();
+    let file_root = transfer.file_root();
+
     // Validate and resolve path using shared helpers
-    let resolved_path = match validate_and_resolve_download_path(ctx, &download_path, use_root) {
+    let resolved_path = match validate_and_resolve_download_path(
+        transfer.user(),
+        file_root,
+        &locale,
+        &download_path,
+        use_root,
+    ) {
         Ok(path) => path,
-        Err(e) => return send_download_transfer_error(ctx.frame_writer, &e).await,
+        Err(e) => return send_download_transfer_error(transfer.writer(), &e).await,
     };
 
     // Check dropbox access
-    if !can_access_for_download(&resolved_path, &ctx.user.username, ctx.user.is_admin) {
-        return send_download_transfer_error(
-            ctx.frame_writer,
-            &TransferError::permission(err_transfer_access_denied(ctx.locale)),
-        )
-        .await;
+    if !can_access_for_download(&resolved_path, &username, is_admin) {
+        let err = TransferError::permission(err_transfer_access_denied(&locale));
+        return send_download_transfer_error(transfer.writer(), &err).await;
     }
 
     // Scan files to transfer
-    let files = match scan_files_for_transfer(
-        &resolved_path,
-        &ctx.user.username,
-        ctx.user.is_admin,
-        ctx.debug,
-    )
-    .await
-    {
+    let files = match scan_files_for_transfer(&resolved_path, &username, is_admin, debug).await {
         Ok(files) => files,
         Err(e) => {
-            if ctx.debug {
-                eprintln!("Failed to scan files from {}: {e}", ctx.peer_addr);
+            if debug {
+                eprintln!("Failed to scan files from {}: {e}", peer_addr);
             }
+            let err_msg = err_transfer_read_failed(&locale);
             return send_download_error_and_close(
-                ctx.frame_writer,
-                &err_transfer_read_failed(ctx.locale),
+                transfer.writer(),
+                &err_msg,
                 Some(ERROR_KIND_IO_ERROR),
             )
             .await;
@@ -93,12 +101,12 @@ where
     let file_count = files.len() as u64;
 
     // Generate transfer ID for logging
-    let transfer_id = generate_transfer_id();
+    let log_transfer_id = generate_transfer_id();
 
-    if ctx.debug {
+    if debug {
         eprintln!(
-            "Download {transfer_id}: {} files, {} bytes from {}",
-            file_count, total_size, ctx.peer_addr
+            "Download {log_transfer_id}: {} files, {} bytes from {}",
+            file_count, total_size, peer_addr
         );
     }
 
@@ -109,27 +117,32 @@ where
         error_kind: None,
         size: Some(total_size),
         file_count: Some(file_count),
-        transfer_id: Some(transfer_id.clone()),
+        transfer_id: Some(log_transfer_id.clone()),
     };
-    send_server_message_with_id(ctx.frame_writer, &response, MessageId::new()).await?;
+    if let Err(e) = transfer.send(&response).await {
+        if debug {
+            eprintln!("Download {log_transfer_id}: Failed to send response: {e}");
+        }
+        return Ok(());
+    }
 
     // Stream each file
-    let mut transfer_success = true;
-    let mut transfer_error: Option<String> = None;
-    let mut transfer_error_kind: Option<String> = None;
+    let mut success = true;
+    let mut error: Option<String> = None;
+    let mut error_kind: Option<String> = None;
 
     for file_info in &files {
         // Canonicalize path to handle symlinks
         let canonical_path = match std::fs::canonicalize(&file_info.absolute_path) {
             Ok(p) => p,
             Err(e) => {
-                transfer_success = false;
-                transfer_error = Some(err_transfer_file_failed(
-                    ctx.locale,
+                success = false;
+                error = Some(err_transfer_file_failed(
+                    &locale,
                     &file_info.relative_path,
                     &e.to_string(),
                 ));
-                transfer_error_kind = Some(ERROR_KIND_IO_ERROR.to_string());
+                error_kind = Some(ERROR_KIND_IO_ERROR.to_string());
                 break;
             }
         };
@@ -138,49 +151,58 @@ where
         let sha256 = match compute_file_sha256_with_keepalive(
             &canonical_path,
             file_info.relative_path.clone(),
-            ctx.frame_writer,
+            transfer.writer(),
         )
         .await
         {
             Ok(hash) => hash,
             Err(e) => {
-                transfer_success = false;
-                transfer_error = Some(err_transfer_file_failed(
-                    ctx.locale,
+                success = false;
+                error = Some(err_transfer_file_failed(
+                    &locale,
                     &file_info.relative_path,
                     &e.to_string(),
                 ));
-                transfer_error_kind = Some(ERROR_KIND_IO_ERROR.to_string());
+                error_kind = Some(ERROR_KIND_IO_ERROR.to_string());
                 break;
             }
         };
 
         match stream_file_with_hash(
-            ctx.frame_reader,
-            ctx.frame_writer,
+            transfer,
             file_info,
             &sha256,
             &canonical_path,
-            ctx.debug,
-            &transfer_id,
+            debug,
+            &log_transfer_id,
         )
         .await
         {
-            Ok(()) => {}
-            Err(e) => {
-                if ctx.debug {
+            Ok(()) => {
+                // bytes_transferred is updated inside stream_file_with_hash
+            }
+            Err(StreamFileError::Banned) => {
+                // Just close the socket - client gets ban reason on BBS connection
+                if debug {
+                    eprintln!("Download {log_transfer_id}: Terminated by ban");
+                }
+                let _ = transfer.writer().get_mut().shutdown().await;
+                return Ok(());
+            }
+            Err(StreamFileError::Io(e)) => {
+                if debug {
                     eprintln!(
-                        "Download {transfer_id}: Error streaming {}: {e}",
+                        "Download {log_transfer_id}: Error streaming {}: {e}",
                         file_info.relative_path
                     );
                 }
-                transfer_success = false;
-                transfer_error = Some(err_transfer_file_failed(
-                    ctx.locale,
+                success = false;
+                error = Some(err_transfer_file_failed(
+                    &locale,
                     &file_info.relative_path,
                     &e.to_string(),
                 ));
-                transfer_error_kind = Some(ERROR_KIND_IO_ERROR.to_string());
+                error_kind = Some(ERROR_KIND_IO_ERROR.to_string());
                 break;
             }
         }
@@ -188,56 +210,78 @@ where
 
     // Send TransferComplete
     let complete = ServerMessage::TransferComplete {
-        success: transfer_success,
-        error: transfer_error,
-        error_kind: transfer_error_kind,
+        success,
+        error,
+        error_kind,
     };
-    send_server_message_with_id(ctx.frame_writer, &complete, MessageId::new()).await?;
+    let _ = transfer.send(&complete).await; // Best effort - connection may be closing
 
-    if ctx.debug {
-        if transfer_success {
-            eprintln!("Download {transfer_id}: Complete");
+    if debug {
+        if success {
+            eprintln!("Download {log_transfer_id}: Complete");
         } else {
-            eprintln!("Download {transfer_id}: Failed");
+            eprintln!("Download {log_transfer_id}: Failed");
         }
     }
 
     // Close connection
-    let _ = ctx.frame_writer.get_mut().shutdown().await;
+    let _ = transfer.writer().get_mut().shutdown().await;
 
     Ok(())
+}
+
+/// Error type for stream_file_with_hash
+enum StreamFileError {
+    Io(io::Error),
+    Banned,
+}
+
+impl From<io::Error> for StreamFileError {
+    fn from(e: io::Error) -> Self {
+        StreamFileError::Io(e)
+    }
+}
+
+impl From<StreamError> for StreamFileError {
+    fn from(e: StreamError) -> Self {
+        match e {
+            StreamError::Banned => StreamFileError::Banned,
+            StreamError::Io(e) => StreamFileError::Io(e),
+            StreamError::ConnectionClosed => {
+                StreamFileError::Io(io::Error::other("Connection closed"))
+            }
+        }
+    }
 }
 
 /// Validate and resolve a download path
 ///
 /// This helper consolidates path validation, permission checks, and resolution
 /// into a single function to reduce code duplication.
-fn validate_and_resolve_download_path<R, W>(
-    ctx: &TransferContext<'_, R, W>,
+fn validate_and_resolve_download_path(
+    user: &AuthenticatedUser,
+    file_root: &Path,
+    locale: &str,
     download_path: &str,
     use_root: bool,
-) -> Result<std::path::PathBuf, TransferError>
-where
-    R: AsyncReadExt + Unpin,
-    W: AsyncWriteExt + Unpin,
-{
+) -> Result<std::path::PathBuf, TransferError> {
     // Validate path
-    validate_transfer_path(download_path, ctx.locale)?;
+    validate_transfer_path(download_path, locale)?;
 
     // Check download permission
-    check_permission(ctx.user, Permission::FileDownload, ctx.locale)?;
+    check_permission(user, Permission::FileDownload, locale)?;
 
     // Check file_root permission if using root mode
-    check_root_permission(ctx.user, use_root, ctx.locale)?;
+    check_root_permission(user, use_root, locale)?;
 
     // Resolve area root
-    let area_root = resolve_area_root(ctx.file_root, &ctx.user.username, use_root, ctx.locale)?;
+    let area_root = resolve_area_root(file_root, &user.username, use_root, locale)?;
 
     // Build candidate path
-    let candidate = build_validated_path(&area_root, download_path, ctx.locale)?;
+    let candidate = build_validated_path(&area_root, download_path, locale)?;
 
     // Resolve to canonical path
-    resolve_path(&area_root, &candidate).map_err(|e| path_error_to_transfer_error(e, ctx.locale))
+    resolve_path(&area_root, &candidate).map_err(|e| path_error_to_transfer_error(e, locale))
 }
 
 /// Check if a path can be accessed for download (dropbox restrictions)
@@ -405,30 +449,31 @@ fn scan_directory_recursive<'a>(
 }
 
 /// Stream a single file to the client (with pre-computed hash)
+///
+/// Uses Transfer's ban-checked streaming to allow mid-transfer termination.
 async fn stream_file_with_hash<R, W>(
-    frame_reader: &mut FrameReader<R>,
-    frame_writer: &mut FrameWriter<W>,
+    transfer: &mut Transfer<'_, R, W>,
     file_info: &FileInfo,
     sha256: &str,
     canonical_path: &Path,
     debug: bool,
     transfer_id: &str,
-) -> io::Result<()>
+) -> Result<(), StreamFileError>
 where
-    R: AsyncReadExt + Unpin,
-    W: AsyncWriteExt + Unpin,
+    R: AsyncRead + Unpin,
+    W: AsyncWrite + Unpin,
 {
-    // Send FileStart
+    // Send FileStart with ban checking
     let file_start = ServerMessage::FileStart {
         path: file_info.relative_path.clone(),
         size: file_info.size,
         sha256: sha256.to_string(),
     };
-    let file_start_id = MessageId::new();
-    send_server_message_with_id(frame_writer, &file_start, file_start_id).await?;
+    transfer.send(&file_start).await?;
 
     // Read FileStartResponse to determine resume offset
-    // Pass frame_writer so we can send keepalives while computing partial hash for resume
+    // Get reader/writer for the response exchange
+    let (frame_reader, frame_writer) = transfer.reader_writer();
     let offset = read_file_start_response(
         frame_reader,
         frame_writer,
@@ -475,11 +520,15 @@ where
         reader.seek(SeekFrom::Start(offset)).await?;
     }
 
-    // Stream file data using the framing helper
-    frame_writer
-        .write_streaming_frame(MessageId::new(), "FileData", &mut reader, bytes_to_send)
-        .await
-        .map_err(|e| io::Error::other(format!("Failed to stream file: {e}")))?;
+    // Stream file data with ban checking between chunks
+    let bytes_written = transfer
+        .stream_file_to_client("FileData", &mut reader, bytes_to_send)
+        .await?;
+
+    // Check if we were banned mid-stream (frame was finished but short)
+    if bytes_written < bytes_to_send || transfer.is_banned() {
+        return Err(StreamFileError::Banned);
+    }
 
     Ok(())
 }

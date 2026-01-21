@@ -145,13 +145,14 @@ where
         Err(e) => return Err(io::Error::other(format!("Failed to read login: {e}"))),
     };
 
-    let (raw_username, password, request_locale) = match received.message {
+    let (raw_username, password, request_locale, request_nickname) = match received.message {
         ClientMessage::Login {
             username,
             password,
             locale: req_locale,
+            nickname,
             ..
-        } => (username, password, req_locale),
+        } => (username, password, req_locale, nickname),
         _ => {
             let response = login_error_response(err_not_logged_in(locale));
             send_server_message_with_id(frame_writer, &response, received.message_id).await?;
@@ -258,9 +259,18 @@ where
     };
     send_server_message_with_id(frame_writer, &response, received.message_id).await?;
 
+    // Determine nickname: use requested nickname for shared accounts, otherwise username
+    let nickname = if account.is_shared {
+        request_nickname.unwrap_or_else(|| account.username.clone())
+    } else {
+        account.username.clone()
+    };
+
     Ok(AuthenticatedUser {
+        nickname,
         username: account.username,
         is_admin: account.is_admin,
+        is_shared: account.is_shared,
         permissions,
     })
 }

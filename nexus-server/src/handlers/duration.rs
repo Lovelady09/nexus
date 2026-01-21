@@ -1,6 +1,7 @@
-//! Duration parsing utilities for handlers
+//! Duration parsing and formatting utilities for handlers
 //!
-//! Shared utilities for parsing duration strings in ban/trust handlers.
+//! Shared utilities for parsing duration strings and formatting remaining time
+//! in ban/trust handlers and transfer termination.
 
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -72,6 +73,37 @@ pub fn parse_duration(duration: &Option<String>) -> Result<Option<i64>, ()> {
         .as_secs();
 
     Ok(Some((now + seconds) as i64))
+}
+
+/// Format remaining duration for display (e.g., "2h 30m")
+///
+/// Takes a Unix timestamp for when a ban expires and returns a human-readable
+/// string showing how much time remains.
+///
+/// # Arguments
+/// * `expires_at` - Unix timestamp when the ban expires
+///
+/// # Returns
+/// A string like "2d 5h", "3h 45m", or "15m" (minimum 1m)
+pub fn format_duration_remaining(expires_at: i64) -> String {
+    let now = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .expect("system time before Unix epoch")
+        .as_secs() as i64;
+
+    let remaining_secs = (expires_at - now).max(0);
+
+    let days = remaining_secs / SECONDS_PER_DAY as i64;
+    let hours = (remaining_secs % SECONDS_PER_DAY as i64) / SECONDS_PER_HOUR as i64;
+    let minutes = (remaining_secs % SECONDS_PER_HOUR as i64) / SECONDS_PER_MINUTE as i64;
+
+    if days > 0 {
+        format!("{}d {}h", days, hours)
+    } else if hours > 0 {
+        format!("{}h {}m", hours, minutes)
+    } else {
+        format!("{}m", minutes.max(1))
+    }
 }
 
 #[cfg(test)]
@@ -179,5 +211,69 @@ mod tests {
     fn test_parse_duration_whitespace() {
         assert_eq!(parse_duration(&Some("  ".to_string())), Ok(None));
         assert_eq!(parse_duration(&Some(" 0 ".to_string())), Ok(None));
+    }
+
+    // =========================================================================
+    // Tests for format_duration_remaining
+    // =========================================================================
+
+    #[test]
+    fn test_format_duration_remaining_days() {
+        let now = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_secs() as i64;
+
+        // 2 days and 5 hours from now
+        let expires_at = now + (2 * SECONDS_PER_DAY as i64) + (5 * SECONDS_PER_HOUR as i64);
+        assert_eq!(format_duration_remaining(expires_at), "2d 5h");
+    }
+
+    #[test]
+    fn test_format_duration_remaining_hours() {
+        let now = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_secs() as i64;
+
+        // 3 hours and 45 minutes from now
+        let expires_at = now + (3 * SECONDS_PER_HOUR as i64) + (45 * SECONDS_PER_MINUTE as i64);
+        assert_eq!(format_duration_remaining(expires_at), "3h 45m");
+    }
+
+    #[test]
+    fn test_format_duration_remaining_minutes() {
+        let now = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_secs() as i64;
+
+        // 15 minutes from now
+        let expires_at = now + (15 * SECONDS_PER_MINUTE as i64);
+        assert_eq!(format_duration_remaining(expires_at), "15m");
+    }
+
+    #[test]
+    fn test_format_duration_remaining_minimum_one_minute() {
+        let now = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_secs() as i64;
+
+        // 30 seconds from now (less than a minute)
+        let expires_at = now + 30;
+        assert_eq!(format_duration_remaining(expires_at), "1m");
+    }
+
+    #[test]
+    fn test_format_duration_remaining_expired() {
+        let now = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_secs() as i64;
+
+        // Already expired (in the past)
+        let expires_at = now - 100;
+        assert_eq!(format_duration_remaining(expires_at), "1m");
     }
 }

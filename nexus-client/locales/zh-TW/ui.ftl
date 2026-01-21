@@ -259,16 +259,22 @@ context-menu-open = 開啟
 
 panel-connection-monitor = 連線監視器
 panel-active-connections = 活躍連線: { $count }
+tab-connections = 連線
+tab-transfers = 傳輸
 col-nickname = 暱稱
 col-username = 用戶名
 col-ip-address = IP 位址
 col-time = 時間
+col-direction = 方向
+col-path = 路徑
+col-progress = 進度
 menu-info = 資訊
 menu-copy = 複製
 menu-kick = 踢出
 menu-ban = 封鎖
 connection-monitor-loading = 正在載入連線…
 connection-monitor-no-connections = 無連線
+connection-monitor-no-transfers = 無活躍傳輸
 
 # =============================================================================
 # Empty States

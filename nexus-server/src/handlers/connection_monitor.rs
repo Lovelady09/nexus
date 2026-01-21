@@ -53,6 +53,7 @@ where
             success: false,
             error: Some(err_permission_denied(ctx.locale)),
             connections: None,
+            transfers: None,
         };
         return ctx.send_message(&response).await;
     }
@@ -66,6 +67,7 @@ where
             nickname: s.nickname,
             username: s.username,
             ip: s.address.ip().to_string(),
+            port: s.address.port(),
             login_time: s.login_time,
             is_admin: s.is_admin,
             is_shared: s.is_shared,
@@ -75,10 +77,22 @@ where
     // Sort alphabetically by nickname
     connections.sort_by(|a, b| a.nickname.to_lowercase().cmp(&b.nickname.to_lowercase()));
 
+    // Get active transfers from registry
+    let mut transfers: Vec<_> = ctx
+        .transfer_registry
+        .snapshot()
+        .iter()
+        .map(|t| t.to_transfer_info())
+        .collect();
+
+    // Sort transfers by nickname
+    transfers.sort_by(|a, b| a.nickname.to_lowercase().cmp(&b.nickname.to_lowercase()));
+
     let response = ServerMessage::ConnectionMonitorResponse {
         success: true,
         error: None,
         connections: Some(connections),
+        transfers: Some(transfers),
     };
     ctx.send_message(&response).await
 }

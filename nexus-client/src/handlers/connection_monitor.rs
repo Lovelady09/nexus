@@ -6,8 +6,8 @@ use nexus_common::protocol::ClientMessage;
 use crate::NexusApp;
 use crate::i18n::t;
 use crate::types::{
-    ActivePanel, ConnectionMonitorSortColumn, DisconnectAction, DisconnectDialogState, Message,
-    PendingRequests, ResponseRouting,
+    ActivePanel, ConnectionMonitorSortColumn, ConnectionMonitorTab, DisconnectAction,
+    DisconnectDialogState, Message, PendingRequests, ResponseRouting, TransferSortColumn,
 };
 use crate::views::constants::{PERMISSION_BAN_CREATE, PERMISSION_USER_INFO, PERMISSION_USER_KICK};
 
@@ -77,6 +77,7 @@ impl NexusApp {
         success: bool,
         error: Option<String>,
         connections: Option<Vec<nexus_common::protocol::ConnectionInfo>>,
+        transfers: Option<Vec<nexus_common::protocol::TransferInfo>>,
     ) -> Task<Message> {
         let Some(conn) = self.connections.get_mut(&connection_id) else {
             return Task::none();
@@ -86,9 +87,11 @@ impl NexusApp {
 
         if success {
             conn.connection_monitor.connections = Some(Ok(connections.unwrap_or_default()));
+            conn.connection_monitor.transfers = Some(Ok(transfers.unwrap_or_default()));
         } else {
-            conn.connection_monitor.connections =
-                Some(Err(error.unwrap_or_else(|| t("err-unknown").to_string())));
+            let err = error.unwrap_or_else(|| t("err-unknown").to_string());
+            conn.connection_monitor.connections = Some(Err(err.clone()));
+            conn.connection_monitor.transfers = Some(Err(err));
         }
 
         Task::none()
@@ -168,7 +171,7 @@ impl NexusApp {
         Task::none()
     }
 
-    /// Handle sort column change
+    /// Handle sort column change for connections
     pub fn handle_connection_monitor_sort_by(
         &mut self,
         column: ConnectionMonitorSortColumn,
@@ -186,6 +189,47 @@ impl NexusApp {
         } else {
             conn.connection_monitor.sort_column = column;
             conn.connection_monitor.sort_ascending = true;
+        }
+
+        Task::none()
+    }
+
+    /// Handle tab selection
+    pub fn handle_connection_monitor_tab_selected(
+        &mut self,
+        tab: ConnectionMonitorTab,
+    ) -> Task<Message> {
+        let Some(conn_id) = self.active_connection else {
+            return Task::none();
+        };
+        let Some(conn) = self.connections.get_mut(&conn_id) else {
+            return Task::none();
+        };
+
+        conn.connection_monitor.active_tab = tab;
+
+        Task::none()
+    }
+
+    /// Handle sort column change for transfers
+    pub fn handle_connection_monitor_transfer_sort_by(
+        &mut self,
+        column: TransferSortColumn,
+    ) -> Task<Message> {
+        let Some(conn_id) = self.active_connection else {
+            return Task::none();
+        };
+        let Some(conn) = self.connections.get_mut(&conn_id) else {
+            return Task::none();
+        };
+
+        // If clicking same column, toggle direction; otherwise set new column ascending
+        if conn.connection_monitor.transfer_sort_column == column {
+            conn.connection_monitor.transfer_sort_ascending =
+                !conn.connection_monitor.transfer_sort_ascending;
+        } else {
+            conn.connection_monitor.transfer_sort_column = column;
+            conn.connection_monitor.transfer_sort_ascending = true;
         }
 
         Task::none()
