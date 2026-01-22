@@ -142,19 +142,23 @@ fn format_bytes(bytes: u64) -> String {
     }
 }
 
-/// Format transfer progress as "X / Y" or percentage
-fn format_progress(bytes_transferred: u64, total_size: u64) -> String {
+/// Format transfer progress as percentage
+fn format_progress_percent(bytes_transferred: u64, total_size: u64) -> String {
     if total_size == 0 {
-        format_bytes(bytes_transferred)
+        "0%".to_string()
     } else {
         let percent = (bytes_transferred as f64 / total_size as f64 * 100.0).min(100.0);
-        format!(
-            "{} / {} ({:.0}%)",
-            format_bytes(bytes_transferred),
-            format_bytes(total_size),
-            percent
-        )
+        format!("{:.0}%", percent)
     }
+}
+
+/// Format transfer progress tooltip showing bytes transferred / total
+fn format_progress_tooltip(bytes_transferred: u64, total_size: u64) -> String {
+    format!(
+        "{} / {}",
+        format_bytes(bytes_transferred),
+        format_bytes(total_size)
+    )
 }
 
 /// Build a context menu with Info, Copy, Kick, Ban actions for connections
@@ -698,18 +702,13 @@ fn lazy_transfer_table(deps: TransferTableDeps) -> Element<'static, Message> {
 
         // Direction column - show ↓ for download, ↑ for upload
         let direction_column = table::column(direction_header, move |transfer: TransferInfo| {
-            let direction_for_value = transfer.direction.clone();
             // "download" means server is sending to client (client downloading)
             // "upload" means client is sending to server (client uploading)
-            let icon_element: Element<'static, Message> = if transfer.direction == "download" {
-                icon::download().size(TEXT_SIZE).into()
+            if transfer.direction == "download" {
+                icon::download().size(TEXT_SIZE)
             } else {
-                icon::upload().size(TEXT_SIZE).into()
-            };
-
-            ContextMenu::new(icon_element, move || {
-                build_transfer_context_menu(direction_for_value.clone())
-            })
+                icon::upload().size(TEXT_SIZE)
+            }
         })
         .width(DIRECTION_COLUMN_WIDTH);
 
@@ -801,20 +800,27 @@ fn lazy_transfer_table(deps: TransferTableDeps) -> Element<'static, Message> {
             ))
             .into();
 
-        // Progress column
+        // Progress column (percentage with tooltip showing bytes)
         let progress_column = table::column(progress_header, move |transfer: TransferInfo| {
-            let progress_str = format_progress(transfer.bytes_transferred, transfer.total_size);
-            let progress_for_value = progress_str.clone();
+            let progress_str =
+                format_progress_percent(transfer.bytes_transferred, transfer.total_size);
+            let tooltip_str =
+                format_progress_tooltip(transfer.bytes_transferred, transfer.total_size);
 
-            let content: Element<'static, Message> = shaped_text(progress_str)
+            let content = shaped_text(progress_str)
                 .size(TEXT_SIZE)
                 .style(muted_text_style)
-                .wrapping(Wrapping::Word)
-                .into();
+                .wrapping(Wrapping::Word);
 
-            ContextMenu::new(content, move || {
-                build_transfer_context_menu(progress_for_value.clone())
-            })
+            tooltip(
+                content,
+                container(shaped_text(tooltip_str).size(TOOLTIP_TEXT_SIZE))
+                    .padding(TOOLTIP_BACKGROUND_PADDING)
+                    .style(tooltip_container_style),
+                tooltip::Position::Top,
+            )
+            .gap(TOOLTIP_GAP)
+            .padding(TOOLTIP_PADDING)
         })
         .width(Fill);
 

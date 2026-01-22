@@ -149,6 +149,11 @@ where
         self.info.get_bytes_transferred()
     }
 
+    /// Set the total size (used for downloads after path resolution)
+    pub fn set_total_size(&self, size: u64) {
+        self.info.set_total_size(size);
+    }
+
     /// Get the shared active transfer state
     #[allow(dead_code)] // Public API for future connection monitor integration
     pub fn info(&self) -> &Arc<ActiveTransfer> {
@@ -285,6 +290,9 @@ where
 
             remaining -= bytes_read as u64;
             total_written += bytes_read as u64;
+
+            // Update shared progress atomically
+            self.info.add_bytes_transferred(bytes_read as u64);
         }
 
         // Write frame terminator
@@ -299,9 +307,6 @@ where
             .flush()
             .await
             .map_err(StreamError::Io)?;
-
-        // Update shared progress atomically
-        self.info.add_bytes_transferred(total_written);
 
         Ok(total_written)
     }
@@ -373,6 +378,9 @@ where
 
             remaining -= bytes_read as u64;
             total_written += bytes_read as u64;
+
+            // Update shared progress atomically
+            self.info.add_bytes_transferred(bytes_read as u64);
         }
 
         // Flush what we wrote
@@ -413,9 +421,6 @@ where
                 "Missing frame terminator",
             )));
         }
-
-        // Update shared progress atomically
-        self.info.add_bytes_transferred(total_written);
 
         Ok(total_written)
     }

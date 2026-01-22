@@ -100,6 +100,9 @@ where
     let total_size: u64 = files.iter().fold(0u64, |acc, f| acc.saturating_add(f.size));
     let file_count = files.len() as u64;
 
+    // Update transfer registry with actual size (was 0 at registration time)
+    transfer.set_total_size(total_size);
+
     // Generate transfer ID for logging
     let log_transfer_id = generate_transfer_id();
 
