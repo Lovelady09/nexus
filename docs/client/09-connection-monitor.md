@@ -1,22 +1,30 @@
 # Connection Monitor
 
-This guide covers the Connection Monitor panel for viewing and managing active server connections.
+This guide covers the Connection Monitor panel for viewing and managing active server connections and file transfers.
 
 ## Overview
 
-The Connection Monitor shows all users currently connected to the server. It's primarily used by administrators to:
+The Connection Monitor shows all users currently connected to the server and active file transfers. It's primarily used by administrators to:
 
 - See who is online and from where
 - View connection duration
+- Monitor active file transfers and their progress
 - Quickly access user actions (Info, Kick, Ban)
 
 ## Accessing the Connection Monitor
 
 Click the **Connection Monitor** icon in the toolbar (monitor icon). You need the `connection_monitor` permission to access this feature.
 
-## Connection Table
+## Tabs
 
-The panel displays a sortable table with the following columns:
+The Connection Monitor has two tabs:
+
+- **Connections** — Active user sessions on the BBS port
+- **Transfers** — Active file uploads and downloads on the transfer port
+
+## Connections Tab
+
+The Connections tab displays a sortable table with the following columns:
 
 | Column | Description |
 |--------|-------------|
@@ -59,9 +67,30 @@ Right-click any cell in a row to access the context menu:
 
 Both actions open the disconnect dialog where you can optionally provide a reason.
 
+## Transfers Tab
+
+The Transfers tab shows active file uploads and downloads with the following columns:
+
+| Column | Description |
+|--------|-------------|
+| **Direction** | Upload (↑) or download (↓) icon |
+| **Nickname** | Display name (colored for admins and shared accounts) |
+| **IP Address** | Remote IP address |
+| **Path** | File path being transferred |
+| **Progress** | Transfer progress as percentage (hover for bytes detail) |
+| **Time** | Transfer duration |
+
+### Progress Column
+
+The Progress column shows the percentage complete (e.g., "45%"). Hover over the value to see a tooltip with the exact bytes transferred (e.g., "45.2 MB / 100.5 MB").
+
+### Context Menu
+
+Right-click the Nickname, IP Address, or Path columns to access the context menu with Copy option.
+
 ## Refreshing
 
-Click the **refresh** button (circular arrow icon) to reload the connection list. The data is not auto-refreshed; use this button to see recent connections.
+Click the **refresh** button (circular arrow icon) to reload the connection and transfer lists. The data is not auto-refreshed; use this button to see current status.
 
 ## Shared Accounts
 
