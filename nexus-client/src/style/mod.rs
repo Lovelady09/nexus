@@ -48,7 +48,7 @@ pub use icons::*;
 pub use layout::*;
 pub use shaping::{shaped_text, shaped_text_wrapped};
 pub use widgets::{
-    alternating_row_style, chat_tab_active_style, close_button_on_primary_style,
+    alternating_row_style, badge_style, chat_tab_active_style, close_button_on_primary_style,
     content_background_style, context_menu_button_style, context_menu_container_style,
     context_menu_item_danger_style, danger_icon_button_style, disabled_icon_button_style,
     drop_overlay_style, error_text_style, icon_button_with_hover_style, list_item_button_style,

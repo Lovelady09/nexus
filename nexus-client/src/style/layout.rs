@@ -362,3 +362,22 @@ pub const CHAT_MESSAGE_SEPARATOR: &str = ": ";
 
 /// Prefix for action messages (/me), IRC-style (e.g., "*** alice waves")
 pub const CHAT_ACTION_PREFIX: &str = "*** ";
+
+// ============================================================================
+// Badge (Notification Count)
+// ============================================================================
+
+/// Badge size (height and minimum width for circular single-digit appearance)
+pub const BADGE_SIZE: f32 = 16.0;
+
+/// Badge height (matches BADGE_SIZE)
+pub const BADGE_HEIGHT: f32 = BADGE_SIZE;
+
+/// Badge font size (small text inside the badge)
+pub const BADGE_FONT_SIZE: f32 = 10.0;
+
+/// Badge horizontal padding (for numbers wider than single digit)
+pub const BADGE_PADDING_HORIZONTAL: f32 = 4.0;
+
+/// Badge border radius (fully rounded for pill shape)
+pub const BADGE_BORDER_RADIUS: f32 = 8.0;

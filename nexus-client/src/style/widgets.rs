@@ -384,6 +384,23 @@ pub fn rule_separator_style(theme: &Theme) -> rule::Style {
 // Panel Helpers
 // ============================================================================
 
+/// Badge style for notification count overlays
+///
+/// Creates a small pill-shaped badge with the primary color background.
+/// Used for showing counts on toolbar buttons (e.g., active transfers).
+pub fn badge_style(theme: &Theme) -> container::Style {
+    let ext = theme.extended_palette();
+    container::Style {
+        background: Some(Background::Color(ext.primary.strong.color)),
+        text_color: Some(ext.primary.strong.text),
+        border: Border {
+            radius: super::BADGE_BORDER_RADIUS.into(),
+            ..Default::default()
+        },
+        ..Default::default()
+    }
+}
+
 /// Build a centered panel title row
 ///
 /// Creates a consistent title row for panel headers with proper sizing

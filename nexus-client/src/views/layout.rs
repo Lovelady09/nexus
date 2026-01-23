@@ -24,9 +24,10 @@ use crate::config::settings::ProxySettings;
 use crate::i18n::t;
 use crate::icon;
 use crate::style::{
-    BORDER_WIDTH, EMPTY_VIEW_SIZE, PANEL_SPACING, TOOLBAR_ICON_SIZE, TOOLBAR_ICON_SPACING,
+    BADGE_FONT_SIZE, BADGE_HEIGHT, BADGE_PADDING_HORIZONTAL, BADGE_SIZE, BORDER_WIDTH,
+    EMPTY_VIEW_SIZE, PANEL_SPACING, TOOLBAR_ICON_SIZE, TOOLBAR_ICON_SPACING,
     TOOLBAR_PADDING_HORIZONTAL, TOOLBAR_PADDING_VERTICAL, TOOLBAR_SPACING, TOOLBAR_TITLE_SIZE,
-    TOOLTIP_BACKGROUND_PADDING, TOOLTIP_GAP, TOOLTIP_PADDING, TOOLTIP_TEXT_SIZE,
+    TOOLTIP_BACKGROUND_PADDING, TOOLTIP_GAP, TOOLTIP_PADDING, TOOLTIP_TEXT_SIZE, badge_style,
     content_background_style, disabled_icon_button_style, modal_overlay_style, muted_text_style,
     separator_style, shaped_text, toolbar_background_style, toolbar_button_style,
     tooltip_container_style, transparent_icon_button_style,
@@ -193,6 +194,10 @@ pub fn main_layout<'a>(config: ViewConfig<'a>) -> Element<'a, Message> {
         .and_then(|id| config.connections.get(&id))
         .and_then(|conn| conn.server_name.as_deref());
 
+    // Count active + queued transfers for badge
+    let transfer_count =
+        config.transfer_manager.active().count() + config.transfer_manager.queued().count();
+
     // Top toolbar
     let toolbar = build_toolbar(ToolbarState {
         show_bookmarks: config.ui_state.show_bookmarks,
@@ -203,6 +208,7 @@ pub fn main_layout<'a>(config: ViewConfig<'a>) -> Element<'a, Message> {
         permissions,
         can_view_user_list,
         server_name,
+        transfer_count,
     });
 
     // Left panel: Server list (use hidden_panel when not visible to preserve layout stability)
@@ -553,18 +559,56 @@ fn build_toolbar(state: ToolbarState) -> Element<'static, Message> {
             container(shaped_text("")).width(Fill),
             // Collapse buttons group (with theme toggle)
             row![
-                // Transfers button (global - always enabled)
-                tooltip(
-                    button(icon::exchange().size(TOOLBAR_ICON_SIZE))
-                        .on_press(Message::ToggleTransfers)
-                        .style(toolbar_button_style(active_panel == ActivePanel::Transfers)),
-                    container(shaped_text(t("tooltip-transfers")).size(TOOLTIP_TEXT_SIZE))
-                        .padding(TOOLTIP_BACKGROUND_PADDING)
-                        .style(tooltip_container_style),
-                    tooltip::Position::Bottom,
-                )
-                .gap(TOOLTIP_GAP)
-                .padding(TOOLTIP_PADDING),
+                // Transfers button (global - always enabled, with badge for active/queued count)
+                if state.transfer_count > 0 {
+                    tooltip(
+                        stack![
+                            button(icon::exchange().size(TOOLBAR_ICON_SIZE))
+                                .on_press(Message::ToggleTransfers)
+                                .style(toolbar_button_style(
+                                    active_panel == ActivePanel::Transfers
+                                )),
+                            // Badge overlay positioned at top-right
+                            container({
+                                // Calculate badge width: circular for 1 digit, pill for 2+
+                                let count_str = state.transfer_count.to_string();
+                                let badge_width = if count_str.len() == 1 {
+                                    BADGE_SIZE // Circular for single digit
+                                } else {
+                                    // Approximate width: font size * 0.6 per digit + padding
+                                    (count_str.len() as f32 * BADGE_FONT_SIZE * 0.6)
+                                        + (BADGE_PADDING_HORIZONTAL * 2.0)
+                                };
+                                container(shaped_text(count_str).size(BADGE_FONT_SIZE))
+                                    .height(BADGE_HEIGHT)
+                                    .width(badge_width)
+                                    .align_x(Center)
+                                    .align_y(Center)
+                                    .style(badge_style)
+                            })
+                            .width(Fill)
+                            .align_x(iced::alignment::Horizontal::Right)
+                        ],
+                        container(shaped_text(t("tooltip-transfers")).size(TOOLTIP_TEXT_SIZE))
+                            .padding(TOOLTIP_BACKGROUND_PADDING)
+                            .style(tooltip_container_style),
+                        tooltip::Position::Bottom,
+                    )
+                    .gap(TOOLTIP_GAP)
+                    .padding(TOOLTIP_PADDING)
+                } else {
+                    tooltip(
+                        button(icon::exchange().size(TOOLBAR_ICON_SIZE))
+                            .on_press(Message::ToggleTransfers)
+                            .style(toolbar_button_style(active_panel == ActivePanel::Transfers)),
+                        container(shaped_text(t("tooltip-transfers")).size(TOOLTIP_TEXT_SIZE))
+                            .padding(TOOLTIP_BACKGROUND_PADDING)
+                            .style(tooltip_container_style),
+                        tooltip::Position::Bottom,
+                    )
+                    .gap(TOOLTIP_GAP)
+                    .padding(TOOLTIP_PADDING)
+                },
                 // About button
                 tooltip(
                     button(icon::info_circled().size(TOOLBAR_ICON_SIZE))

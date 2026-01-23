@@ -132,6 +132,8 @@ pub struct ToolbarState<'a> {
     pub can_view_user_list: bool,
     /// Server name to display in toolbar (None = show "Nexus BBS")
     pub server_name: Option<&'a str>,
+    /// Count of active + queued transfers (for badge display)
+    pub transfer_count: usize,
 }
 
 impl<'a> ToolbarState<'a> {
@@ -183,6 +185,7 @@ mod tests {
             permissions: &[],
             can_view_user_list: false,
             server_name: None,
+            transfer_count: 0,
         }
     }
 
