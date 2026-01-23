@@ -242,8 +242,9 @@ pub fn tooltip_container_style(theme: &Theme) -> container::Style {
 
 /// Context menu button style - has visible hover background
 ///
-/// Note: iced_aw's ContextMenu currently doesn't forward hover events to overlay content,
-/// so hover states won't display. When this is fixed upstream, hover will work automatically.
+/// Note: Hover states don't work in context menus because iced's Button widget stores
+/// its status in the widget struct rather than the tree state. Since overlay content
+/// is recreated each frame, the button's hover status is always reset.
 pub fn context_menu_button_style(theme: &Theme, status: button::Status) -> button::Style {
     let palette = theme.extended_palette();
     button::Style {
@@ -270,8 +271,7 @@ pub fn context_menu_button_style(theme: &Theme, status: button::Status) -> butto
 /// Uses danger-colored text to indicate a destructive action.
 /// No background in normal state for a clean menu appearance.
 ///
-/// Note: iced_aw's ContextMenu currently doesn't forward hover events to overlay content,
-/// so hover states won't display. When this is fixed upstream, hover will work automatically.
+/// Note: Hover states don't work in context menus (see `context_menu_button_style`).
 pub fn context_menu_item_danger_style(theme: &Theme, status: button::Status) -> button::Style {
     let palette = theme.extended_palette();
     button::Style {

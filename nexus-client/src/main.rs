@@ -19,6 +19,7 @@ mod transfers;
 mod types;
 pub mod uri;
 mod views;
+mod widgets;
 
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::sync::Mutex;

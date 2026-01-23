@@ -2,6 +2,7 @@
 
 use std::hash::{Hash, Hasher};
 
+use crate::widgets::LazyContextMenu;
 use chrono::{DateTime, Local, TimeZone, Utc};
 use iced::widget::button as btn;
 use iced::widget::text::Wrapping;
@@ -9,7 +10,6 @@ use iced::widget::{
     Space, button, column, container, lazy, row, scrollable, stack, table, text_input, tooltip,
 };
 use iced::{Center, Element, Fill, Right, alignment};
-use iced_aw::ContextMenu;
 use nexus_common::protocol::{FileEntry, FileInfoDetails, FileSearchResult};
 
 use super::layout::scrollable_panel;
@@ -718,7 +718,7 @@ fn lazy_search_results_table(deps: SearchResultsDeps) -> Element<'static, Messag
                     .into();
 
                 // Build context menu - always show since Open is always available
-                ContextMenu::new(row_element, move || {
+                LazyContextMenu::new(row_element, move || {
                     build_lazy_search_context_menu(result.clone(), perms)
                 })
                 .into()
@@ -1417,7 +1417,7 @@ fn lazy_file_table(deps: FileTableDeps) -> Element<'static, Message> {
                 || row.perms.file_upload;
 
             if has_any_permission {
-                ContextMenu::new(row_element, move || {
+                LazyContextMenu::new(row_element, move || {
                     build_lazy_context_menu(
                         &row.path,
                         &row.entry.name,

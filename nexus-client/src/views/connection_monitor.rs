@@ -7,10 +7,11 @@
 
 use std::hash::{Hash, Hasher};
 
+use crate::widgets::LazyContextMenu;
 use iced::widget::text::Wrapping;
 use iced::widget::{Space, button, column, container, lazy, row, scrollable, table, tooltip};
 use iced::{Center, Element, Fill, Right, Theme, alignment};
-use iced_aw::{ContextMenu, TabLabel, Tabs};
+use iced_aw::{TabLabel, Tabs};
 use nexus_common::protocol::{ConnectionInfo, TransferInfo};
 
 use super::constants::{PERMISSION_BAN_CREATE, PERMISSION_USER_INFO, PERMISSION_USER_KICK};
@@ -345,7 +346,7 @@ fn lazy_connection_table(deps: ConnectionTableDeps) -> Element<'static, Message>
             };
 
             // Wrap in context menu with full actions
-            ContextMenu::new(content, move || {
+            LazyContextMenu::new(content, move || {
                 build_connection_context_menu(
                     nickname_for_menu.clone(),
                     nickname_for_value.clone(),
@@ -416,7 +417,7 @@ fn lazy_connection_table(deps: ConnectionTableDeps) -> Element<'static, Message>
                     .into()
             };
 
-            ContextMenu::new(content, move || {
+            LazyContextMenu::new(content, move || {
                 build_connection_context_menu(
                     nickname_for_menu.clone(),
                     username_for_value.clone(),
@@ -473,7 +474,7 @@ fn lazy_connection_table(deps: ConnectionTableDeps) -> Element<'static, Message>
                 .wrapping(Wrapping::WordOrGlyph)
                 .into();
 
-            ContextMenu::new(content, move || {
+            LazyContextMenu::new(content, move || {
                 build_connection_context_menu(
                     nickname_for_menu.clone(),
                     ip_for_value.clone(),
@@ -612,7 +613,7 @@ fn lazy_transfer_table(deps: TransferTableDeps) -> Element<'static, Message> {
                     .into()
             };
 
-            ContextMenu::new(content, move || {
+            LazyContextMenu::new(content, move || {
                 build_transfer_context_menu(nickname_for_value.clone())
             })
         })
@@ -664,7 +665,7 @@ fn lazy_transfer_table(deps: TransferTableDeps) -> Element<'static, Message> {
                 .wrapping(Wrapping::WordOrGlyph)
                 .into();
 
-            ContextMenu::new(content, move || {
+            LazyContextMenu::new(content, move || {
                 build_transfer_context_menu(ip_for_value.clone())
             })
         })
@@ -758,7 +759,7 @@ fn lazy_transfer_table(deps: TransferTableDeps) -> Element<'static, Message> {
                 .wrapping(Wrapping::WordOrGlyph)
                 .into();
 
-            ContextMenu::new(content, move || {
+            LazyContextMenu::new(content, move || {
                 build_transfer_context_menu(path_for_value.clone())
             })
         })

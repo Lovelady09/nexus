@@ -18,7 +18,7 @@ use std::fmt;
 const DEFAULT_PORT: u16 = 7500;
 
 /// Parsed nexus:// URI
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Clone, PartialEq)]
 pub struct NexusUri {
     /// Optional username for authentication
     pub user: Option<String>,
@@ -36,6 +36,18 @@ impl NexusUri {
     /// Check if this URI has credentials
     pub fn has_credentials(&self) -> bool {
         self.user.is_some()
+    }
+}
+
+impl fmt::Debug for NexusUri {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("NexusUri")
+            .field("user", &self.user)
+            .field("password", &self.password.as_ref().map(|_| "[REDACTED]"))
+            .field("host", &self.host)
+            .field("port", &self.port)
+            .field("path", &self.path)
+            .finish()
     }
 }
 
