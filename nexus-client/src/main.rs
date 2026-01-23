@@ -72,9 +72,13 @@ fn get_ipc_socket_path() -> String {
 /// Returns Ok(false) if no existing instance (caller should become the primary),
 /// Returns Err if something went wrong.
 fn try_send_to_existing_instance(uri: &str) -> Result<bool, Box<dyn std::error::Error>> {
-    use std::io::{BufRead, BufReader, Write};
+    #[cfg(unix)]
+    use std::io::Write;
+    use std::io::{BufRead, BufReader};
+    #[cfg(unix)]
     use std::time::Duration;
 
+    #[cfg(unix)]
     const IPC_TIMEOUT: Duration = Duration::from_secs(5);
 
     #[cfg(unix)]
@@ -108,13 +112,13 @@ fn try_send_to_existing_instance(uri: &str) -> Result<bool, Box<dyn std::error::
 
     #[cfg(windows)]
     {
-        use interprocess::os::windows::named_pipe::*;
+        use interprocess::os::windows::named_pipe::{DuplexPipeStream, pipe_mode};
+        use std::io::Write;
 
         let pipe_name = get_ipc_socket_path();
 
-        match PipeStream::connect_by_path(&pipe_name) {
+        match DuplexPipeStream::<pipe_mode::Bytes>::connect_by_path(pipe_name.as_str()) {
             Ok(mut stream) => {
-                use std::io::Write;
                 // Note: interprocess named pipes don't support timeouts directly,
                 // but the operations are typically fast. If this becomes an issue,
                 // we could spawn a thread with a timeout wrapper.
@@ -1114,18 +1118,25 @@ fn ipc_listener_stream() -> impl iced::futures::Stream<Item = Message> {
 
         #[cfg(windows)]
         {
-            use interprocess::os::windows::named_pipe::tokio::*;
+            use interprocess::os::windows::named_pipe::{
+                PipeListenerOptions, PipeMode, pipe_mode,
+                tokio::{PipeListener, PipeListenerOptionsExt, PipeStream as TokioPipeStream},
+            };
             use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 
             let pipe_name = get_ipc_socket_path();
 
+            type WinPipeListener = PipeListener<pipe_mode::Bytes, pipe_mode::Bytes>;
+            type WinPipeStream = TokioPipeStream<pipe_mode::Bytes, pipe_mode::Bytes>;
+
             // Initialize listener on first call
-            let listener = match listener_state {
+            let listener: WinPipeListener = match listener_state {
                 Some(l) => l,
                 None => {
                     match PipeListenerOptions::new()
-                        .name(&pipe_name)
-                        .create_tokio::<DuplexPipeStream>()
+                        .path(pipe_name.as_str())
+                        .mode(PipeMode::Bytes)
+                        .create_tokio::<pipe_mode::Bytes, pipe_mode::Bytes>()
                     {
                         Ok(l) => l,
                         Err(_) => return None,
@@ -1141,7 +1152,7 @@ fn ipc_listener_stream() -> impl iced::futures::Stream<Item = Message> {
 
                         if reader.read_line(&mut line).await.is_ok() && !line.is_empty() {
                             // Send acknowledgment
-                            let mut inner = reader.into_inner();
+                            let mut inner: WinPipeStream = reader.into_inner();
                             let _ = inner.write_all(b"ok\n").await;
 
                             let uri = line.trim().to_string();
