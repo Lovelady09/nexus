@@ -12,6 +12,7 @@ use super::{
     TITLE_SIZE,
 };
 use crate::types::Message;
+use crate::widgets::{MenuButtonStatus, MenuButtonStyle};
 use iced::widget::{Container, button, container, rule, text};
 use iced::{Background, Border, Center, Color, Fill, Theme};
 
@@ -240,56 +241,51 @@ pub fn tooltip_container_style(theme: &Theme) -> container::Style {
     container::bordered_box(theme)
 }
 
-/// Context menu button style - has visible hover background
+/// Menu button style with working hover states for context menus
 ///
-/// Note: Hover states don't work in context menus because iced's Button widget stores
-/// its status in the widget struct rather than the tree state. Since overlay content
-/// is recreated each frame, the button's hover status is always reset.
-pub fn context_menu_button_style(theme: &Theme, status: button::Status) -> button::Style {
+/// Use this with `MenuButton` instead of `button()` in context menus
+/// to get proper hover highlighting.
+pub fn menu_button_style(theme: &Theme, status: MenuButtonStatus) -> MenuButtonStyle {
     let palette = theme.extended_palette();
-    button::Style {
+    MenuButtonStyle {
         background: match status {
-            button::Status::Hovered | button::Status::Pressed => {
+            MenuButtonStatus::Hovered | MenuButtonStatus::Pressed => {
                 Some(Background::Color(palette.primary.weak.color))
             }
-            _ => None,
+            MenuButtonStatus::Active => None,
         },
         text_color: match status {
-            button::Status::Hovered | button::Status::Pressed => palette.primary.weak.text,
-            _ => ui::text_color(theme),
+            MenuButtonStatus::Hovered | MenuButtonStatus::Pressed => palette.primary.weak.text,
+            MenuButtonStatus::Active => ui::text_color(theme),
         },
         border: Border {
             radius: CONTEXT_MENU_BORDER_RADIUS.into(),
             ..Default::default()
         },
-        ..Default::default()
     }
 }
 
-/// Context menu item style for danger/destructive actions (e.g., delete)
+/// Menu button danger style with working hover states for context menus
 ///
-/// Uses danger-colored text to indicate a destructive action.
-/// No background in normal state for a clean menu appearance.
-///
-/// Note: Hover states don't work in context menus (see `context_menu_button_style`).
-pub fn context_menu_item_danger_style(theme: &Theme, status: button::Status) -> button::Style {
+/// Use this with `MenuButton` for destructive actions (e.g., delete)
+/// to get proper hover highlighting.
+pub fn menu_button_danger_style(theme: &Theme, status: MenuButtonStatus) -> MenuButtonStyle {
     let palette = theme.extended_palette();
-    button::Style {
+    MenuButtonStyle {
         background: match status {
-            button::Status::Hovered | button::Status::Pressed => {
+            MenuButtonStatus::Hovered | MenuButtonStatus::Pressed => {
                 Some(Background::Color(palette.danger.weak.color))
             }
-            _ => None,
+            MenuButtonStatus::Active => None,
         },
         text_color: match status {
-            button::Status::Hovered | button::Status::Pressed => palette.danger.weak.text,
-            _ => theme.palette().danger,
+            MenuButtonStatus::Hovered | MenuButtonStatus::Pressed => palette.danger.weak.text,
+            MenuButtonStatus::Active => theme.palette().danger,
         },
         border: Border {
             radius: CONTEXT_MENU_BORDER_RADIUS.into(),
             ..Default::default()
         },
-        ..Default::default()
     }
 }
 

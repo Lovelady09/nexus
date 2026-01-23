@@ -232,7 +232,7 @@ where
             if cursor.is_over(bounds) {
                 let s: &mut State = state.state.downcast_mut();
                 s.cursor_position = cursor.position().unwrap_or_default();
-                s.show = !s.show;
+                s.show = true;
                 // Reset overlay tree so it gets rebuilt with fresh content
                 s.overlay_tree = None;
                 shell.capture_event();
@@ -343,16 +343,13 @@ where
     Theme: 'a,
 {
     fn operate(&mut self, layout: Layout<'_>, renderer: &Renderer, operation: &mut dyn Operation) {
-        let content_layout = layout
-            .children()
-            .next()
-            .expect("Layout should have content");
+        let Some(content_layout) = layout.children().next() else {
+            return;
+        };
 
-        let tree = self
-            .state
-            .overlay_tree
-            .as_mut()
-            .expect("overlay tree should exist");
+        let Some(tree) = self.state.overlay_tree.as_mut() else {
+            return;
+        };
 
         self.content
             .as_widget_mut()
@@ -362,11 +359,10 @@ where
     fn layout(&mut self, renderer: &Renderer, bounds: Size) -> Node {
         let limits = Limits::new(Size::ZERO, bounds);
 
-        let tree = self
-            .state
-            .overlay_tree
-            .as_mut()
-            .expect("overlay tree should exist");
+        let Some(tree) = self.state.overlay_tree.as_mut() else {
+            // Return empty layout if tree not initialized
+            return Node::new(bounds);
+        };
         let mut content = self.content.as_widget_mut().layout(tree, renderer, &limits);
 
         // Adjust position to stay within bounds
@@ -391,16 +387,14 @@ where
         layout: Layout<'_>,
         cursor: Cursor,
     ) {
-        let content_layout = layout
-            .children()
-            .next()
-            .expect("Layout should have content");
+        let Some(content_layout) = layout.children().next() else {
+            return;
+        };
 
-        let tree = self
-            .state
-            .overlay_tree
-            .as_ref()
-            .expect("overlay tree should exist");
+        let Some(tree) = self.state.overlay_tree.as_ref() else {
+            return;
+        };
+
         self.content.as_widget().draw(
             tree,
             renderer,
@@ -421,10 +415,9 @@ where
         clipboard: &mut dyn Clipboard,
         shell: &mut Shell<'_, Message>,
     ) {
-        let content_layout = layout
-            .children()
-            .next()
-            .expect("Layout should have content");
+        let Some(content_layout) = layout.children().next() else {
+            return;
+        };
 
         // Handle escape to close
         if let Event::Keyboard(iced::keyboard::Event::KeyPressed { key, .. }) = event
@@ -454,11 +447,10 @@ where
         // This is the same limitation as the original iced_aw ContextMenu.
 
         // Forward event to content so buttons receive it (including hover events)
-        let tree = self
-            .state
-            .overlay_tree
-            .as_mut()
-            .expect("overlay tree should exist");
+        let Some(tree) = self.state.overlay_tree.as_mut() else {
+            return;
+        };
+
         self.content.as_widget_mut().update(
             tree,
             event,
@@ -491,16 +483,14 @@ where
         cursor: Cursor,
         renderer: &Renderer,
     ) -> mouse::Interaction {
-        let content_layout = layout
-            .children()
-            .next()
-            .expect("Layout should have content");
+        let Some(content_layout) = layout.children().next() else {
+            return mouse::Interaction::None;
+        };
 
-        let tree = self
-            .state
-            .overlay_tree
-            .as_ref()
-            .expect("overlay tree should exist");
+        let Some(tree) = self.state.overlay_tree.as_ref() else {
+            return mouse::Interaction::None;
+        };
+
         self.content.as_widget().mouse_interaction(
             tree,
             content_layout,

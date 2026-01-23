@@ -7,7 +7,7 @@
 
 use std::hash::{Hash, Hasher};
 
-use crate::widgets::LazyContextMenu;
+use crate::widgets::{LazyContextMenu, MenuButton};
 use iced::widget::text::Wrapping;
 use iced::widget::{Space, button, column, container, lazy, row, scrollable, table, tooltip};
 use iced::{Center, Element, Fill, Right, Theme, alignment};
@@ -24,9 +24,9 @@ use crate::style::{
     SORT_ICON_LEFT_MARGIN, SORT_ICON_RIGHT_MARGIN, SORT_ICON_SIZE, SPACER_SIZE_LARGE,
     SPACER_SIZE_MEDIUM, SPACER_SIZE_SMALL, TAB_LABEL_PADDING, TEXT_SIZE, TITLE_SIZE,
     TOOLTIP_BACKGROUND_PADDING, TOOLTIP_GAP, TOOLTIP_PADDING, TOOLTIP_TEXT_SIZE, chat,
-    content_background_style, context_menu_button_style, context_menu_container_style,
-    context_menu_item_danger_style, error_text_style, muted_text_style, separator_style,
-    shaped_text, shaped_text_wrapped, tooltip_container_style, transparent_icon_button_style,
+    content_background_style, context_menu_container_style, error_text_style,
+    menu_button_danger_style, menu_button_style, muted_text_style, separator_style, shaped_text,
+    shaped_text_wrapped, tooltip_container_style, transparent_icon_button_style,
 };
 use crate::types::{
     ConnectionMonitorSortColumn, ConnectionMonitorState, ConnectionMonitorTab, Message,
@@ -184,10 +184,10 @@ fn build_connection_context_menu(
     if show_info {
         let nickname_for_info = nickname.clone();
         menu_items.push(
-            button(shaped_text(t("menu-info")).size(TEXT_SIZE))
+            MenuButton::new(shaped_text(t("menu-info")).size(TEXT_SIZE))
                 .padding(CONTEXT_MENU_ITEM_PADDING)
                 .width(Fill)
-                .style(context_menu_button_style)
+                .style(menu_button_style)
                 .on_press(Message::ConnectionMonitorInfo(nickname_for_info))
                 .into(),
         );
@@ -206,10 +206,10 @@ fn build_connection_context_menu(
 
     // Copy (always available)
     menu_items.push(
-        button(shaped_text(t("menu-copy")).size(TEXT_SIZE))
+        MenuButton::new(shaped_text(t("menu-copy")).size(TEXT_SIZE))
             .padding(CONTEXT_MENU_ITEM_PADDING)
             .width(Fill)
-            .style(context_menu_button_style)
+            .style(menu_button_style)
             .on_press(Message::ConnectionMonitorCopy(value))
             .into(),
     );
@@ -233,10 +233,10 @@ fn build_connection_context_menu(
     if show_kick {
         let nickname_for_kick = nickname.clone();
         menu_items.push(
-            button(shaped_text(t("menu-kick")).size(TEXT_SIZE))
+            MenuButton::new(shaped_text(t("menu-kick")).size(TEXT_SIZE))
                 .padding(CONTEXT_MENU_ITEM_PADDING)
                 .width(Fill)
-                .style(context_menu_item_danger_style)
+                .style(menu_button_danger_style)
                 .on_press(Message::ConnectionMonitorKick(nickname_for_kick))
                 .into(),
         );
@@ -245,10 +245,10 @@ fn build_connection_context_menu(
     // Ban (if permission and not admin row) - danger style
     if show_ban {
         menu_items.push(
-            button(shaped_text(t("menu-ban")).size(TEXT_SIZE))
+            MenuButton::new(shaped_text(t("menu-ban")).size(TEXT_SIZE))
                 .padding(CONTEXT_MENU_ITEM_PADDING)
                 .width(Fill)
-                .style(context_menu_item_danger_style)
+                .style(menu_button_danger_style)
                 .on_press(Message::ConnectionMonitorBan(nickname))
                 .into(),
         );
@@ -266,10 +266,10 @@ fn build_connection_context_menu(
 /// Build a simple context menu with Copy action for transfers
 fn build_transfer_context_menu(value: String) -> Element<'static, Message> {
     container(
-        button(shaped_text(t("menu-copy")).size(TEXT_SIZE))
+        MenuButton::new(shaped_text(t("menu-copy")).size(TEXT_SIZE))
             .padding(CONTEXT_MENU_ITEM_PADDING)
             .width(Fill)
-            .style(context_menu_button_style)
+            .style(menu_button_style)
             .on_press(Message::ConnectionMonitorCopy(value)),
     )
     .width(CONTEXT_MENU_MIN_WIDTH)

@@ -2,7 +2,7 @@
 
 use std::hash::{Hash, Hasher};
 
-use crate::widgets::LazyContextMenu;
+use crate::widgets::{LazyContextMenu, MenuButton};
 use chrono::{DateTime, Local, TimeZone, Utc};
 use iced::widget::button as btn;
 use iced::widget::text::Wrapping;
@@ -27,10 +27,10 @@ use crate::style::{
     SPACER_SIZE_MEDIUM, SPACER_SIZE_SMALL, TAB_CONTENT_PADDING, TEXT_SIZE, TITLE_SIZE,
     TOOLTIP_BACKGROUND_PADDING, TOOLTIP_GAP, TOOLTIP_PADDING, TOOLTIP_TEXT_SIZE,
     chat_tab_active_style, close_button_on_primary_style, content_background_style,
-    context_menu_button_style, context_menu_container_style, context_menu_item_danger_style,
-    disabled_icon_button_style, drop_overlay_style, error_text_style, muted_text_style,
-    panel_title, separator_style, shaped_text, shaped_text_wrapped, tooltip_container_style,
-    transparent_icon_button_style, upload_folder_style,
+    context_menu_container_style, disabled_icon_button_style, drop_overlay_style, error_text_style,
+    menu_button_danger_style, menu_button_style, muted_text_style, panel_title, separator_style,
+    shaped_text, shaped_text_wrapped, tooltip_container_style, transparent_icon_button_style,
+    upload_folder_style,
 };
 use crate::types::{
     ClipboardOperation, FileSortColumn, FileTab, FilesManagementState, InputId, Message,
@@ -899,10 +899,10 @@ fn build_lazy_search_context_menu(
     // Download (if permission)
     if perms.file_download {
         menu_items.push(
-            button(shaped_text(t("context-menu-download")).size(TEXT_SIZE))
+            MenuButton::new(shaped_text(t("context-menu-download")).size(TEXT_SIZE))
                 .padding(CONTEXT_MENU_ITEM_PADDING)
                 .width(Fill)
-                .style(context_menu_button_style)
+                .style(menu_button_style)
                 .on_press(Message::FileSearchResultDownload(result.clone()))
                 .into(),
         );
@@ -912,10 +912,10 @@ fn build_lazy_search_context_menu(
     // Upload (directories only, if permission)
     if perms.file_upload && result.is_directory {
         menu_items.push(
-            button(shaped_text(t("context-menu-upload")).size(TEXT_SIZE))
+            MenuButton::new(shaped_text(t("context-menu-upload")).size(TEXT_SIZE))
                 .padding(CONTEXT_MENU_ITEM_PADDING)
                 .width(Fill)
-                .style(context_menu_button_style)
+                .style(menu_button_style)
                 .on_press(Message::FileUpload(result.path.clone()))
                 .into(),
         );
@@ -936,10 +936,10 @@ fn build_lazy_search_context_menu(
     // Info (if permission)
     if perms.file_info {
         menu_items.push(
-            button(shaped_text(t("files-info")).size(TEXT_SIZE))
+            MenuButton::new(shaped_text(t("files-info")).size(TEXT_SIZE))
                 .padding(CONTEXT_MENU_ITEM_PADDING)
                 .width(Fill)
-                .style(context_menu_button_style)
+                .style(menu_button_style)
                 .on_press(Message::FileSearchResultInfo(result.clone()))
                 .into(),
         );
@@ -947,10 +947,10 @@ fn build_lazy_search_context_menu(
 
     // Open (always available - same as left-click)
     menu_items.push(
-        button(shaped_text(t("context-menu-open")).size(TEXT_SIZE))
+        MenuButton::new(shaped_text(t("context-menu-open")).size(TEXT_SIZE))
             .padding(CONTEXT_MENU_ITEM_PADDING)
             .width(Fill)
-            .style(context_menu_button_style)
+            .style(menu_button_style)
             .on_press(Message::FileSearchResultOpen(result.clone()))
             .into(),
     );
@@ -1556,10 +1556,10 @@ fn build_lazy_context_menu(
             Message::FileDownload(entry_path.to_string())
         };
         menu_items.push(
-            button(shaped_text(t("context-menu-download")).size(TEXT_SIZE))
+            MenuButton::new(shaped_text(t("context-menu-download")).size(TEXT_SIZE))
                 .padding(CONTEXT_MENU_ITEM_PADDING)
                 .width(Fill)
-                .style(context_menu_button_style)
+                .style(menu_button_style)
                 .on_press(download_message)
                 .into(),
         );
@@ -1569,10 +1569,10 @@ fn build_lazy_context_menu(
     // Upload
     if perms.file_upload && is_dir && can_upload {
         menu_items.push(
-            button(shaped_text(t("context-menu-upload")).size(TEXT_SIZE))
+            MenuButton::new(shaped_text(t("context-menu-upload")).size(TEXT_SIZE))
                 .padding(CONTEXT_MENU_ITEM_PADDING)
                 .width(Fill)
-                .style(context_menu_button_style)
+                .style(menu_button_style)
                 .on_press(Message::FileUpload(entry_path.to_string()))
                 .into(),
         );
@@ -1594,10 +1594,10 @@ fn build_lazy_context_menu(
     // Cut
     if perms.file_move {
         menu_items.push(
-            button(shaped_text(t("files-cut")).size(TEXT_SIZE))
+            MenuButton::new(shaped_text(t("files-cut")).size(TEXT_SIZE))
                 .padding(CONTEXT_MENU_ITEM_PADDING)
                 .width(Fill)
-                .style(context_menu_button_style)
+                .style(menu_button_style)
                 .on_press(Message::FileCut(
                     entry_path.to_string(),
                     entry_name.to_string(),
@@ -1610,10 +1610,10 @@ fn build_lazy_context_menu(
     // Copy
     if perms.file_copy {
         menu_items.push(
-            button(shaped_text(t("files-copy")).size(TEXT_SIZE))
+            MenuButton::new(shaped_text(t("files-copy")).size(TEXT_SIZE))
                 .padding(CONTEXT_MENU_ITEM_PADDING)
                 .width(Fill)
-                .style(context_menu_button_style)
+                .style(menu_button_style)
                 .on_press(Message::FileCopyToClipboard(
                     entry_path.to_string(),
                     entry_name.to_string(),
@@ -1626,10 +1626,10 @@ fn build_lazy_context_menu(
     // Paste
     if is_dir && has_clipboard && (perms.file_move || perms.file_copy) {
         menu_items.push(
-            button(shaped_text(t("files-paste")).size(TEXT_SIZE))
+            MenuButton::new(shaped_text(t("files-paste")).size(TEXT_SIZE))
                 .padding(CONTEXT_MENU_ITEM_PADDING)
                 .width(Fill)
-                .style(context_menu_button_style)
+                .style(menu_button_style)
                 .on_press(Message::FilePasteInto(entry_path.to_string()))
                 .into(),
         );
@@ -1650,10 +1650,10 @@ fn build_lazy_context_menu(
     // Info
     if perms.file_info {
         menu_items.push(
-            button(shaped_text(t("files-info")).size(TEXT_SIZE))
+            MenuButton::new(shaped_text(t("files-info")).size(TEXT_SIZE))
                 .padding(CONTEXT_MENU_ITEM_PADDING)
                 .width(Fill)
-                .style(context_menu_button_style)
+                .style(menu_button_style)
                 .on_press(Message::FileInfoClicked(entry_name.to_string()))
                 .into(),
         );
@@ -1663,10 +1663,10 @@ fn build_lazy_context_menu(
     // Rename
     if perms.file_rename {
         menu_items.push(
-            button(shaped_text(t("files-rename")).size(TEXT_SIZE))
+            MenuButton::new(shaped_text(t("files-rename")).size(TEXT_SIZE))
                 .padding(CONTEXT_MENU_ITEM_PADDING)
                 .width(Fill)
-                .style(context_menu_button_style)
+                .style(menu_button_style)
                 .on_press(Message::FileRenameClicked(entry_name.to_string()))
                 .into(),
         );
@@ -1687,10 +1687,10 @@ fn build_lazy_context_menu(
     // Delete
     if perms.file_delete {
         menu_items.push(
-            button(shaped_text(t("files-delete")).size(TEXT_SIZE))
+            MenuButton::new(shaped_text(t("files-delete")).size(TEXT_SIZE))
                 .padding(CONTEXT_MENU_ITEM_PADDING)
                 .width(Fill)
-                .style(context_menu_item_danger_style)
+                .style(menu_button_danger_style)
                 .on_press(Message::FileDeleteClicked(entry_path.to_string()))
                 .into(),
         );
