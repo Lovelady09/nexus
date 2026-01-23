@@ -1989,19 +1989,8 @@ pub fn files_view<'a>(
         }
     } else {
         // Normal browsing mode
-        // Priority: error > entries > loading
-        if let Some(error) = &tab.error {
-            // Error state
-            container(
-                shaped_text_wrapped(error)
-                    .size(TEXT_SIZE)
-                    .style(error_text_style),
-            )
-            .width(Fill)
-            .center_x(Fill)
-            .padding(SPACER_SIZE_SMALL)
-            .into()
-        } else if let Some(entries) = &tab.sorted_entries {
+        // Build main content (listing, empty, or loading)
+        if let Some(entries) = &tab.sorted_entries {
             if entries.is_empty() {
                 // Empty directory
                 container(
@@ -2057,6 +2046,25 @@ pub fn files_view<'a>(
     // Build the form with max_width constraint
     // Breadcrumbs and toolbar stay fixed, only content scrolls
     let mut form_column = column![title_row, breadcrumbs, toolbar,];
+
+    // Add error banner if present (between toolbar and search)
+    if let Some(error) = &tab.error {
+        form_column = form_column.push(
+            container(
+                shaped_text_wrapped(error)
+                    .size(TEXT_SIZE)
+                    .style(error_text_style),
+            )
+            .width(Fill)
+            .center_x(Fill)
+            .padding(iced::Padding {
+                top: NO_SPACING,
+                right: NO_SPACING,
+                bottom: SPACER_SIZE_MEDIUM,
+                left: NO_SPACING,
+            }),
+        );
+    }
 
     // Add search row if user has permission
     if let Some(search) = search_row {

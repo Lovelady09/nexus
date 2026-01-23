@@ -59,6 +59,7 @@ uuid = { version = "1.19", features = ["v4", "serde"] }
 hex = "0.4"
 notify-rust = "4.11"
 rodio = { version = "0.20", default-features = false, features = ["vorbis"] }
+interprocess = { version = "2.2", features = ["tokio"] }
 
 [dev-dependencies]
 tempfile = "3.20"

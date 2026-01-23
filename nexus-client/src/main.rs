@@ -17,9 +17,13 @@ mod sound;
 mod style;
 mod transfers;
 mod types;
+pub mod uri;
 mod views;
 
 use std::collections::{HashMap, HashSet, VecDeque};
+use std::sync::Mutex;
+
+use once_cell::sync::Lazy;
 
 use uuid::Uuid;
 
@@ -33,11 +37,151 @@ use types::{
     ServerConnection, SettingsFormState, SettingsTab, UiState, ViewConfig,
 };
 
+/// Startup URI passed via command line (consumed by NexusApp::new)
+static STARTUP_URI: Lazy<Mutex<Option<String>>> = Lazy::new(|| Mutex::new(None));
+
+/// Get the IPC socket path for single-instance communication
+fn get_ipc_socket_path() -> String {
+    #[cfg(unix)]
+    {
+        // Linux: prefer XDG_RUNTIME_DIR, fallback to /tmp/nexus-$USER.sock
+        // macOS: use TMPDIR
+        if let Ok(runtime_dir) = std::env::var("XDG_RUNTIME_DIR") {
+            return format!("{}/nexus.sock", runtime_dir);
+        }
+        if let Ok(tmpdir) = std::env::var("TMPDIR") {
+            return format!("{}/nexus.sock", tmpdir.trim_end_matches('/'));
+        }
+        if let Ok(user) = std::env::var("USER") {
+            return format!("/tmp/nexus-{}.sock", user);
+        }
+        "/tmp/nexus.sock".to_string()
+    }
+    #[cfg(windows)]
+    {
+        // Windows: use named pipe
+        let username = std::env::var("USERNAME").unwrap_or_else(|_| "user".to_string());
+        format!("nexus-{}", username)
+    }
+}
+
+/// Try to send a URI to an existing instance
+///
+/// Returns Ok(true) if successfully sent to existing instance (caller should exit),
+/// Returns Ok(false) if no existing instance (caller should become the primary),
+/// Returns Err if something went wrong.
+fn try_send_to_existing_instance(uri: &str) -> Result<bool, Box<dyn std::error::Error>> {
+    use std::io::{BufRead, BufReader, Write};
+    use std::time::Duration;
+
+    const IPC_TIMEOUT: Duration = Duration::from_secs(5);
+
+    #[cfg(unix)]
+    {
+        use std::os::unix::net::UnixStream;
+        let socket_path = get_ipc_socket_path();
+
+        match UnixStream::connect(&socket_path) {
+            Ok(mut stream) => {
+                // Set timeouts to avoid blocking forever if primary instance hangs
+                stream.set_read_timeout(Some(IPC_TIMEOUT))?;
+                stream.set_write_timeout(Some(IPC_TIMEOUT))?;
+
+                // Connected to existing instance - send URI
+                writeln!(stream, "{}", uri)?;
+                stream.flush()?;
+
+                // Wait for acknowledgment
+                let mut reader = BufReader::new(stream);
+                let mut response = String::new();
+                reader.read_line(&mut response)?;
+
+                Ok(true)
+            }
+            Err(_) => {
+                // No existing instance
+                Ok(false)
+            }
+        }
+    }
+
+    #[cfg(windows)]
+    {
+        use interprocess::os::windows::named_pipe::*;
+
+        let pipe_name = get_ipc_socket_path();
+
+        match PipeStream::connect_by_path(&pipe_name) {
+            Ok(mut stream) => {
+                use std::io::Write;
+                // Note: interprocess named pipes don't support timeouts directly,
+                // but the operations are typically fast. If this becomes an issue,
+                // we could spawn a thread with a timeout wrapper.
+                writeln!(stream, "{}", uri)?;
+                stream.flush()?;
+
+                // Wait for acknowledgment
+                let mut reader = BufReader::new(stream);
+                let mut response = String::new();
+                reader.read_line(&mut response)?;
+
+                Ok(true)
+            }
+            Err(_) => Ok(false),
+        }
+    }
+}
+
+/// Parse command line arguments for a nexus:// URI
+fn get_startup_uri() -> Option<String> {
+    let args: Vec<String> = std::env::args().collect();
+
+    // Look for a nexus:// URI in arguments
+    // Handle both direct URI and %u placeholder from desktop files
+    for arg in args.iter().skip(1) {
+        let arg = arg.trim();
+        if arg == "%u" {
+            // Placeholder not substituted, skip
+            continue;
+        }
+        if uri::is_nexus_uri(arg) {
+            return Some(arg.to_string());
+        }
+    }
+
+    None
+}
+
 /// Application entry point
 ///
 /// Configures the Iced application with window settings, fonts, and theme,
 /// then starts the event loop.
 pub fn main() -> iced::Result {
+    // Check for startup URI and single-instance handling
+    let startup_uri = get_startup_uri();
+
+    if let Some(ref uri_str) = startup_uri {
+        // Try to send to existing instance
+        match try_send_to_existing_instance(uri_str) {
+            Ok(true) => {
+                // Successfully sent to existing instance, exit
+                return Ok(());
+            }
+            Ok(false) => {
+                // No existing instance, continue startup
+            }
+            Err(e) => {
+                // Error connecting, log and continue
+                eprintln!("IPC error: {}", e);
+            }
+        }
+    }
+
+    // Store startup URI in a static for NexusApp::new to pick up
+    if let Some(uri_str) = startup_uri {
+        STARTUP_URI.lock().unwrap().replace(uri_str);
+    }
+
     // Load config early to get saved window position/size
     let config = config::Config::load();
     let window_size = iced::Size::new(config.settings.window_width, config.settings.window_height);
@@ -193,12 +337,20 @@ impl NexusApp {
     fn new() -> (Self, Task<Message>) {
         let app = Self::default();
 
-        // Generate auto-connect tasks for bookmarks
-        let auto_connect_tasks = autostart::generate_auto_connect_tasks(&app.config);
+        // Check for startup URI
+        let startup_uri = STARTUP_URI.lock().unwrap().take();
+        let mut tasks: Vec<Task<Message>> = vec![operation::focus(Id::from(InputId::ServerName))];
 
-        // Combine focus task with auto-connect tasks
-        let mut tasks = vec![operation::focus(Id::from(InputId::ServerName))];
-        tasks.extend(auto_connect_tasks);
+        if let Some(uri_str) = startup_uri {
+            if let Ok(parsed_uri) = uri::parse(&uri_str) {
+                // Queue URI handling as a task
+                tasks.push(Task::done(Message::HandleNexusUri(parsed_uri)));
+            }
+        } else {
+            // No startup URI - generate auto-connect tasks for bookmarks
+            let auto_connect_tasks = autostart::generate_auto_connect_tasks(&app.config);
+            tasks.extend(auto_connect_tasks);
+        }
 
         (app, Task::batch(tasks))
     }
@@ -249,6 +401,12 @@ impl NexusApp {
 
                 // Save any pending transfer progress
                 let _ = self.transfer_manager.save();
+
+                // Clean up IPC socket
+                #[cfg(unix)]
+                {
+                    let _ = std::fs::remove_file(get_ipc_socket_path());
+                }
 
                 iced::window::close(id)
             }
@@ -686,6 +844,29 @@ impl NexusApp {
             Message::TransferMoveUp(id) => self.handle_transfer_move_up(id),
             Message::TransferMoveDown(id) => self.handle_transfer_move_down(id),
             Message::TransferRetry(id) => self.handle_transfer_retry(id),
+
+            // URI scheme
+            Message::HandleNexusUri(uri) => self.handle_nexus_uri(uri),
+            Message::UriReceivedFromIpc(uri_str) => {
+                if let Ok(parsed) = uri::parse(&uri_str) {
+                    // Focus the window and handle the URI
+                    let uri_task = self.handle_nexus_uri(parsed);
+                    let focus_task = iced::window::oldest().then(|opt_id| {
+                        opt_id
+                            .map(iced::window::gain_focus)
+                            .unwrap_or_else(Task::none)
+                    });
+                    Task::batch([focus_task, uri_task])
+                } else {
+                    Task::none()
+                }
+            }
+            Message::UriConnectionResult {
+                result,
+                target_host,
+                display_name,
+                path,
+            } => self.handle_uri_connection_result(result, target_host, display_name, path),
         }
     }
 
@@ -699,6 +880,8 @@ impl NexusApp {
             iced::event::listen().map(Message::Event),
             // Window close requests (we handle saving before exit)
             iced::window::close_requests().map(Message::WindowCloseRequested),
+            // IPC listener for receiving URIs from other instances
+            Subscription::run(ipc_listener_stream),
         ];
 
         // Subscribe to all active connections
@@ -860,8 +1043,125 @@ impl NexusApp {
         main_view
     }
 
-    /// Get the current theme based on configuration
     fn theme(&self) -> Theme {
         self.config.settings.theme.to_iced_theme()
     }
+}
+
+/// Stream that listens for IPC connections from other instances
+fn ipc_listener_stream() -> impl iced::futures::Stream<Item = Message> {
+    iced::futures::stream::unfold(None, |listener_state| async move {
+        #[cfg(unix)]
+        {
+            use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
+            use tokio::net::UnixListener;
+
+            // Initialize listener on first call
+            let listener = match listener_state {
+                Some(l) => l,
+                None => {
+                    let socket_path = get_ipc_socket_path();
+
+                    // Remove stale socket file if it exists
+                    let _ = std::fs::remove_file(&socket_path);
+
+                    match UnixListener::bind(&socket_path) {
+                        Ok(l) => {
+                            // Set socket permissions to user-only (0600) for security
+                            // This prevents other users from sending URIs to our client
+                            use std::os::unix::fs::PermissionsExt;
+                            let _ = std::fs::set_permissions(
+                                &socket_path,
+                                std::fs::Permissions::from_mode(0o600),
+                            );
+                            l
+                        }
+                        Err(_) => {
+                            // Failed to bind - another instance might be running
+                            // or we don't have permissions. Just return empty stream.
+                            return None;
+                        }
+                    }
+                }
+            };
+
+            // Wait for a connection
+            loop {
+                match listener.accept().await {
+                    Ok((stream, _)) => {
+                        let mut reader = BufReader::new(stream);
+                        let mut line = String::new();
+
+                        if reader.read_line(&mut line).await.is_ok() && !line.is_empty() {
+                            // Send acknowledgment
+                            let mut stream = reader.into_inner();
+                            let _ = stream.write_all(b"ok\n").await;
+
+                            let uri = line.trim().to_string();
+                            if uri::is_nexus_uri(&uri) {
+                                return Some((Message::UriReceivedFromIpc(uri), Some(listener)));
+                            }
+                        }
+                        // Invalid message, continue listening
+                    }
+                    Err(_) => {
+                        // Accept error, continue listening
+                    }
+                }
+            }
+        }
+
+        #[cfg(windows)]
+        {
+            use interprocess::os::windows::named_pipe::tokio::*;
+            use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
+
+            let pipe_name = get_ipc_socket_path();
+
+            // Initialize listener on first call
+            let listener = match listener_state {
+                Some(l) => l,
+                None => {
+                    match PipeListenerOptions::new()
+                        .name(&pipe_name)
+                        .create_tokio::<DuplexPipeStream>()
+                    {
+                        Ok(l) => l,
+                        Err(_) => return None,
+                    }
+                }
+            };
+
+            loop {
+                match listener.accept().await {
+                    Ok(stream) => {
+                        let mut reader = BufReader::new(stream);
+                        let mut line = String::new();
+
+                        if reader.read_line(&mut line).await.is_ok() && !line.is_empty() {
+                            // Send acknowledgment
+                            let mut inner = reader.into_inner();
+                            let _ = inner.write_all(b"ok\n").await;
+
+                            let uri = line.trim().to_string();
+                            if uri::is_nexus_uri(&uri) {
+                                return Some((Message::UriReceivedFromIpc(uri), Some(listener)));
+                            }
+                        }
+                    }
+                    Err(_) => {
+                        // Accept error, continue listening
+                    }
+                }
+            }
+        }
+
+        #[cfg(not(any(unix, windows)))]
+        {
+            // Unsupported platform - no IPC
+            let _state = listener_state;
+            iced::futures::future::pending::<()>().await;
+            None
+        }
+    })
 }

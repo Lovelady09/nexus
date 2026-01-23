@@ -294,6 +294,7 @@ transfers-empty = Sin transferencias
 news-updated = Actualizado
 files-loading = Cargando archivos…
 files-empty = Este directorio está vacío
+files-not-found = '{ $name }' no encontrado
 files-home = Inicio
 files-root = Raíz
 files-panel-title = Archivos
@@ -448,7 +449,7 @@ err-no-shutdown-handle = Error de conexión: Sin manejador de cierre
 err-userlist-failed = Error al actualizar lista de usuarios
 err-port-invalid = El puerto debe ser un número válido (1-65535)
 err-no-chat-permission = No tienes permiso para enviar mensajes
-err-console-no-send = Usa /join para entrar a un canal o /msg para enviar un mensaje a un usuario
+err-console-no-send = Usa /{ $join } para entrar a un canal o /{ $msg } para enviar un mensaje a un usuario
 
 # Network connection errors
 err-no-peer-certificates = No se encontraron certificados del servidor
@@ -603,7 +604,7 @@ cmd-help-header = Comandos disponibles:
 cmd-help-desc = Mostrar comandos disponibles
 cmd-me-desc = Enviar un mensaje de acción
 cmd-me-usage = Uso: /{ $command } <acción>
-err-me-no-target = Usa /join para entrar a un canal o /msg para enviar una acción a un usuario
+err-me-no-target = Usa /{ $join } para entrar a un canal o /{ $msg } para enviar una acción a un usuario
 cmd-help-escape-hint = Consejo: Usa // para enviar un mensaje que comience con /
 cmd-message-desc = Enviar un mensaje a un usuario
 cmd-message-usage = Uso: /{ $command } <usuario> <mensaje>
@@ -726,9 +727,10 @@ err-channel-too-short = El nombre del canal debe tener al menos un carácter des
 err-channel-too-long = El nombre del canal es demasiado largo (máx. { $max } caracteres)
 err-channel-missing-prefix = El nombre del canal debe comenzar con #
 err-channel-invalid-characters = El nombre del canal contiene caracteres inválidos
-err-leave-no-channel = Debes estar en un canal para usar /leave sin argumentos
+err-leave-no-channel = Debes estar en un canal para usar /{ $command } sin argumentos
 err-not-in-channel = No estás en el canal { $channel }
 err-leave-already-pending = Ya esperando respuesta del servidor
+err-uri-connection-failed = Error al conectar a { $host }: { $error }
 
 label-port = Puerto:
 

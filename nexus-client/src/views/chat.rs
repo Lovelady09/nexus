@@ -93,9 +93,10 @@ fn split_into_segments(text: &str) -> Vec<TextSegment<'_>> {
 
 /// Build the URL to open when a link is clicked
 ///
-/// If the URL doesn't have a scheme, prepend "https://"
+/// If the URL doesn't have a scheme, prepend "https://".
+/// nexus:// URIs are preserved as-is for internal handling.
 fn make_openable_url(url: &str) -> String {
-    if url.starts_with("http://") || url.starts_with("https://") {
+    if url.starts_with("http://") || url.starts_with("https://") || url.starts_with("nexus://") {
         url.to_string()
     } else {
         format!("https://{}", url)

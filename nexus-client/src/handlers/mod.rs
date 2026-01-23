@@ -13,4 +13,5 @@ mod server_info;
 mod settings;
 mod transfers;
 mod ui;
+mod uri;
 mod user_management;

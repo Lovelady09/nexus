@@ -294,6 +294,7 @@ transfers-empty = Aucun transfert
 news-updated = Modifié
 files-loading = Chargement des fichiers…
 files-empty = Ce répertoire est vide
+files-not-found = '{ $name }' introuvable
 files-home = Accueil
 files-root = Racine
 files-panel-title = Fichiers
@@ -446,7 +447,7 @@ err-no-shutdown-handle = Erreur de connexion : Pas de gestionnaire d'arrêt
 err-userlist-failed = Échec de l'actualisation de la liste des utilisateurs
 err-port-invalid = Le port doit être un numéro valide (1-65535)
 err-no-chat-permission = Vous n'avez pas la permission d'envoyer des messages
-err-console-no-send = Utilisez /join pour rejoindre un canal ou /msg pour envoyer un message à un utilisateur
+err-console-no-send = Utilisez /{ $join } pour rejoindre un canal ou /{ $msg } pour envoyer un message à un utilisateur
 
 # Network connection errors
 err-no-peer-certificates = Aucun certificat de serveur trouvé
@@ -601,7 +602,7 @@ cmd-help-header = Commandes disponibles :
 cmd-help-desc = Afficher les commandes disponibles
 cmd-me-desc = Envoyer un message d'action
 cmd-me-usage = Utilisation : /{ $command } <action>
-err-me-no-target = Utilisez /join pour rejoindre un canal ou /msg pour envoyer une action à un utilisateur
+err-me-no-target = Utilisez /{ $join } pour rejoindre un canal ou /{ $msg } pour envoyer une action à un utilisateur
 cmd-help-escape-hint = Astuce : Utilisez // pour envoyer un message commençant par /
 cmd-message-desc = Envoyer un message à un utilisateur
 cmd-message-usage = Utilisation : /{ $command } <utilisateur> <message>
@@ -724,9 +725,10 @@ err-channel-too-short = Le nom du canal doit avoir au moins un caractère après
 err-channel-too-long = Le nom du canal est trop long (max { $max } caractères)
 err-channel-missing-prefix = Le nom du canal doit commencer par #
 err-channel-invalid-characters = Le nom du canal contient des caractères invalides
-err-leave-no-channel = Vous devez être dans un canal pour utiliser /leave sans arguments
+err-leave-no-channel = Vous devez être dans un canal pour utiliser /{ $command } sans arguments
 err-not-in-channel = Vous n'êtes pas dans le canal { $channel }
 err-leave-already-pending = Attente de la réponse du serveur en cours
+err-uri-connection-failed = Échec de la connexion à { $host } : { $error }
 
 label-port = Port:
 

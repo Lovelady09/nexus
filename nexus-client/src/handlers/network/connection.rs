@@ -26,20 +26,22 @@ struct ConnectionRegistration {
 }
 
 /// Context for connection success handling
-struct ConnectionContext {
-    bookmark_id: Option<Uuid>,
-    display_name: String,
-    certificate_fingerprint: String,
-    connection_id: usize,
+pub struct ConnectionContext {
+    pub bookmark_id: Option<Uuid>,
+    pub display_name: String,
+    pub certificate_fingerprint: String,
+    pub connection_id: usize,
 }
 
 /// Source of the connection attempt
 #[derive(Clone, Copy)]
-enum ConnectionSource {
+pub enum ConnectionSource {
     /// Manual connection from the connection form
-    Form,
+    Manual,
     /// Connection from clicking a bookmark
     Bookmark,
+    /// Connection from a nexus:// URI (startup arg, IPC, or clicked link)
+    Uri,
 }
 
 impl NexusApp {
@@ -82,7 +84,7 @@ impl NexusApp {
                     connection_id: conn.connection_id,
                 };
 
-                self.handle_successful_connection(conn, ctx, ConnectionSource::Form)
+                self.handle_successful_connection(conn, ctx, ConnectionSource::Manual)
             }
             Err(error) => {
                 self.connection_form.error = Some(error);
@@ -201,7 +203,7 @@ impl NexusApp {
     // =========================================================================
 
     /// Common handler for successful connections from any source
-    fn handle_successful_connection(
+    pub fn handle_successful_connection(
         &mut self,
         conn: NetworkConnection,
         ctx: ConnectionContext,
@@ -339,7 +341,7 @@ impl NexusApp {
         }
 
         // Save as bookmark if checkbox was enabled (form connections only, not already a bookmark)
-        if matches!(source, ConnectionSource::Form)
+        if matches!(source, ConnectionSource::Manual)
             && self.connection_form.add_bookmark
             && ctx.bookmark_id.is_none()
         {
@@ -347,7 +349,7 @@ impl NexusApp {
         }
 
         // Clear connection form for form connections
-        if matches!(source, ConnectionSource::Form) {
+        if matches!(source, ConnectionSource::Manual) {
             self.connection_form.clear();
         }
 
@@ -362,13 +364,18 @@ impl NexusApp {
         error: String,
     ) {
         match source {
-            ConnectionSource::Form => {
+            ConnectionSource::Manual => {
                 self.connection_form.error = Some(error);
             }
             ConnectionSource::Bookmark => {
                 if let Some(id) = bookmark_id {
                     self.bookmark_errors.insert(id, error);
                 }
+            }
+            ConnectionSource::Uri => {
+                // URI connection errors are handled in handle_uri_connection_result
+                // This branch shouldn't be reached, but if it is, show in form
+                self.connection_form.error = Some(error);
             }
         }
     }

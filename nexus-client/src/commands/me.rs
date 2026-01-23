@@ -51,7 +51,7 @@ pub fn execute(
     match &conn.active_chat_tab {
         ChatTab::Console => {
             // Can't send /me to console - need to be in a channel or PM
-            let error_msg = t("err-me-no-target");
+            let error_msg = t_args("err-me-no-target", &[("join", "join"), ("msg", "msg")]);
             return app.add_active_tab_message(connection_id, ChatMessage::error(error_msg));
         }
         ChatTab::Channel(channel) => {

@@ -13,3 +13,6 @@ mod messages;
 
 pub mod constants;
 pub mod helpers;
+
+// Re-export connection types for use by URI handler
+pub use connection::{ConnectionContext, ConnectionSource};

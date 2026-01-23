@@ -1119,7 +1119,7 @@ impl NexusApp {
     /// such as when downloading from search results where the search
     /// may have been performed with a different root setting than the
     /// current tab's browsing mode.
-    fn queue_download_with_root(
+    pub(crate) fn queue_download_with_root(
         &mut self,
         remote_path: String,
         is_directory: bool,

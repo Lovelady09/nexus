@@ -2,6 +2,7 @@
 
 use std::collections::HashMap;
 
+use iced::widget::text::Wrapping;
 use iced::widget::{Column, Space, button, column, container, row, scrollable, tooltip};
 use iced::{Element, Fill, alignment};
 use uuid::Uuid;
@@ -87,12 +88,15 @@ fn connected_servers_section<'a>(
             let is_active = active_connection == Some(**conn_id);
 
             // Transparent button with hover effect and primary color for active
-            let btn = button(shaped_text(&conn.display_name).size(SERVER_LIST_TEXT_SIZE))
-                .width(Fill)
-                .height(SERVER_LIST_BUTTON_HEIGHT)
-                .padding(INPUT_PADDING)
-                .on_press(Message::SwitchToConnection(**conn_id))
-                .style(list_item_button_style(is_active, false));
+            let btn = button(
+                shaped_text(&conn.display_name)
+                    .size(SERVER_LIST_TEXT_SIZE)
+                    .wrapping(Wrapping::WordOrGlyph),
+            )
+            .width(Fill)
+            .padding(INPUT_PADDING)
+            .on_press(Message::SwitchToConnection(**conn_id))
+            .style(list_item_button_style(is_active, false));
 
             // Disconnect button (transparent icon button with hover effect)
             let disconnect_btn = tooltip(

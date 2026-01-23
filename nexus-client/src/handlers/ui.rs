@@ -52,9 +52,21 @@ impl NexusApp {
         self.handle_show_chat_view()
     }
 
-    /// Open a URL in the default browser
+    /// Open a URL in the default browser or handle nexus:// URIs internally
     pub fn handle_open_url(&mut self, url: markdown::Uri) -> Task<Message> {
-        let _ = open::that(url.as_str());
+        let url_str = url.as_str();
+
+        // Check if this is a nexus:// URI - handle internally
+        if crate::uri::is_nexus_uri(url_str) {
+            if let Ok(parsed) = crate::uri::parse(url_str) {
+                return self.handle_nexus_uri(parsed);
+            }
+            // Failed to parse - just ignore
+            return Task::none();
+        }
+
+        // Regular URL - open in browser
+        let _ = open::that(url_str);
         Task::none()
     }
 

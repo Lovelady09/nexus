@@ -12,6 +12,7 @@ use super::{ChatTab, NetworkConnection, ServerMessage};
 use crate::config::events::{EventType, NotificationContent, SoundChoice};
 use crate::image::ImagePickerError;
 use crate::transfers::TransferEvent;
+use crate::uri::NexusUri;
 
 /// Messages that drive the application state machine
 #[derive(Debug, Clone)]
@@ -531,4 +532,20 @@ pub enum Message {
     TransferMoveDown(Uuid),
     /// Transfer: Retry a failed transfer (re-queue)
     TransferRetry(Uuid),
+
+    // ==================== URI Scheme ====================
+    /// URI: Handle a nexus:// URI (from startup arg or IPC)
+    HandleNexusUri(NexusUri),
+    /// URI: Received from another instance via IPC
+    UriReceivedFromIpc(String),
+    /// URI: Connection attempt from URI completed (shows errors in console)
+    UriConnectionResult {
+        result: Result<NetworkConnection, String>,
+        /// The host we tried to connect to (for error messages)
+        target_host: String,
+        /// Display name for the connection (host:port)
+        display_name: String,
+        /// Path intent to navigate to after connection succeeds
+        path: Option<crate::uri::NexusPath>,
+    },
 }

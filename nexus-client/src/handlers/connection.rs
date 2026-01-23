@@ -454,7 +454,10 @@ impl NexusApp {
             ParseResult::Message(message, action) => {
                 // Console tab doesn't allow plain text - show specific error
                 if conn.active_chat_tab == ChatTab::Console {
-                    return self.add_chat_error(conn_id, t("err-console-no-send"));
+                    return self.add_chat_error(
+                        conn_id,
+                        t_args("err-console-no-send", &[("join", "join"), ("msg", "msg")]),
+                    );
                 }
 
                 // Check permission before sending

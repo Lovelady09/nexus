@@ -18,7 +18,7 @@ use crate::types::{ChatMessage, ChatTab, Message};
 pub fn execute(
     app: &mut NexusApp,
     connection_id: usize,
-    _invoked_name: &str,
+    invoked_name: &str,
     args: &[String],
 ) -> Task<Message> {
     let Some(conn) = app.connections.get_mut(&connection_id) else {
@@ -33,7 +33,10 @@ pub fn execute(
             ChatTab::Console | ChatTab::UserMessage(_) => {
                 return app.add_active_tab_message(
                     connection_id,
-                    ChatMessage::error(t("err-leave-no-channel")),
+                    ChatMessage::error(t_args(
+                        "err-leave-no-channel",
+                        &[("command", invoked_name)],
+                    )),
                 );
             }
         }

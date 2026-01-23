@@ -130,6 +130,47 @@ To route Nexus traffic through Tor:
 
 Note: The server operator must also be reachable through Tor for this to work.
 
+## URI Links
+
+Nexus supports `nexus://` URIs for deep linking to servers and resources. Click a link in chat, email, or a web page to connect directly.
+
+### URI Format
+
+```
+nexus://[user[:password]@]host[:port][/path]
+```
+
+### Examples
+
+| URI | Action |
+|-----|--------|
+| `nexus://server.com` | Connect as guest |
+| `nexus://server.com:8500` | Connect to custom port |
+| `nexus://alice@server.com` | Connect as alice (uses bookmark password if saved) |
+| `nexus://shared:pass@server.com` | Connect with shared account credentials |
+| `nexus://server.com/chat/#general` | Connect and join #general channel |
+| `nexus://server.com/chat/alice` | Connect and open PM with alice |
+| `nexus://server.com/files/Music` | Connect and open Files to Music folder |
+| `nexus://server.com/news` | Connect and open News panel |
+| `nexus://server.com/info` | Connect and open Server Info panel |
+
+### Connection Behavior
+
+- **Existing connection**: If already connected to the server, Nexus switches to that connection and navigates to the path
+- **No credentials in URI**: Looks for a matching bookmark, otherwise connects as guest
+- **Username without password**: Looks for matching bookmark to get saved password
+- **Full credentials**: Uses the provided username and password (intended for shared accounts)
+
+### Command Line
+
+Launch Nexus with a URI to connect on startup:
+
+```bash
+nexus "nexus://server.com/chat/#general"
+```
+
+If Nexus is already running, the URI is sent to the existing instance.
+
 ## Connection Troubleshooting
 
 ### Connection Refused

@@ -1,6 +1,6 @@
 //! File response handlers
 
-use crate::i18n::t;
+use crate::i18n::{t, t_args};
 use crate::types::ChatMessage;
 
 use iced::widget::{Id, scrollable};
@@ -67,6 +67,48 @@ impl NexusApp {
 
             // Build sorted entries cache
             tab.update_sorted_entries();
+
+            // Check for pending URI target (from nexus:// URI navigation)
+            let pending_target = tab.pending_uri_target.take();
+            if let Some(ref target) = pending_target
+                && let Some(ref entries) = tab.entries
+            {
+                // Find the target in the file list (case-insensitive)
+                let target_lower = target.to_lowercase();
+                if let Some(entry) = entries
+                    .iter()
+                    .find(|e| e.name.to_lowercase() == target_lower)
+                {
+                    if entry.dir_type.is_some() {
+                        // It's a directory - navigate into it
+                        let new_path = if tab.current_path.is_empty() {
+                            entry.name.clone()
+                        } else {
+                            format!("{}/{}", tab.current_path, entry.name)
+                        };
+                        let root = tab.viewing_root;
+                        let show_hidden = self.config.settings.show_hidden_files;
+                        tab.navigate_to(new_path.clone());
+                        return self.send_file_list_request(
+                            connection_id,
+                            new_path,
+                            root,
+                            show_hidden,
+                        );
+                    } else {
+                        // It's a file - queue download
+                        let file_path = if tab.current_path.is_empty() {
+                            entry.name.clone()
+                        } else {
+                            format!("{}/{}", tab.current_path, entry.name)
+                        };
+                        let remote_root = tab.viewing_root;
+                        return self.queue_download_with_root(file_path, false, remote_root);
+                    }
+                }
+                // Target not found - show error message above the listing
+                tab.error = Some(t_args("files-not-found", &[("name", target)]));
+            }
         } else {
             tab.entries = None;
             tab.sorted_entries = None;
