@@ -59,26 +59,36 @@ pub fn compute_avatar_hash(avatar_data_uri: Option<&str>) -> Option<[u8; 32]> {
 /// - If the user has a custom avatar (data URI), decodes and caches it
 /// - If decoding fails or no avatar, generates and caches an identicon
 ///
-/// The cache key is the nickname (always populated; equals username for regular accounts).
-/// This is case-sensitive, matching server behavior.
+/// The cache key is the nickname normalized to lowercase for case-insensitive lookups.
+/// This ensures consistent avatar display regardless of nickname casing from different
+/// server responses (e.g., UserConnected vs UserInfoDetailed).
 pub fn get_or_create_avatar(
     cache: &mut HashMap<String, CachedImage>,
     nickname: &str,
     avatar_data_uri: Option<&str>,
 ) -> CachedImage {
-    // Check if already cached (keyed by nickname)
-    if let Some(cached) = cache.get(nickname) {
+    // Normalize key to lowercase for case-insensitive matching
+    let cache_key = nickname.to_lowercase();
+
+    // Check if already cached
+    if let Some(cached) = cache.get(&cache_key) {
         return cached.clone();
     }
 
     // Try to decode custom avatar, fall back to identicon
+    // Use original nickname for identicon seed to preserve visual consistency
     let avatar = avatar_data_uri
         .and_then(|uri| decode_data_uri_square(uri, AVATAR_MAX_CACHE_SIZE))
         .unwrap_or_else(|| generate_identicon(nickname));
 
-    // Cache and return (keyed by nickname)
-    cache.insert(nickname.to_string(), avatar.clone());
+    // Cache and return (keyed by lowercase nickname)
+    cache.insert(cache_key, avatar.clone());
     avatar
+}
+
+/// Get the cache key for a nickname (lowercase for case-insensitive lookups)
+pub fn avatar_cache_key(nickname: &str) -> String {
+    nickname.to_lowercase()
 }
 
 // =============================================================================
@@ -334,16 +344,15 @@ mod tests {
     }
 
     #[test]
-    fn test_get_or_create_avatar_case_sensitive_nickname() {
+    fn test_get_or_create_avatar_case_insensitive_nickname() {
         let mut cache = HashMap::new();
 
-        // Display names are case-sensitive for caching
+        // Display names are case-insensitive for caching (normalized to lowercase)
         get_or_create_avatar(&mut cache, "TestUser", None);
         get_or_create_avatar(&mut cache, "testuser", None);
 
-        // Should have two separate cache entries
-        assert_eq!(cache.len(), 2);
-        assert!(cache.contains_key("TestUser"));
+        // Should have one cache entry (both map to same lowercase key)
+        assert_eq!(cache.len(), 1);
         assert!(cache.contains_key("testuser"));
     }
 }

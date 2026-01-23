@@ -6,7 +6,7 @@ use nexus_common::framing::MessageId;
 use nexus_common::protocol::{UserInfo as ProtocolUserInfo, UserInfoDetailed};
 
 use crate::NexusApp;
-use crate::avatar::{compute_avatar_hash, get_or_create_avatar};
+use crate::avatar::{avatar_cache_key, compute_avatar_hash, get_or_create_avatar};
 use crate::handlers::network::constants::DATETIME_FORMAT;
 use crate::handlers::network::helpers::{format_duration, sort_user_list};
 use crate::i18n::{t, t_args};
@@ -393,10 +393,10 @@ impl NexusApp {
 
             // If nickname changed, remove old cache entry
             if old_nickname != new_nickname {
-                conn.avatar_cache.remove(&old_nickname);
+                conn.avatar_cache.remove(&avatar_cache_key(&old_nickname));
             } else if avatar_changed {
                 // Same nickname but avatar changed - invalidate cache
-                conn.avatar_cache.remove(&new_nickname);
+                conn.avatar_cache.remove(&avatar_cache_key(&new_nickname));
             }
 
             // Pre-populate cache with new avatar (keyed by nickname)

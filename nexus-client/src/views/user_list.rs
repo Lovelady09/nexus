@@ -11,7 +11,7 @@ use iced::{Center, Color, Element, Fill, Theme};
 use super::constants::{
     PERMISSION_BAN_CREATE, PERMISSION_USER_INFO, PERMISSION_USER_KICK, PERMISSION_USER_MESSAGE,
 };
-use crate::avatar::generate_identicon;
+use crate::avatar::{avatar_cache_key, generate_identicon};
 use crate::i18n::t;
 use crate::icon;
 use crate::style::{
@@ -316,7 +316,7 @@ pub fn user_list_panel<'a>(conn: &'a ServerConnection, theme: &Theme) -> Element
             // Get cached avatar (should already be populated by handlers)
             // Avatar cache is keyed by nickname (always populated; equals username for regular accounts)
             let avatar_element: Element<'_, Message> =
-                if let Some(cached_avatar) = conn.avatar_cache.get(nickname) {
+                if let Some(cached_avatar) = conn.avatar_cache.get(&avatar_cache_key(nickname)) {
                     cached_avatar.render(USER_LIST_AVATAR_SIZE)
                 } else {
                     // Fallback: generate identicon if not in cache (shouldn't happen normally)

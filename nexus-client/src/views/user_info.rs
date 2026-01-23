@@ -9,7 +9,7 @@ use nexus_common::protocol::UserInfoDetailed;
 
 use super::constants::PERMISSION_USER_EDIT;
 use super::layout::scrollable_panel;
-use crate::avatar::generate_identicon;
+use crate::avatar::{avatar_cache_key, generate_identicon};
 use crate::handlers::network::constants::DATETIME_FORMAT;
 use crate::handlers::network::helpers::format_duration;
 use crate::i18n::{t, t_args};
@@ -238,9 +238,9 @@ fn build_user_info_content<'a>(
     // Nickname is always populated (equals username for regular accounts)
     let nickname = &user.nickname;
 
-    // Avatar cache is keyed by nickname (always populated; equals username for regular accounts)
+    // Avatar cache is keyed by lowercase nickname for case-insensitive lookups
     let avatar_element: Element<'_, Message> =
-        if let Some(cached_avatar) = avatar_cache.get(nickname) {
+        if let Some(cached_avatar) = avatar_cache.get(&avatar_cache_key(nickname)) {
             cached_avatar.render(USER_INFO_AVATAR_SIZE)
         } else {
             // Fallback: generate identicon (shouldn't happen if cache is properly populated)

@@ -4,7 +4,7 @@ use iced::Task;
 use nexus_common::protocol::UserInfo as ProtocolUserInfo;
 
 use crate::NexusApp;
-use crate::avatar::{compute_avatar_hash, get_or_create_avatar};
+use crate::avatar::{avatar_cache_key, compute_avatar_hash, get_or_create_avatar};
 use crate::config::events::EventType;
 use crate::events::{EventContext, emit_event};
 use crate::handlers::network::helpers::sort_user_list;
@@ -51,7 +51,7 @@ impl NexusApp {
                 // Update avatar if it changed
                 if existing_user.avatar_hash != new_avatar_hash {
                     existing_user.avatar_hash = new_avatar_hash;
-                    conn.avatar_cache.remove(&nickname);
+                    conn.avatar_cache.remove(&avatar_cache_key(&nickname));
                     get_or_create_avatar(&mut conn.avatar_cache, &nickname, user.avatar.as_deref());
                 }
 
@@ -96,7 +96,7 @@ impl NexusApp {
                 // Update avatar if it changed (latest login wins)
                 if existing_user.avatar_hash != new_avatar_hash {
                     existing_user.avatar_hash = new_avatar_hash;
-                    conn.avatar_cache.remove(&nickname);
+                    conn.avatar_cache.remove(&avatar_cache_key(&nickname));
                     get_or_create_avatar(&mut conn.avatar_cache, &nickname, user.avatar.as_deref());
                 }
 
@@ -192,8 +192,8 @@ impl NexusApp {
                 conn.expanded_user = None;
             }
 
-            // Remove from avatar cache (keyed by nickname)
-            conn.avatar_cache.remove(nickname);
+            // Remove from avatar cache (keyed by lowercase nickname)
+            conn.avatar_cache.remove(&avatar_cache_key(nickname));
         }
 
         // Emit notification for users going offline
