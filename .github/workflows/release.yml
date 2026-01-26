@@ -78,12 +78,10 @@ jobs:
         run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
 
       - name: Build deb package
-        working-directory: nexus-client
-        run: cargo bundle --release --format deb
+        run: cargo bundle --release --format deb -p nexus-client
 
       - name: Build appimage package
-        working-directory: nexus-client
-        run: cargo bundle --release --format appimage
+        run: cargo bundle --release --format appimage -p nexus-client
 
       - name: Collect artifacts
         run: |
@@ -217,8 +215,7 @@ jobs:
           sed -i '' 's/name = "nexus"/name = "Nexus"/' Cargo.toml
 
       - name: Build app bundle
-        working-directory: nexus-client
-        run: cargo bundle --release
+        run: cargo bundle --release -p nexus-client
 
       - name: Upload binary
         uses: actions/upload-artifact@v4
@@ -490,8 +487,7 @@ jobs:
           sed -i 's/^license = "MIT"$/license-file = "..\/LICENSE"/' nexus-client/Cargo.toml
 
       - name: Create MSI installer
-        working-directory: nexus-client
-        run: cargo bundle --target x86_64-pc-windows-msvc --format wxsmsi --release
+        run: cargo bundle --target x86_64-pc-windows-msvc --format wxsmsi --release -p nexus-client
 
       - name: Collect client artifact
         shell: bash
