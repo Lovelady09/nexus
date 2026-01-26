@@ -86,12 +86,8 @@ jobs:
       - name: Collect artifacts
         run: |
           mkdir -p dist
-          echo "=== Listing bundle directories ==="
-          ls -la target/release/bundle/ || true
-          ls -la target/release/bundle/deb/ || true
-          ls -la target/release/bundle/appimage/ || true
-          mv target/release/bundle/deb/*.deb dist/nexus-client-${{ steps.version.outputs.VERSION }}-linux-${{ matrix.arch }}.deb
-          mv target/release/bundle/appimage/*.AppImage dist/nexus-client-${{ steps.version.outputs.VERSION }}-linux-${{ matrix.arch }}.AppImage
+          mv target/release/bundle/deb/nexus_${{ steps.version.outputs.VERSION }}_*.deb dist/nexus-client-${{ steps.version.outputs.VERSION }}-linux-${{ matrix.arch }}.deb
+          mv target/release/bundle/appimage/nexus_${{ steps.version.outputs.VERSION }}_*.AppImage dist/nexus-client-${{ steps.version.outputs.VERSION }}-linux-${{ matrix.arch }}.AppImage
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
