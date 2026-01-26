@@ -380,6 +380,7 @@ async fn test_broadcast_detects_closed_channels() {
                 message: "test".to_string(),
                 action: ChatAction::Normal,
                 channel: DEFAULT_CHANNEL.to_string(),
+                timestamp: 0,
             },
             Permission::ChatReceive,
         )

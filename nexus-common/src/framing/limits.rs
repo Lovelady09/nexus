@@ -449,7 +449,7 @@ const TRANSFER_COMPLETE_SIZE: usize = json_type_base("TransferComplete")
 // Server messages - Chat
 // -----------------------------------------------------------------------------
 
-/// ChatMessage: {"type":"ChatMessage","session_id":4294967295,"nickname":"...64...","is_admin":false,"is_shared":false,"message":"...1024...","action":"Normal","channel":"...32..."}
+/// ChatMessage: {"type":"ChatMessage","session_id":4294967295,"nickname":"...64...","is_admin":false,"is_shared":false,"message":"...1024...","action":"Normal","channel":"...32...","timestamp":18446744073709551615}
 const CHAT_MESSAGE_SIZE: usize = json_type_base("ChatMessage")
     + json_u32_field("session_id")
     + json_string_field("nickname", MAX_NICKNAME_LENGTH)
@@ -457,7 +457,8 @@ const CHAT_MESSAGE_SIZE: usize = json_type_base("ChatMessage")
     + json_bool_field("is_shared")
     + json_string_field("message", MAX_MESSAGE_LENGTH)
     + json_enum_field("action", MAX_ACTION_VARIANT)
-    + json_string_field("channel", MAX_CHANNEL_LENGTH);
+    + json_string_field("channel", MAX_CHANNEL_LENGTH)
+    + json_u64_field("timestamp");
 
 /// ChatUpdated: {"type":"ChatUpdated","channel":"...32...","topic":"...256...","topic_set_by":"...64...","secret":false,"secret_set_by":"...64..."}
 const CHAT_UPDATED_SIZE: usize = json_type_base("ChatUpdated")
@@ -598,14 +599,15 @@ const USER_DISCONNECTED_SIZE: usize = json_type_base("UserDisconnected")
     + json_u32_field("session_id")
     + json_string_field("nickname", MAX_NICKNAME_LENGTH);
 
-/// UserMessage (server): {"type":"UserMessage","from_nickname":"...64...","from_admin":false,"from_shared":false,"to_nickname":"...64...","message":"...1024...","action":"Normal"}
+/// UserMessage (server): {"type":"UserMessage","from_nickname":"...64...","from_admin":false,"from_shared":false,"to_nickname":"...64...","message":"...1024...","action":"Normal","timestamp":18446744073709551615}
 const USER_MESSAGE_SIZE: usize = json_type_base("UserMessage")
     + json_string_field("from_nickname", MAX_NICKNAME_LENGTH)
     + json_bool_field("from_admin")
     + json_bool_field("from_shared")
     + json_string_field("to_nickname", MAX_NICKNAME_LENGTH)
     + json_string_field("message", MAX_MESSAGE_LENGTH)
-    + json_enum_field("action", MAX_ACTION_VARIANT);
+    + json_enum_field("action", MAX_ACTION_VARIANT)
+    + json_u64_field("timestamp");
 
 /// UserAwayResponse: {"type":"UserAwayResponse","success":false,"error":"...2048..."}
 const USER_AWAY_RESPONSE_SIZE: usize = json_type_base("UserAwayResponse")
@@ -2111,6 +2113,7 @@ mod tests {
             message: str_of_len(MAX_MESSAGE_LENGTH),
             action: ChatAction::Normal,
             channel: str_of_len(MAX_CHANNEL_LENGTH),
+            timestamp: u64::MAX,
         };
         assert!(
             json_size(&msg) <= max_payload_for_type("ChatMessage") as usize,
@@ -2662,6 +2665,7 @@ mod tests {
             to_nickname: str_of_len(MAX_NICKNAME_LENGTH),
             message: str_of_len(MAX_MESSAGE_LENGTH),
             action: ChatAction::Normal,
+            timestamp: u64::MAX,
         };
         assert!(
             json_size(&msg) <= max_payload_for_type("UserMessage") as usize,

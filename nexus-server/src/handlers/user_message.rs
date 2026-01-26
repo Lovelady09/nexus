@@ -1,6 +1,7 @@
 //! Handler for UserMessage command
 
 use std::io;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use tokio::io::AsyncWrite;
 
@@ -124,6 +125,10 @@ where
     };
 
     // Build the message to broadcast
+    let timestamp = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or(0);
     let broadcast = ServerMessage::UserMessage {
         from_nickname: requesting_user_session.nickname.clone(),
         from_admin: requesting_user_session.is_admin,
@@ -131,6 +136,7 @@ where
         to_nickname: target_session.nickname.clone(),
         message,
         action,
+        timestamp,
     };
 
     // Send to sender's session(s) by nickname

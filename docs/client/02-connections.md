@@ -148,6 +148,7 @@ nexus://[user[:password]@]host[:port][/path]
 | `nexus://server.com:8500` | Connect to custom port |
 | `nexus://alice@server.com` | Connect as alice (uses bookmark password if saved) |
 | `nexus://shared:pass@server.com` | Connect with shared account credentials |
+| `nexus://server.com/chat` | Connect and focus chat panel |
 | `nexus://server.com/chat/#general` | Connect and join #general channel |
 | `nexus://server.com/chat/alice` | Connect and open PM with alice |
 | `nexus://server.com/files/Music` | Connect and open Files to Music folder |

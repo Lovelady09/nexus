@@ -448,6 +448,7 @@ mod tests {
                 message: "hi".to_string(),
                 action: ChatAction::Normal,
                 channel: DEFAULT_CHANNEL.to_string(),
+                timestamp: 0,
             }),
             "ChatMessage"
         );
@@ -502,6 +503,7 @@ mod tests {
             message: "Hi there!".to_string(),
             action: ChatAction::Normal,
             channel: DEFAULT_CHANNEL.to_string(),
+            timestamp: 0,
         };
 
         // Write the message

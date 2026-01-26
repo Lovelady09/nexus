@@ -72,6 +72,7 @@ impl NexusApp {
                 message,
                 action,
                 channel,
+                timestamp,
             } => self.handle_chat_message(
                 connection_id,
                 channel,
@@ -80,6 +81,7 @@ impl NexusApp {
                 is_admin,
                 is_shared,
                 action,
+                timestamp,
             ),
 
             ServerMessage::ChatUpdated {
@@ -252,6 +254,7 @@ impl NexusApp {
                 to_nickname,
                 message,
                 action,
+                timestamp,
             } => self.handle_user_message(UserMessageParams {
                 connection_id,
                 from_nickname,
@@ -260,6 +263,7 @@ impl NexusApp {
                 to_nickname,
                 message,
                 action,
+                timestamp,
             }),
 
             ServerMessage::UserMessageResponse {

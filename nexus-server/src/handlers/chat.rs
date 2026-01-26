@@ -2,6 +2,7 @@
 //! Handler for ChatSend command
 
 use std::io;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use tokio::io::AsyncWrite;
 
@@ -103,6 +104,10 @@ where
         .unwrap_or_default();
 
     // Build the chat message
+    let timestamp = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or(0);
     let chat_message = ServerMessage::ChatMessage {
         session_id: id,
         nickname: user.nickname.clone(),
@@ -111,6 +116,7 @@ where
         message,
         action,
         channel,
+        timestamp,
     };
 
     // Send message to all channel members who have the chat feature and ChatReceive permission

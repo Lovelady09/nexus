@@ -1,5 +1,6 @@
 //! Chat message handlers
 
+use chrono::{Local, TimeZone};
 use iced::Task;
 use nexus_common::protocol::ChatAction;
 
@@ -21,6 +22,7 @@ impl NexusApp {
         is_admin: bool,
         is_shared: bool,
         action: ChatAction,
+        timestamp: u64,
     ) -> Task<Message> {
         // Check if we were mentioned in this message
         if let Some(conn) = self.connections.get(&connection_id) {
@@ -67,13 +69,17 @@ impl NexusApp {
             }
         }
 
+        // Use server timestamp if available, otherwise fall back to local time
+        let datetime = if timestamp > 0 {
+            Local
+                .timestamp_opt(timestamp as i64, 0)
+                .single()
+                .unwrap_or_else(Local::now)
+        } else {
+            Local::now()
+        };
         let chat_message = ChatMessage::with_timestamp_and_status(
-            nickname,
-            message,
-            chrono::Local::now(),
-            is_admin,
-            is_shared,
-            action,
+            nickname, message, datetime, is_admin, is_shared, action,
         );
         self.add_channel_message(connection_id, &channel, chat_message)
     }

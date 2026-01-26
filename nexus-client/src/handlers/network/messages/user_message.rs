@@ -1,6 +1,6 @@
 //! User message handlers
 
-use chrono::Local;
+use chrono::{Local, TimeZone};
 use iced::Task;
 use nexus_common::framing::MessageId;
 use nexus_common::protocol::ChatAction;
@@ -20,6 +20,7 @@ pub struct UserMessageParams {
     pub to_nickname: String,
     pub message: String,
     pub action: ChatAction,
+    pub timestamp: u64,
 }
 
 impl NexusApp {
@@ -33,6 +34,7 @@ impl NexusApp {
             to_nickname,
             message,
             action,
+            timestamp,
         } = params;
 
         // First pass: get info we need for notification (immutable borrow)
@@ -82,10 +84,19 @@ impl NexusApp {
         };
 
         // Add message to PM tab history (creates entry if doesn't exist)
+        // Use server timestamp if available, otherwise fall back to local time
+        let datetime = if timestamp > 0 {
+            Local
+                .timestamp_opt(timestamp as i64, 0)
+                .single()
+                .unwrap_or_else(Local::now)
+        } else {
+            Local::now()
+        };
         let chat_msg = ChatMessage::with_timestamp_and_status(
             from_nickname,
             message,
-            Local::now(),
+            datetime,
             from_admin,
             from_shared,
             action,

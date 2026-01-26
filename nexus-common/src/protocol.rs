@@ -411,6 +411,9 @@ pub enum ServerMessage {
         #[serde(default, skip_serializing_if = "is_normal_action")]
         action: ChatAction,
         channel: String,
+        /// Unix timestamp (seconds since epoch)
+        #[serde(default)]
+        timestamp: u64,
     },
     /// Broadcast when channel properties change (topic, secret mode)
     /// Only changed fields are included
@@ -611,6 +614,9 @@ pub enum ServerMessage {
         message: String,
         #[serde(default, skip_serializing_if = "is_normal_action")]
         action: ChatAction,
+        /// Unix timestamp (seconds since epoch)
+        #[serde(default)]
+        timestamp: u64,
     },
     UserMessageResponse {
         success: bool,
@@ -1799,6 +1805,7 @@ mod tests {
             is_shared: true,
             action: ChatAction::Normal,
             channel: "#general".to_string(),
+            timestamp: 1718234567,
         };
         let json = serde_json::to_string(&msg).unwrap();
         assert!(json.contains("\"type\":\"ChatMessage\""));
@@ -1912,6 +1919,7 @@ mod tests {
             to_nickname: "alice".to_string(),
             message: "Hello!".to_string(),
             action: ChatAction::Normal,
+            timestamp: 1718234567,
         };
         let json = serde_json::to_string(&msg).unwrap();
         assert!(json.contains("\"type\":\"UserMessage\""));
@@ -2759,6 +2767,7 @@ mod tests {
             to_nickname: "alice".to_string(),
             message: "Hello!".to_string(),
             action: ChatAction::Normal,
+            timestamp: 1718234567,
         })
         .unwrap();
 
