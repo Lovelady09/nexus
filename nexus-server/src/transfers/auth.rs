@@ -263,7 +263,7 @@ where
         server_info: None,
         channels: None,
         locale: None,
-        nickname: Some(nickname.clone()),
+        nickname: None,
     };
     send_server_message_with_id(frame_writer, &response, received.message_id).await?;
 

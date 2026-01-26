@@ -84,6 +84,11 @@ Server's response to the login attempt.
 | `server_info` | object | If success | Server information (see below) |
 | `chat_info` | object | If success | Chat state (see below) |
 | `locale` | string | If success | Confirmed locale |
+| `nickname` | string | If success | Server-confirmed display name (v0.5.2+) |
+
+The `nickname` field contains the user's actual display name as confirmed by the server:
+- For regular accounts: equals the username
+- For shared accounts: the validated nickname from the login request
 
 **Success example:**
 
@@ -115,7 +120,8 @@ Server's response to the login attempt.
     "topic": "Welcome!",
     "topic_set_by": "admin"
   },
-  "locale": "en"
+  "locale": "en",
+  "nickname": "alice"
 }
 ```
 
