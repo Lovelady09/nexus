@@ -286,6 +286,6 @@ No session ID, permissions, server info, or chat info is returned on the transfe
 After successful login, the client can:
 - Send and receive [chat messages](03-chat.md)
 - View and manage [users](04-users.md)
-- Send [private messages](05-messaging.md)
+- Send [user messages](05-messaging.md)
 - Browse [news](06-news.md)
 - Browse [files](07-files.md)

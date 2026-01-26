@@ -247,6 +247,13 @@ where
     };
 
     // Send simplified success response (no server_info, channels, etc.)
+    // Determine nickname: use requested nickname for shared accounts, otherwise username
+    let nickname = if account.is_shared {
+        request_nickname.unwrap_or_else(|| account.username.clone())
+    } else {
+        account.username.clone()
+    };
+
     let response = ServerMessage::LoginResponse {
         success: true,
         error: None,
@@ -256,15 +263,9 @@ where
         server_info: None,
         channels: None,
         locale: None,
+        nickname: Some(nickname.clone()),
     };
     send_server_message_with_id(frame_writer, &response, received.message_id).await?;
-
-    // Determine nickname: use requested nickname for shared accounts, otherwise username
-    let nickname = if account.is_shared {
-        request_nickname.unwrap_or_else(|| account.username.clone())
-    } else {
-        account.username.clone()
-    };
 
     Ok(AuthenticatedUser {
         nickname,

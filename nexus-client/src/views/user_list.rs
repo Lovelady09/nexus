@@ -101,12 +101,8 @@ fn get_contextual_users(conn: &ServerConnection) -> Vec<&UserInfo> {
         return conn.online_users.iter().collect();
     }
 
-    let current_nickname = conn
-        .online_users
-        .iter()
-        .find(|u| u.session_ids.contains(&conn.session_id))
-        .map(|u| u.nickname.as_str())
-        .unwrap_or(&conn.connection_info.username);
+    // Use server-confirmed nickname
+    let current_nickname = &conn.nickname;
 
     match &conn.active_chat_tab {
         ChatTab::Console => {
@@ -120,10 +116,11 @@ fn get_contextual_users(conn: &ServerConnection) -> Vec<&UserInfo> {
                 conn.online_users
                     .iter()
                     .filter(|user| {
+                        let user_nickname_lower = user.nickname.to_lowercase();
                         channel_state
                             .members
                             .iter()
-                            .any(|m| m.eq_ignore_ascii_case(&user.nickname))
+                            .any(|m| m.to_lowercase() == user_nickname_lower)
                     })
                     .collect()
             } else {
@@ -270,15 +267,8 @@ fn build_user_tooltip(nickname: &str, is_away: bool, status: Option<&str>) -> St
 }
 
 pub fn user_list_panel<'a>(conn: &'a ServerConnection, theme: &Theme) -> Element<'a, Message> {
-    // Get current user's nickname for self-detection
-    // Use session_id to find our entry (important for shared accounts where
-    // multiple users may have the same username but different nicknames)
-    let current_nickname = conn
-        .online_users
-        .iter()
-        .find(|u| u.session_ids.contains(&conn.session_id))
-        .map(|u| u.nickname.as_str())
-        .unwrap_or(&conn.connection_info.username);
+    // Use server-confirmed nickname for self-detection
+    let current_nickname = &conn.nickname;
 
     // Get contextual title based on active tab
     let title = shaped_text(get_user_list_title(conn))

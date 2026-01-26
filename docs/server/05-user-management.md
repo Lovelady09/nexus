@@ -79,7 +79,7 @@ Permissions control what actions users can perform. Admins have all permissions 
 |------------|--------|
 | `user_list` | See online users |
 | `user_info` | View user details |
-| `user_message` | Send private messages |
+| `user_message` | Send user messages |
 | `user_broadcast` | Send broadcasts to all users |
 | `user_kick` | Kick users from the server |
 | `user_create` | Create new user accounts |

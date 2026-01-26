@@ -10,7 +10,7 @@ use crate::types::{ChatMessage, ChatTab, Message};
 
 /// Execute the /me command
 ///
-/// Sends an action message to the current chat (server chat or PM tab).
+/// Sends an action message to the current chat (channel or user message tab).
 ///
 /// Usage: /me <action>
 pub fn execute(
@@ -66,7 +66,7 @@ pub fn execute(
             }
         }
         ChatTab::UserMessage(nickname) => {
-            // Send as PM to the user
+            // Send as user message to the user
             let msg = ClientMessage::UserMessage {
                 to_nickname: nickname.clone(),
                 message,

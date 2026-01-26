@@ -3,7 +3,7 @@
 use chrono::{Local, TimeZone};
 use iced::Task;
 use nexus_common::framing::MessageId;
-use nexus_common::protocol::ChatAction;
+use nexus_common::protocol::{ChatAction, ServerMessage};
 
 use crate::NexusApp;
 use crate::config::events::EventType;
@@ -11,7 +11,7 @@ use crate::events::{EventContext, emit_event};
 use crate::i18n::t_args;
 use crate::types::{ChatMessage, ChatTab, Message, ResponseRouting};
 
-/// Parameters for handling an incoming private message
+/// Parameters for handling an incoming user message
 pub struct UserMessageParams {
     pub connection_id: usize,
     pub from_nickname: String,
@@ -24,7 +24,7 @@ pub struct UserMessageParams {
 }
 
 impl NexusApp {
-    /// Handle incoming private message
+    /// Handle incoming user message
     pub fn handle_user_message(&mut self, params: UserMessageParams) -> Task<Message> {
         let UserMessageParams {
             connection_id,
@@ -37,34 +37,27 @@ impl NexusApp {
             timestamp,
         } = params;
 
-        // First pass: get info we need for notification (immutable borrow)
-        let notification_info = {
+        // First pass: get info we need for notification and history (immutable borrow)
+        let (should_notify, other_nickname) = {
             let Some(conn) = self.connections.get(&connection_id) else {
                 return Task::none();
             };
 
-            // Get current user's nickname for comparison
-            let current_nickname = conn
-                .online_users
-                .iter()
-                .find(|u| u.session_ids.contains(&conn.session_id))
-                .map(|u| u.nickname.clone())
-                .unwrap_or_else(|| conn.connection_info.username.clone());
+            // Use server-confirmed nickname
+            let current_nickname = conn.nickname.clone();
 
             // Check if this is a message from someone else
             let should_notify = from_nickname != current_nickname;
 
-            // Determine which user we're chatting with (the other person)
-            let other_user = if from_nickname == current_nickname {
+            // Determine the other party's nickname
+            let other_nickname = if from_nickname == current_nickname {
                 to_nickname.clone()
             } else {
                 from_nickname.clone()
             };
 
-            (should_notify, other_user)
+            (should_notify, other_nickname)
         };
-
-        let (should_notify, other_user) = notification_info;
 
         // Emit notification event (only for messages from others)
         if should_notify {
@@ -78,12 +71,29 @@ impl NexusApp {
             );
         }
 
+        // Save to history (keyed by nickname)
+        if let Some(base_dir) = self.connection_history_keys.get(&connection_id)
+            && let Some(history_manager) = self.history_managers.get_mut(base_dir)
+        {
+            let server_msg = ServerMessage::UserMessage {
+                from_nickname: from_nickname.clone(),
+                from_admin,
+                from_shared,
+                to_nickname: to_nickname.clone(),
+                message: message.clone(),
+                action,
+                timestamp,
+            };
+            // Silently ignore save failures - history is non-critical
+            let _ = history_manager.add_message(&other_nickname, server_msg);
+        }
+
         // Second pass: mutate state
         let Some(conn) = self.connections.get_mut(&connection_id) else {
             return Task::none();
         };
 
-        // Add message to PM tab history (creates entry if doesn't exist)
+        // Add message to user message tab history (creates entry if doesn't exist)
         // Use server timestamp if available, otherwise fall back to local time
         let datetime = if timestamp > 0 {
             Local
@@ -102,17 +112,17 @@ impl NexusApp {
             action,
         );
         conn.user_messages
-            .entry(other_user.clone())
+            .entry(other_nickname.clone())
             .or_default()
             .push(chat_msg);
 
         // Add to user_message_tabs if not already present (creates the tab in UI)
-        if !conn.user_message_tabs.contains(&other_user) {
-            conn.user_message_tabs.push(other_user.clone());
+        if !conn.user_message_tabs.contains(&other_nickname) {
+            conn.user_message_tabs.push(other_nickname.clone());
         }
 
         // Mark as unread if not currently viewing this tab
-        let pm_tab = ChatTab::UserMessage(other_user);
+        let pm_tab = ChatTab::UserMessage(other_nickname);
         if conn.active_chat_tab != pm_tab {
             conn.unread_tabs.insert(pm_tab);
             Task::none()
@@ -164,7 +174,7 @@ impl NexusApp {
                     ))
                 };
 
-                // Add the away notice to the PM tab
+                // Add the away notice to the user message tab
                 if let Some(conn) = self.connections.get_mut(&connection_id)
                     && let Some(messages) = conn.user_messages.get_mut(nickname)
                 {
@@ -193,7 +203,7 @@ impl NexusApp {
                     return Task::none();
                 };
 
-                // Only add to PM tab if it still exists (user didn't close it)
+                // Only add to user message tab if it still exists (user didn't close it)
                 if let Some(messages) = conn.user_messages.get_mut(&nickname) {
                     messages.push(error_msg);
 

@@ -146,7 +146,7 @@ Once connected, you'll see:
 | Area | Description |
 |------|-------------|
 | **Server List** (left) | Your bookmarks and active connections |
-| **Chat Area** (center) | Server chat and private message tabs |
+| **Chat Area** (center) | Channel and user message tabs |
 | **User List** (right) | Online users — click for actions |
 | **Toolbar** (top) | Access to Files, News, Settings, and more |
 | **Input Field** (bottom) | Type messages or commands |

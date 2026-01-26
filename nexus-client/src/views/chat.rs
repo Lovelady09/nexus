@@ -194,7 +194,7 @@ fn create_tab_button(
     }
 }
 
-/// Create an active tab button (with close button for channel and PM tabs)
+/// Create an active tab button (with close button for channel and user message tabs)
 fn create_active_tab_button(tab: ChatTab, label: String) -> Element<'static, Message> {
     match &tab {
         ChatTab::Channel(channel) => {
@@ -227,7 +227,7 @@ fn create_active_tab_button(tab: ChatTab, label: String) -> Element<'static, Mes
                 .into()
         }
         ChatTab::UserMessage(nickname) => {
-            // PM tabs include a close button
+            // User message tabs include a close button
             let nickname_clone = nickname.clone();
             let close_button = tooltip(
                 button(crate::icon::close().size(CHAT_MESSAGE_SIZE))
@@ -522,7 +522,7 @@ fn build_input_row<'a>(message_input: &'a str, font_size: f32) -> iced::widget::
 // Tab Bar
 // ============================================================================
 
-/// Build the tab bar with Console, channel, and PM tabs
+/// Build the tab bar with Console, channel, and user message tabs
 fn build_tab_bar(conn: &ServerConnection) -> (iced::widget::Row<'static, Message>, bool) {
     let mut tab_row = row![].spacing(SMALL_SPACING);
 

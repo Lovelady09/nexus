@@ -26,19 +26,14 @@ impl NexusApp {
     ) -> Task<Message> {
         // Check if we were mentioned in this message
         if let Some(conn) = self.connections.get(&connection_id) {
-            // Get our nickname (from online users list, or fall back to username)
-            let our_nickname = conn
-                .online_users
-                .iter()
-                .find(|u| u.session_ids.contains(&conn.session_id))
-                .map(|u| u.nickname.as_str())
-                .unwrap_or(&conn.connection_info.username);
+            // Use server-confirmed nickname
+            let our_nickname = &conn.nickname;
 
             // Check if message mentions our nickname (case-insensitive, word boundary)
             // and it's not from ourselves
             // Guard against empty nickname which would match everything
             let our_nickname_lower = our_nickname.to_lowercase();
-            let is_from_self = nickname.eq_ignore_ascii_case(our_nickname);
+            let is_from_self = nickname.to_lowercase() == our_nickname_lower;
 
             // Emit ChatMessage event (with is_from_self flag for sound handling)
             emit_event(

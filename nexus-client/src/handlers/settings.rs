@@ -142,6 +142,21 @@ impl NexusApp {
         Task::none()
     }
 
+    /// Handle chat history retention selection from the picker
+    pub fn handle_chat_history_retention_selected(
+        &mut self,
+        retention: crate::config::settings::ChatHistoryRetention,
+    ) -> Task<Message> {
+        self.config.settings.chat_history_retention = retention;
+
+        // Update all existing history managers to use new retention setting
+        for manager in self.history_managers.values_mut() {
+            manager.update_retention(retention);
+        }
+
+        Task::none()
+    }
+
     // ==================== Timestamps ====================
 
     /// Handle show timestamps toggle

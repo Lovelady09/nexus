@@ -2,7 +2,7 @@
 //!
 //! Some requests need special response handling based on how they were initiated:
 //! - `/list all` - display results in chat instead of updating the user cache
-//! - `/msg` - open a PM tab on successful delivery
+//! - `/msg` - open a user message tab on successful delivery
 //! - `/info` - display user info in chat
 //! - Info icon click - populate the UserInfo panel
 //!
@@ -18,9 +18,9 @@ use crate::types::TabId;
 pub enum ResponseRouting {
     /// Display user list in chat (from `/list all` command)
     DisplayListInChat,
-    /// Open PM tab on success (from `/msg` command)
+    /// Open user message tab on success (from `/msg` command)
     OpenMessageTab(String),
-    /// Show error in PM tab on failure (from PM tab message send)
+    /// Show error in user message tab on failure (from user message tab send)
     ShowErrorInMessageTab(String),
     /// Display user info in chat (from `/info` command)
     DisplayUserInfoInChat,

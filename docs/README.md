@@ -8,7 +8,7 @@ For users connecting to Nexus BBS servers.
 
 - [Getting Started](client/01-getting-started.md) — Installation and your first connection
 - [Connections](client/02-connections.md) — Bookmarks, auto-connect, and proxy setup
-- [Chat](client/03-chat.md) — Server chat, private messages, topics, and mentions
+- [Chat](client/03-chat.md) — Channels, user messages, topics, and mentions
 - [Commands](client/04-commands.md) — IRC-style slash commands
 - [Files](client/05-files.md) — Browsing, downloading, and uploading files
 - [News](client/06-news.md) — Reading and posting news articles

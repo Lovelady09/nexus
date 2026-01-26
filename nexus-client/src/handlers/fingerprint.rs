@@ -3,6 +3,7 @@
 use iced::Task;
 
 use crate::NexusApp;
+use crate::history::rotate_fingerprint;
 use crate::i18n::t;
 use crate::transfers::update_registry_fingerprint;
 use crate::types::Message;
@@ -12,6 +13,10 @@ impl NexusApp {
     pub fn handle_accept_new_fingerprint(&mut self) -> Task<Message> {
         if let Some(mismatch) = self.fingerprint_mismatch_queue.pop_front() {
             let new_fingerprint = mismatch.received.clone();
+            let old_fingerprint = mismatch.expected.clone();
+
+            // Rotate history files from old fingerprint to new fingerprint
+            let _ = rotate_fingerprint(&old_fingerprint, &new_fingerprint);
 
             // Update the stored fingerprint (handle case where bookmark was deleted)
             if let Some(bookmark) = self.config.get_bookmark_mut(mismatch.bookmark_id) {

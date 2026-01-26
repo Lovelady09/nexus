@@ -75,6 +75,70 @@ fn default_proxy_port() -> u16 {
 }
 
 // =============================================================================
+// Chat History Retention
+// =============================================================================
+
+/// Chat history retention policy for user message conversations
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, serde::Serialize, serde::Deserialize)]
+pub enum ChatHistoryRetention {
+    /// Keep history forever (no automatic deletion)
+    #[default]
+    Forever,
+    /// Keep messages for 30 days
+    Days30,
+    /// Keep messages for 14 days
+    Days14,
+    /// Keep messages for 7 days
+    Days7,
+    /// Don't save history at all
+    Disabled,
+}
+
+impl ChatHistoryRetention {
+    /// All retention options for the picker
+    pub const ALL: &'static [ChatHistoryRetention] = &[
+        ChatHistoryRetention::Forever,
+        ChatHistoryRetention::Days30,
+        ChatHistoryRetention::Days14,
+        ChatHistoryRetention::Days7,
+        ChatHistoryRetention::Disabled,
+    ];
+
+    /// Get the number of days for this retention policy, or None for Forever/Disabled
+    pub fn days(&self) -> Option<u32> {
+        match self {
+            ChatHistoryRetention::Forever => None,
+            ChatHistoryRetention::Days30 => Some(30),
+            ChatHistoryRetention::Days14 => Some(14),
+            ChatHistoryRetention::Days7 => Some(7),
+            ChatHistoryRetention::Disabled => None,
+        }
+    }
+
+    /// Whether history saving is enabled
+    pub fn is_enabled(&self) -> bool {
+        !matches!(self, ChatHistoryRetention::Disabled)
+    }
+
+    /// Get the translation key for this retention option
+    pub fn translation_key(&self) -> &'static str {
+        match self {
+            ChatHistoryRetention::Forever => "chat-history-forever",
+            ChatHistoryRetention::Days30 => "chat-history-30-days",
+            ChatHistoryRetention::Days14 => "chat-history-14-days",
+            ChatHistoryRetention::Days7 => "chat-history-7-days",
+            ChatHistoryRetention::Disabled => "chat-history-disabled",
+        }
+    }
+}
+
+impl std::fmt::Display for ChatHistoryRetention {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", crate::i18n::t(self.translation_key()))
+    }
+}
+
+// =============================================================================
 // Constants
 // =============================================================================
 
@@ -221,6 +285,10 @@ pub struct Settings {
     /// Maximum scrollback lines per chat tab (0 = unlimited)
     #[serde(default = "default_max_scrollback")]
     pub max_scrollback: usize,
+
+    /// Chat history retention policy for user message conversations
+    #[serde(default)]
+    pub chat_history_retention: ChatHistoryRetention,
 }
 
 /// Default value for max_scrollback setting
@@ -256,6 +324,7 @@ impl Default for Settings {
             event_settings: EventSettings::default(),
             selected_event_type: EventType::default(),
             max_scrollback: default_max_scrollback(),
+            chat_history_retention: ChatHistoryRetention::default(),
         }
     }
 }
@@ -284,6 +353,7 @@ impl std::fmt::Debug for Settings {
             .field("nickname", &self.nickname)
             .field("proxy", &self.proxy)
             .field("max_scrollback", &self.max_scrollback)
+            .field("chat_history_retention", &self.chat_history_retention)
             .finish()
     }
 }

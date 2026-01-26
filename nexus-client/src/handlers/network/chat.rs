@@ -81,7 +81,7 @@ impl NexusApp {
 
     /// Add a message to a user message tab and auto-scroll if viewing that tab
     ///
-    /// Used for command output in PM tabs.
+    /// Used for command output in user message tabs.
     fn add_user_message(
         &mut self,
         connection_id: usize,
@@ -107,7 +107,7 @@ impl NexusApp {
             conn.user_message_tabs.push(nickname.to_string());
         }
 
-        // Mark PM tab as unread if not currently viewing it
+        // Mark user message tab as unread if not currently viewing it
         let pm_tab = ChatTab::UserMessage(nickname.to_string());
         if conn.active_chat_tab != pm_tab {
             conn.unread_tabs.insert(pm_tab);

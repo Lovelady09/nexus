@@ -191,6 +191,8 @@ pub enum Message {
     ChatFontSizeSelected(u8),
     /// Settings panel: Max scrollback lines changed
     MaxScrollbackChanged(usize),
+    /// Settings panel: Chat history retention selected from picker
+    ChatHistoryRetentionSelected(crate::config::settings::ChatHistoryRetention),
     /// Settings panel: Clear avatar button pressed
     ClearAvatarPressed,
     /// Settings panel: Connection notifications checkbox toggled

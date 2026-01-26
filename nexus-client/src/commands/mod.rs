@@ -13,7 +13,7 @@
 //! | `/broadcast` | `/bc` | `user_broadcast` | Send a broadcast to all users |
 //! | `/channels` | `/ch` | `chat_list` | List available channels |
 //! | `/clear` | | *none* | Clear chat history for current tab |
-//! | `/focus` | `/f` | *none* | Focus server chat or a user's PM tab |
+//! | `/focus` | `/f` | *none* | Focus server chat or a user's message tab |
 //! | `/help` | `/h`, `/?` | *none* | Show available commands |
 //! | `/info` | `/i`, `/userinfo`, `/whois` | `user_info` | Show information about a user |
 //! | `/join` | `/j` | `chat_join` | Join or create a channel |

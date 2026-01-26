@@ -150,7 +150,7 @@ nexus://[user[:password]@]host[:port][/path]
 | `nexus://shared:pass@server.com` | Connect with shared account credentials |
 | `nexus://server.com/chat` | Connect and focus chat panel |
 | `nexus://server.com/chat/#general` | Connect and join #general channel |
-| `nexus://server.com/chat/alice` | Connect and open PM with alice |
+| `nexus://server.com/chat/alice` | Connect and open user message tab with alice |
 | `nexus://server.com/files/Music` | Connect and open Files to Music folder |
 | `nexus://server.com/news` | Connect and open News panel |
 | `nexus://server.com/info` | Connect and open Server Info panel |
@@ -200,5 +200,5 @@ If Nexus is already running, the URI is sent to the existing instance.
 
 ## Next Steps
 
-- [Chat](03-chat.md) — Server chat and private messages
+- [Chat](03-chat.md) — Channels, user messages, and mentions
 - [Settings](07-settings.md) — More configuration options

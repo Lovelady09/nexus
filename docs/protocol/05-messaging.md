@@ -1,10 +1,10 @@
 # Messaging
 
-Messaging provides private user-to-user communication and server-wide broadcasts.
+Messaging provides user-to-user communication and server-wide broadcasts.
 
 ## Flow
 
-### Private Message
+### User Message
 
 ```
 Client                                        Server
@@ -42,7 +42,7 @@ The sender also receives the `ServerBroadcast` (echo).
 
 ### UserMessage (Client → Server)
 
-Send a private message to another user.
+Send a message to another user.
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
@@ -119,7 +119,7 @@ Response to the sender indicating success or failure. On success, also indicates
 
 ### UserMessage (Server → Client)
 
-Delivered to the recipient when a private message is sent.
+Delivered to the recipient when a user message is sent.
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
@@ -239,16 +239,16 @@ Delivered to all users when a broadcast is sent.
 
 | Permission | Required For |
 |------------|--------------|
-| `user_message` | Sending private messages (`UserMessage`) |
+| `user_message` | Sending user messages (`UserMessage`) |
 | `user_broadcast` | Sending broadcasts (`UserBroadcast`) |
 
 Admins have all permissions automatically.
 
-Note: There is no permission required to *receive* private messages or broadcasts. All connected users can receive them.
+Note: There is no permission required to *receive* user messages or broadcasts. All connected users can receive them.
 
 ## Message Validation
 
-Both private messages and broadcasts use the same validation rules:
+Both user messages and broadcasts use the same validation rules:
 
 | Rule | Value | Error |
 |------|-------|-------|
@@ -272,9 +272,9 @@ The `to_nickname` field uses the same validation as usernames:
 | Max length | 32 characters | Nickname too long |
 | Valid chars | Alphanumeric and ASCII graphic | Invalid nickname |
 
-## Private Message Routing
+## User Message Routing
 
-Private messages are routed by **nickname**, not username:
+User messages are routed by **nickname**, not username:
 
 - **Regular accounts:** `nickname` equals `username`, so all sessions receive the message
 - **Shared accounts:** Each session has a unique `nickname`, so only that specific session receives the message
@@ -283,7 +283,7 @@ This ensures users can always message the person they see in the user list.
 
 ## Self-Messaging
 
-Sending a private message to yourself is not allowed. The server returns:
+Sending a message to yourself is not allowed. The server returns:
 
 ```json
 {
@@ -323,7 +323,7 @@ Sending a private message to yourself is not allowed. The server returns:
 | Invalid characters | Contains control characters | Disconnected |
 | Permission denied | Missing `user_broadcast` permission | Stays connected |
 
-Note: Broadcast validation errors disconnect the client (more strict), while private message validation errors keep the connection open.
+Note: Broadcast validation errors disconnect the client (more strict), while user message validation errors keep the connection open.
 
 ## Broadcast vs Chat
 
@@ -337,10 +337,10 @@ Note: Broadcast validation errors disconnect the client (more strict), while pri
 
 ## Notes
 
-- Private messages are not persisted; only online users receive them
+- User messages are not persisted; only online users receive them
 - Broadcasts are not persisted; only online users receive them
 - The sender receives their own broadcast as a `ServerBroadcast` (for confirmation)
-- Private messages are delivered to all sessions of the recipient (for regular accounts)
+- User messages are delivered to all sessions of the recipient (for regular accounts)
 - `from_admin` in `UserMessage` allows clients to highlight admin messages differently
 - `from_shared` in `UserMessage` indicates messages from shared account users (displayed with muted styling)
 - `session_id` in `ServerBroadcast` can be used to identify the sender

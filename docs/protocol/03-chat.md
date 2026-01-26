@@ -642,4 +642,4 @@ Both settings are independent—persistent channels don't have to be auto-joined
 ## Next Step
 
 - View and manage [users](04-users.md)
-- Send [private messages](05-messaging.md)
+- Send [user messages](05-messaging.md)

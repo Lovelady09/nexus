@@ -157,6 +157,9 @@ impl NexusApp {
             // Clean up text editor content for this connection
             self.news_body_content.remove(&connection_id);
 
+            // Clean up history key mapping (but keep the manager - it may be shared)
+            self.connection_history_keys.remove(&connection_id);
+
             if self.active_connection == Some(connection_id) {
                 self.active_connection = None;
             }

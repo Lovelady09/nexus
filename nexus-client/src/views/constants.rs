@@ -39,7 +39,7 @@ pub(crate) const PERMISSION_USER_LIST: &str = "user_list";
 /// Permission to view user information
 pub(crate) const PERMISSION_USER_INFO: &str = "user_info";
 
-/// Permission to send user messages (private messages)
+/// Permission to send user messages
 pub(crate) const PERMISSION_USER_MESSAGE: &str = "user_message";
 
 /// Permission to broadcast messages to all users

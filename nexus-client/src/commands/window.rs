@@ -21,8 +21,8 @@ fn get_keywords() -> (String, String, String) {
 /// Manages chat tabs.
 /// Usage:
 /// - `/window` or `/w` - List open tabs
-/// - `/window close` or `/w close` - Close current PM tab
-/// - `/window close <nickname>` or `/w close <nickname>` - Close specific user's PM tab
+/// - `/window close` or `/w close` - Close current user message tab
+/// - `/window close <nickname>` or `/w close <nickname>` - Close specific user's message tab
 /// - `/window next` or `/w next` - Switch to next tab
 /// - `/window prev` or `/w prev` - Switch to previous tab
 pub fn execute(

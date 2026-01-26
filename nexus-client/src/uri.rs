@@ -7,7 +7,7 @@
 //!
 //! Path intents:
 //! - `/chat/#channel` - Open/focus channel tab
-//! - `/chat/user` - Open/focus PM tab
+//! - `/chat/user` - Open/focus user message tab
 //! - `/files/path` - Open Files panel to path
 //! - `/news` - Open News panel
 //! - `/info` - Open Server Info panel

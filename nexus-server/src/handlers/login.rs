@@ -539,6 +539,9 @@ where
         Some(joined_channels)
     };
 
+    // nickname is already set correctly: username for regular, validated_nickname for shared
+    let nickname = validated_nickname.unwrap_or_else(|| username.clone());
+
     let response = ServerMessage::LoginResponse {
         success: true,
         session_id: Some(id),
@@ -547,6 +550,7 @@ where
         server_info,
         locale: Some(locale.clone()),
         channels,
+        nickname: Some(nickname.clone()),
         error: None,
     };
     ctx.send_message(&response).await?;
@@ -556,8 +560,6 @@ where
     }
 
     // Notify other users about new connection
-    // nickname is already set correctly: username for regular, validated_nickname for shared
-    let nickname = validated_nickname.unwrap_or_else(|| username.clone());
     let user_info = UserInfo {
         username,
         nickname,

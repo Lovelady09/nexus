@@ -9,6 +9,7 @@ mod constants;
 mod events;
 mod fonts;
 mod handlers;
+mod history;
 mod i18n;
 mod icon;
 mod image;
@@ -279,6 +280,15 @@ struct NexusApp {
     news_body_content: HashMap<usize, text_editor::Content>,
 
     // -------------------------------------------------------------------------
+    // Chat History
+    // -------------------------------------------------------------------------
+    /// History managers for user message persistence, keyed by base_dir path
+    /// (shared across connections to the same server+account)
+    history_managers: HashMap<std::path::PathBuf, history::HistoryManager>,
+    /// Maps connection_id to its history manager's base_dir key
+    connection_history_keys: HashMap<usize, std::path::PathBuf>,
+
+    // -------------------------------------------------------------------------
     // Transfers
     // -------------------------------------------------------------------------
     /// Transfer manager for file downloads/uploads (global, not per-connection)
@@ -324,6 +334,9 @@ impl Default for NexusApp {
             bookmark_errors: HashMap::new(),
             // Text Editor State
             news_body_content: HashMap::new(),
+            // Chat History
+            history_managers: HashMap::new(),
+            connection_history_keys: HashMap::new(),
             // Transfers
             transfer_manager,
             // Drag and Drop
@@ -584,6 +597,9 @@ impl NexusApp {
             Message::CancelSettings => self.handle_cancel_settings(),
             Message::ChatFontSizeSelected(size) => self.handle_chat_font_size_selected(size),
             Message::MaxScrollbackChanged(value) => self.handle_max_scrollback_changed(value),
+            Message::ChatHistoryRetentionSelected(retention) => {
+                self.handle_chat_history_retention_selected(retention)
+            }
             Message::ClearAvatarPressed => self.handle_clear_avatar_pressed(),
             Message::ConnectionNotificationsToggled(enabled) => {
                 self.handle_connection_notifications_toggled(enabled)
@@ -1006,6 +1022,7 @@ impl NexusApp {
             theme: self.theme(),
             show_connection_events: self.config.settings.show_connection_events,
             show_join_leave_events: self.config.settings.show_join_leave_events,
+            chat_history_retention: self.config.settings.chat_history_retention,
             chat_font_size: self.config.settings.chat_font_size,
             show_timestamps: self.config.settings.show_timestamps,
             use_24_hour_time: self.config.settings.use_24_hour_time,

@@ -1,6 +1,6 @@
 [package]
 name = "nexus-client"
-version = "0.5.1"
+version = "0.5.2"
 edition = "2024"
 license = "MIT"
 authors = ["Josh Ellithorpe <quest@mac.com>"]
@@ -45,6 +45,8 @@ tokio-socks = "0.5"
 rustls-native-certs = "0.8"
 webpki-roots = "1.0"
 sha2 = "0.10"
+hkdf = "0.12"
+chacha20poly1305 = "0.10"
 sys-locale = "0.3"
 fluent-bundle = "0.16"
 unic-langid = "0.9"

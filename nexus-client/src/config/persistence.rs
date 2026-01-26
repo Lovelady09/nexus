@@ -59,13 +59,21 @@ impl Config {
         let json = serde_json::to_string_pretty(self)
             .map_err(|e| t_args("err-failed-serialize-config", &[("error", &e.to_string())]))?;
 
-        // Write to disk
+        // On Unix, create empty file and set permissions before writing content
+        // This avoids a race condition where the file is briefly world-readable
+        #[cfg(unix)]
+        {
+            // Create empty file (or truncate existing)
+            fs::File::create(&path)
+                .map_err(|e| t_args("err-failed-write-config", &[("error", &e.to_string())]))?;
+
+            // Set restrictive permissions while file is empty
+            Self::set_config_permissions(&path)?;
+        }
+
+        // Write content (file already has correct permissions on Unix)
         fs::write(&path, json)
             .map_err(|e| t_args("err-failed-write-config", &[("error", &e.to_string())]))?;
-
-        // Set restrictive permissions on Unix (owner read/write only)
-        #[cfg(unix)]
-        Self::set_config_permissions(&path)?;
 
         Ok(())
     }

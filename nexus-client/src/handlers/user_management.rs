@@ -641,14 +641,14 @@ impl NexusApp {
 
     // ==================== User List Icon Handlers ====================
 
-    /// Handle user message icon click (create/switch to PM tab)
+    /// Handle user message icon click (create/switch to user message tab)
     ///
     /// The `nickname` parameter is the display name (always populated; equals username for regular accounts).
     pub fn handle_user_message_icon_clicked(&mut self, nickname: String) -> Task<Message> {
         if let Some(conn_id) = self.active_connection
             && let Some(conn) = self.connections.get_mut(&conn_id)
         {
-            // Create PM tab entry if it doesn't exist (keyed by display name)
+            // Create user message tab entry if it doesn't exist (keyed by display name)
             conn.user_messages.entry(nickname.clone()).or_default();
 
             // Add to user_message_tabs if not already present (creates the tab in UI)
@@ -656,7 +656,7 @@ impl NexusApp {
                 conn.user_message_tabs.push(nickname.clone());
             }
 
-            // Switch to the PM tab
+            // Switch to the user message tab
             let tab = ChatTab::UserMessage(nickname);
             return Task::done(Message::SwitchChatTab(tab));
         }

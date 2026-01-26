@@ -131,16 +131,17 @@ async fn perform_login(
     match received.message {
         ServerMessage::LoginResponse {
             success: true,
-            session_id: Some(id),
+            session_id: Some(_),
             is_admin,
             permissions,
             server_info,
             channels,
             locale,
+            nickname,
             ..
         } => Ok(LoginInfo {
-            session_id: id,
             is_admin: is_admin.unwrap_or(false),
+            nickname: nickname.unwrap_or_default(),
             permissions: permissions.unwrap_or_default(),
             server_name: server_info.as_ref().and_then(|info| info.name.clone()),
             server_description: server_info

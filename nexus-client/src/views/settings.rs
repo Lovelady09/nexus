@@ -1,5 +1,7 @@
 //! Settings panel view
 
+use crate::config::settings::ChatHistoryRetention;
+
 use iced::widget::button as btn;
 use iced::widget::{
     Column, Id, Space, button, checkbox, container, pick_list, row, scrollable, slider, text_input,
@@ -38,6 +40,8 @@ pub struct SettingsViewData<'a> {
     pub show_connection_events: bool,
     /// Show channel join/leave events in chat
     pub show_join_leave_events: bool,
+    /// Chat history retention policy for user message conversations
+    pub chat_history_retention: ChatHistoryRetention,
     /// Maximum scrollback lines per chat tab (0 = unlimited)
     pub max_scrollback: usize,
     /// Font size for chat messages
@@ -106,6 +110,7 @@ pub fn settings_view<'a>(data: SettingsViewData<'a>) -> Element<'a, Message> {
     let general_content =
         general_tab_content(data.current_theme, avatar, default_avatar, data.nickname);
     let chat_content = chat_tab_content(
+        data.chat_history_retention,
         data.max_scrollback,
         data.chat_font_size,
         data.show_connection_events,
@@ -289,6 +294,7 @@ fn general_tab_content<'a>(
 
 /// Build the Chat tab content (font size, notifications, timestamps)
 fn chat_tab_content(
+    chat_history_retention: ChatHistoryRetention,
     max_scrollback: usize,
     chat_font_size: u8,
     show_connection_events: bool,
@@ -299,6 +305,19 @@ fn chat_tab_content(
 
     // Space between tab bar and first content
     items.push(Space::new().height(SPACER_SIZE_MEDIUM).into());
+
+    // Chat history retention picker row
+    let retention_label = shaped_text(t("label-chat-history-retention")).size(TEXT_SIZE);
+    let retention_picker = pick_list(
+        ChatHistoryRetention::ALL,
+        Some(chat_history_retention),
+        Message::ChatHistoryRetentionSelected,
+    )
+    .text_size(TEXT_SIZE);
+    let retention_row = row![retention_label, retention_picker]
+        .spacing(ELEMENT_SPACING)
+        .align_y(Center);
+    items.push(retention_row.into());
 
     // Max scrollback input row (0 = unlimited)
     let scrollback_label = shaped_text(t("label-max-scrollback")).size(TEXT_SIZE);

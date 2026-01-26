@@ -7,7 +7,7 @@ use iced::widget::text_editor;
 use uuid::Uuid;
 
 use crate::config::events::EventSettings;
-use crate::config::settings::ProxySettings;
+use crate::config::settings::{ChatHistoryRetention, ProxySettings};
 use crate::transfers::TransferManager;
 use crate::types::{
     ActivePanel, BookmarkEditState, ConnectionFormState, ServerBookmark, ServerConnection,
@@ -27,6 +27,9 @@ pub struct ViewConfig<'a> {
 
     /// Show channel join/leave events in chat
     pub show_join_leave_events: bool,
+
+    /// Chat history retention policy for user message conversations
+    pub chat_history_retention: ChatHistoryRetention,
 
     /// Font size for chat messages
     pub chat_font_size: u8,

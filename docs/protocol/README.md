@@ -155,7 +155,7 @@ Current version: `0.5.1`
 | [02-login.md](02-login.md) | Authentication and session establishment |
 | [03-chat.md](03-chat.md) | Chat messages and topics |
 | [04-users.md](04-users.md) | User list and presence |
-| [05-messaging.md](05-messaging.md) | Private messages and broadcasts |
+| [05-messaging.md](05-messaging.md) | User messages and broadcasts |
 | [06-news.md](06-news.md) | News posts |
 | [07-files.md](07-files.md) | File browsing and management |
 | [08-transfers.md](08-transfers.md) | File upload and download (port 7501) |

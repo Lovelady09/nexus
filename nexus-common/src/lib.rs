@@ -79,7 +79,7 @@ pub const DEFAULT_PORT_STR: &str = "7500";
 /// - `user_info`: View detailed user information
 /// - `user_kick`: Kick/disconnect users
 /// - `user_list`: View the list of connected users
-/// - `user_message`: Send private messages to users
+/// - `user_message`: Send user messages
 pub const ALL_PERMISSIONS: &[&str] = &[
     "ban_create",
     "ban_delete",
@@ -152,7 +152,7 @@ pub const PERMISSIONS_COUNT: usize = ALL_PERMISSIONS.len();
 /// - `trust_list`: View list of trusted IPs
 /// - `user_info`: View detailed user information
 /// - `user_list`: View the list of connected users
-/// - `user_message`: Send private messages to users
+/// - `user_message`: Send user messages
 pub const SHARED_ACCOUNT_PERMISSIONS: &[&str] = &[
     "ban_list",
     "chat_create",

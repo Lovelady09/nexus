@@ -984,7 +984,7 @@ impl FilesManagementState {
 /// - `news_list`: View news posts
 /// - `user_info`: View user information
 /// - `user_list`: View connected users list
-/// - `user_message`: Send private messages
+/// - `user_message`: Send user messages
 const DEFAULT_USER_PERMISSIONS: &[&str] = &[
     "chat_receive",
     "chat_send",

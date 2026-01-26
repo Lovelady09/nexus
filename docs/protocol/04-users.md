@@ -429,7 +429,7 @@ The protocol distinguishes between username and nickname:
 | `username` | Database account identifier | `alice` | `shared_acct` |
 | `nickname` | Display name shown in UI | `alice` | `Visitor` |
 
-**Golden rule:** "Users type what they see." When users need to reference another user (e.g., for private messages, kicks, info), they use the `nickname` field.
+**Golden rule:** "Users type what they see." When users need to reference another user (e.g., for user messages, kicks, info), they use the `nickname` field.
 
 For regular accounts, `nickname` always equals `username`. For shared accounts, `nickname` is unique per session and differs from `username`.
 
@@ -548,7 +548,7 @@ Response to `UserStatus` request.
 - **Session-only**: Away and status are cleared on disconnect
 - **Multi-session inheritance**: New sessions for regular accounts inherit away/status from the latest existing session
 - **Shared accounts**: No inheritance; each session starts fresh
-- **No restrictions**: Away users can still chat, PM, and transfer files
+- **No restrictions**: Away users can still chat, send messages, and transfer files
 - **Broadcasts**: Changes trigger `UserUpdated` broadcast to all users with `user_list` permission
 
 ### Validation
@@ -596,5 +596,5 @@ User lists are sorted alphabetically by nickname (case-insensitive).
 
 ## Next Step
 
-- Send [private messages and broadcasts](05-messaging.md)
+- Send [user messages and broadcasts](05-messaging.md)
 - Manage users with [admin commands](09-admin.md)

@@ -133,13 +133,21 @@ impl TransferManager {
             )
         })?;
 
-        // Write to disk
+        // On Unix, create empty file and set permissions before writing content
+        // This avoids a race condition where the file is briefly world-readable
+        #[cfg(unix)]
+        {
+            // Create empty file (or truncate existing)
+            fs::File::create(&path)
+                .map_err(|e| t_args("transfer-save-write-failed", &[("error", &e.to_string())]))?;
+
+            // Set restrictive permissions while file is empty
+            Self::set_transfers_permissions(&path)?;
+        }
+
+        // Write content (file already has correct permissions on Unix)
         fs::write(&path, json)
             .map_err(|e| t_args("transfer-save-write-failed", &[("error", &e.to_string())]))?;
-
-        // Set restrictive permissions on Unix (owner read/write only)
-        #[cfg(unix)]
-        Self::set_transfers_permissions(&path)?;
 
         self.dirty = false;
         Ok(())

@@ -411,11 +411,11 @@ impl NexusApp {
         sort_user_list(&mut conn.online_users);
 
         // If username changed, update user_messages HashMap and active tab
-        // Note: PM tabs are keyed by nickname.
+        // Note: User message tabs are keyed by nickname.
         // For regular accounts, nickname == username, so this rename works correctly.
         // For shared accounts, nickname is session-specific (not username), so the remove()
         // will return None and this becomes a no-op, which is correct behavior since
-        // the shared user's nickname (and thus PM tab key) hasn't changed.
+        // the shared user's nickname (and thus user message tab key) hasn't changed.
         if username_changed {
             // If this is our own username changing, update conn.connection_info.username
             if conn.connection_info.username == previous_username {

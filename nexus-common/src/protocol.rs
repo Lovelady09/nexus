@@ -10,7 +10,7 @@
 
 use serde::{Deserialize, Serialize};
 
-/// Action type for chat and private messages
+/// Action type for chat and user messages
 ///
 /// Determines how a message is rendered:
 /// - `Normal`: Standard message with brackets (e.g., `<alice> hello`)
@@ -523,6 +523,9 @@ pub enum ServerMessage {
         /// Channels the user was auto-joined to on login
         #[serde(skip_serializing_if = "Option::is_none")]
         channels: Option<Vec<ChannelJoinInfo>>,
+        /// Server-confirmed nickname (equals username for regular accounts)
+        #[serde(skip_serializing_if = "Option::is_none")]
+        nickname: Option<String>,
     },
     ServerBroadcast {
         session_id: u32,
@@ -1544,6 +1547,7 @@ mod tests {
             server_info: None,
             locale: Some("en".to_string()),
             channels: None,
+            nickname: Some("testuser".to_string()),
             error: None,
         };
         let json = serde_json::to_string(&msg).unwrap();
@@ -1562,6 +1566,7 @@ mod tests {
             server_info: None,
             locale: None,
             channels: None,
+            nickname: None,
             error: Some("Invalid credentials".to_string()),
         };
         let json = serde_json::to_string(&msg).unwrap();
@@ -1579,6 +1584,7 @@ mod tests {
             server_info: None,
             locale: Some("en".to_string()),
             channels: None,
+            nickname: Some("admin".to_string()),
             error: None,
         };
         let json = serde_json::to_string(&msg).unwrap();
@@ -1598,6 +1604,7 @@ mod tests {
             server_info: None,
             locale: Some("en".to_string()),
             channels: None,
+            nickname: Some("regularuser".to_string()),
             error: None,
         };
         let json = serde_json::to_string(&msg).unwrap();

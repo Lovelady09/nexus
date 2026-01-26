@@ -1,8 +1,8 @@
 //! Message validation
 //!
-//! Validates chat messages, broadcasts, and private messages.
+//! Validates chat messages, broadcasts, and user messages.
 
-/// Maximum length for messages (chat, broadcast, private messages) in bytes
+/// Maximum length for messages (chat, broadcast, user messages) in bytes
 pub const MAX_MESSAGE_LENGTH: usize = 1024;
 
 /// Validation error for messages
@@ -18,7 +18,7 @@ pub enum MessageError {
     InvalidCharacters,
 }
 
-/// Validate a message (chat, broadcast, private message)
+/// Validate a message (chat, broadcast, user message)
 ///
 /// Checks:
 /// - Not empty or whitespace-only

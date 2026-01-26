@@ -106,7 +106,7 @@ This guide covers common issues and their solutions when using the Nexus BBS cli
 ### Messages not appearing
 
 **Solutions:**
-1. Check that you're viewing the correct tab (Server vs. PM tabs)
+1. Check that you're viewing the correct tab (channel vs. user message tabs)
 2. Scroll down — you may be viewing older messages
 3. Verify you're connected (check the server list)
 

@@ -221,7 +221,7 @@ pub fn build_test_notification_content(
 fn should_show_notification(app: &NexusApp, event_type: EventType, context: &EventContext) -> bool {
     match event_type {
         EventType::UserMessage => {
-            // Don't notify if window is focused AND this connection is active AND we're viewing that user's PM tab
+            // Don't notify if window is focused AND this connection is active AND we're viewing that user's message tab
             if app.window_focused
                 && let Some(event_conn_id) = context.connection_id
                 && let Some(active_conn_id) = app.active_connection

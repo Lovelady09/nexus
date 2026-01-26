@@ -98,8 +98,8 @@ impl TabCompletionState {
 pub struct ServerConnectionParams {
     /// Bookmark ID or None for ad-hoc connections
     pub bookmark_id: Option<Uuid>,
-    /// Session ID assigned by server
-    pub session_id: u32,
+    /// Server-confirmed nickname (equals username for regular accounts)
+    pub nickname: String,
     /// Connection info (address, port, auth info)
     pub connection_info: ConnectionInfo,
     /// Display name (bookmark name or address:port)
@@ -156,8 +156,8 @@ pub type CommandSender = mpsc::UnboundedSender<(MessageId, ClientMessage)>;
 pub struct ServerConnection {
     /// Bookmark ID or None for ad-hoc connections
     pub bookmark_id: Option<Uuid>,
-    /// Session ID assigned by server (used to identify our user in online_users list)
-    pub session_id: u32,
+    /// Server-confirmed nickname (equals username for regular accounts)
+    pub nickname: String,
     /// Connection info (address, port, auth info)
     pub connection_info: ConnectionInfo,
     /// Display name (bookmark name or address:port)
@@ -327,7 +327,7 @@ impl ServerConnection {
     pub fn new(params: ServerConnectionParams) -> Self {
         Self {
             bookmark_id: params.bookmark_id,
-            session_id: params.session_id,
+            nickname: params.nickname,
             connection_info: params.connection_info,
             display_name: params.display_name,
             connection_id: params.connection_id,
@@ -394,14 +394,14 @@ impl ServerConnection {
 pub struct NetworkConnection {
     /// Channel for sending messages to server
     pub tx: CommandSender,
-    /// Session ID from server
-    pub session_id: u32,
     /// Unique connection identifier
     pub connection_id: usize,
     /// Optional shutdown handle
     pub shutdown: Option<WrappedShutdownHandle>,
     /// Whether user is admin
     pub is_admin: bool,
+    /// Server-confirmed nickname (equals username for regular accounts)
+    pub nickname: String,
     /// User's permissions
     pub permissions: Vec<String>,
     /// Server name (if provided in ServerInfo)

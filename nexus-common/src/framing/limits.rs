@@ -2389,6 +2389,7 @@ mod tests {
             }),
             locale: Some(str_of_len(MAX_LOCALE_LENGTH)),
             channels: Some(channels),
+            nickname: Some(str_of_len(MAX_NICKNAME_LENGTH)),
         };
         let size = json_size(&msg);
         let limit = max_payload_for_type("LoginResponse") as usize;

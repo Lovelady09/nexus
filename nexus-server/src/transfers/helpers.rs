@@ -28,10 +28,10 @@ use crate::handlers::{
 use super::types::AuthenticatedUser;
 
 // =============================================================================
-// Transfer Error Type
+// File Response Error Type
 // =============================================================================
 
-/// Error type for file transfer operations
+/// Error type for file transfer response errors
 ///
 /// This provides structured error handling with both human-readable messages
 /// and machine-readable error kinds for client decision-making.
@@ -211,6 +211,7 @@ pub(crate) fn login_error_response(error: String) -> ServerMessage {
         server_info: None,
         locale: None,
         channels: None,
+        nickname: None,
     }
 }
 

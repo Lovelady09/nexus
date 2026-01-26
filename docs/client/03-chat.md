@@ -1,6 +1,6 @@
 # Chat
 
-This guide covers the multi-channel chat system, private messaging, and notifications.
+This guide covers the multi-channel chat system, user messaging, and notifications.
 
 ## Tab System
 
@@ -13,10 +13,10 @@ The **Console** tab is always present and cannot be closed. It receives:
 - Server broadcasts
 - System messages (user connects, disconnects)
 - Permission change notifications
-- Command output (when not in a channel or PM)
+- Command output (when not in a channel or user message tab)
 - Error messages
 
-**Note:** You cannot send regular messages from the Console tab. Use `/join` to enter a channel or `/msg` to send a private message.
+**Note:** You cannot send regular messages from the Console tab. Use `/join` to enter a channel or `/msg` to send a user message.
 
 ### Channel Tabs
 
@@ -29,9 +29,9 @@ Channel tabs (e.g., `#nexus`, `#support`) are for group conversations:
 
 ### User Message Tabs
 
-Private message tabs are for 1-on-1 conversations:
+User message tabs are for 1-on-1 conversations:
 
-- Created when you receive a PM or use `/msg`
+- Created when you receive a message or use `/msg`
 - Ordered by creation time
 - Click the **×** to hide the tab (history is preserved)
 - If a new message arrives, the tab reappears at the end
@@ -101,9 +101,9 @@ View or change a channel's secret mode with the `/secret` command:
 
 Secret channels are hidden from `/channels` output for non-members. Viewing the state requires no permission; changing it requires `chat_secret` permission.
 
-## Private Messages
+## User Messages
 
-### Starting a Private Message
+### Starting a Conversation
 
 **Method 1: From the user list**
 1. Click a user's name in the user list
@@ -116,7 +116,7 @@ Secret channels are hidden from `/channels` output for non-members. Viewing the 
 
 ### Away Status
 
-When you message someone who is away, you'll see their away status:
+When you message someone who is away, you'll see their status:
 
 ```
 alice is away
@@ -129,7 +129,7 @@ alice is away: Gone for lunch
 
 Type your message and press **Enter**. The message is sent to all channel members.
 
-### In PM Tabs
+### In User Message Tabs
 
 Type your message and press **Enter**. The message is sent only to that user.
 
@@ -177,7 +177,7 @@ Use `/focus` to switch to a specific tab:
 
 ```
 /focus #general    # Switch to #general channel
-/focus alice       # Switch to PM with alice
+/focus alice       # Switch to user message tab with alice
 ```
 
 ## Tab Completion
@@ -250,15 +250,15 @@ The user list (right panel) shows contextual users:
 |------------|-----------------|
 | Console | All online users |
 | Channel | Channel members only |
-| PM | You and the other user |
+| User Message | You and the other user |
 
 Click a user to see available actions (info, message, kick).
 
 ## Notifications
 
-### Channel Events
+### Events
 
-Configure notifications for channel activity:
+Configure notifications for activity:
 
 | Event | Description | Default |
 |-------|-------------|---------|
@@ -266,6 +266,7 @@ Configure notifications for channel activity:
 | Chat Mention | Your nickname mentioned | On |
 | Chat Join | User joins a channel you're in | Off |
 | Chat Leave | User leaves a channel you're in | Off |
+| User Message | 1-on-1 message received | On |
 
 Notifications are suppressed when you're viewing that specific channel.
 
@@ -280,13 +281,37 @@ Notifications are suppressed when you're viewing that specific channel.
 
 ## Chat History
 
-- Messages are stored per-connection, per-tab
-- History is limited by the **Max Scrollback** setting (default: 5000 messages per tab)
-- When the limit is reached, oldest messages are automatically removed
-- History is cleared when you disconnect
+### Display History (All Tabs)
+
+- Messages displayed in tabs are limited by the **Max Scrollback** setting (default: 5000 messages per tab)
+- When the limit is reached, oldest messages are automatically removed from display
 - Scroll up to view older messages
 - Use `/clear` to clear the current tab's history
 - Adjust scrollback limit in Settings > Chat
+
+### Persistent History (User Messages Only)
+
+User message conversations are automatically saved to disk and restored when you reconnect:
+
+- **Local storage** — History is stored on your device only; the server stores nothing
+- **Per-server, per-account** — Each server and account has separate history
+- **Restored on connect** — When you reconnect, user message tabs are recreated with their history
+
+Configure how long to keep history in **Settings > Chat > Chat History**:
+
+| Setting | Behavior |
+|---------|----------|
+| Forever | Keep all history indefinitely (default) |
+| 30 Days | Delete messages older than 30 days |
+| 14 Days | Delete messages older than 14 days |
+| 7 Days | Delete messages older than 7 days |
+| Disabled | Don't save history (existing files are preserved) |
+
+**Notes:**
+- Console and channel history is not saved (cleared on disconnect)
+- Using `/clear` on a user message tab deletes both the display and the saved history file
+- Changing the retention setting only affects new connections
+- If you disable history, existing history files are kept (not deleted)
 
 ## Session Membership
 
@@ -305,7 +330,7 @@ If you're logged in from multiple devices:
 | `/channels` | List available channels |
 | `/topic [set text\|clear]` | View or set channel topic |
 | `/secret [on\|off]` | Toggle secret mode (admin) |
-| `/msg user message` | Send private message |
+| `/msg user message` | Send user message |
 | `/me action` | Send action message |
 | `/clear` | Clear current tab history |
 | `/window` | Manage tabs |

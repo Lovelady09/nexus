@@ -12,7 +12,7 @@ use crate::types::{ChatMessage, ChatTab, Message};
 /// Usage:
 /// - `/focus` or `/f` - Switch to console
 /// - `/focus #channel` or `/f #channel` - Switch to a channel tab
-/// - `/focus <nickname>` or `/f <nickname>` - Switch to (or open) a user's PM tab
+/// - `/focus <nickname>` or `/f <nickname>` - Switch to (or open) a user's message tab
 pub fn execute(
     app: &mut NexusApp,
     connection_id: usize,
@@ -59,7 +59,7 @@ pub fn execute(
         }
     }
 
-    // Check if target matches a PM tab (case-insensitive)
+    // Check if target matches a user message tab (case-insensitive)
     let matching_user = conn
         .user_messages
         .keys()
@@ -80,7 +80,7 @@ pub fn execute(
         .map(|user| user.nickname.clone());
 
     if let Some(nickname) = online_user {
-        // User is online, open/switch to their PM tab
+        // User is online, open/switch to their user message tab
         return Task::done(Message::UserMessageIconClicked(nickname));
     }
 

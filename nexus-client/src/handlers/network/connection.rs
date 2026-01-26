@@ -8,6 +8,7 @@ use uuid::Uuid;
 use crate::NexusApp;
 use crate::config::events::EventType;
 use crate::events::{EventContext, emit_event};
+use crate::history::HistoryManager;
 use crate::i18n::{t, t_args};
 use crate::image::decode_data_uri_max_width;
 use crate::style::SERVER_IMAGE_MAX_CACHE_WIDTH;
@@ -189,6 +190,9 @@ impl NexusApp {
             // Clean up text editor content for this connection
             self.news_body_content.remove(&connection_id);
 
+            // Clean up history key mapping (but keep the manager - it may be shared)
+            self.connection_history_keys.remove(&connection_id);
+
             // If this was the active connection, clear it
             if self.active_connection == Some(connection_id) {
                 self.active_connection = None;
@@ -304,24 +308,19 @@ impl NexusApp {
 
             // Logged in identity: nickname [admin] or nickname (username) [admin] for shared accounts
             let username = &conn.connection_info.username;
-            let nickname = if conn.connection_info.nickname.is_empty() {
-                username.clone()
-            } else {
-                conn.connection_info.nickname.clone()
-            };
-            let is_shared = !conn.connection_info.nickname.is_empty()
-                && conn.connection_info.nickname != *username;
+            let nickname = &conn.nickname;
+            let is_shared = conn.nickname != *username;
             let login_info = match (is_shared, conn.is_admin) {
                 (true, true) => t_args(
                     "msg-logged-in-as-shared-admin",
-                    &[("nickname", &nickname), ("username", username)],
+                    &[("nickname", nickname), ("username", username)],
                 ),
                 (true, false) => t_args(
                     "msg-logged-in-as-shared",
-                    &[("nickname", &nickname), ("username", username)],
+                    &[("nickname", nickname), ("username", username)],
                 ),
-                (false, true) => t_args("msg-logged-in-as-admin", &[("nickname", &nickname)]),
-                (false, false) => t_args("msg-logged-in-as", &[("nickname", &nickname)]),
+                (false, true) => t_args("msg-logged-in-as-admin", &[("nickname", nickname)]),
+                (false, false) => t_args("msg-logged-in-as", &[("nickname", nickname)]),
             };
             welcome_lines.push(login_info);
 
@@ -393,6 +392,13 @@ impl NexusApp {
         let should_request_userlist = conn.has_permission(PERMISSION_USER_LIST);
         let shutdown_handle = conn.shutdown?;
 
+        // Extract values needed for history manager before moving connection_info
+        let fingerprint = conn.connection_info.certificate_fingerprint.clone();
+        let username = conn.connection_info.username.clone();
+        // Use server-confirmed nickname (equals username for regular accounts)
+        let nickname = conn.nickname.clone();
+        let connection_id = conn.connection_id;
+
         // Clone server_image once for both uses
         let server_image = conn.server_image.clone();
         let cached_server_image = if server_image.is_empty() {
@@ -403,7 +409,7 @@ impl NexusApp {
 
         let server_conn = ServerConnection::new(ServerConnectionParams {
             bookmark_id,
-            session_id: conn.session_id,
+            nickname: nickname.clone(),
             connection_info: conn.connection_info,
             display_name,
             connection_id: conn.connection_id,
@@ -425,8 +431,87 @@ impl NexusApp {
             shutdown_handle,
         });
 
-        self.connections.insert(conn.connection_id, server_conn);
-        self.active_connection = Some(conn.connection_id);
+        self.connections.insert(connection_id, server_conn);
+        self.active_connection = Some(connection_id);
+
+        // Get or create shared history manager for this server+account combination
+        let base_dir = HistoryManager::build_base_dir(&fingerprint, &username);
+        let is_new_manager = !self.history_managers.contains_key(&base_dir);
+
+        if is_new_manager {
+            let manager = HistoryManager::new(
+                &fingerprint,
+                &username,
+                self.config.settings.chat_history_retention,
+            );
+            self.history_managers.insert(base_dir.clone(), manager);
+        } else {
+            // Update existing manager's retention to current setting
+            if let Some(manager) = self.history_managers.get_mut(&base_dir) {
+                manager.update_retention(self.config.settings.chat_history_retention);
+            }
+        }
+
+        // Record which manager this connection uses
+        self.connection_history_keys
+            .insert(connection_id, base_dir.clone());
+
+        // Load history and restore tabs (only loads from disk on first access)
+        if let Some(history_manager) = self.history_managers.get_mut(&base_dir)
+            && let Ok(conversations) = history_manager.load_all()
+            && let Some(server_conn) = self.connections.get_mut(&connection_id)
+        {
+            for (other_nickname, messages) in conversations {
+                // Use the other user's nickname as the tab name
+                let tab_name = other_nickname.clone();
+
+                // Create tab if not exists
+                if !server_conn.user_message_tabs.contains(&tab_name) {
+                    server_conn.user_message_tabs.push(tab_name.clone());
+                }
+
+                // Convert ServerMessage::UserMessage to ChatMessage for display
+                let chat_messages: Vec<_> = messages
+                    .iter()
+                    .filter_map(|msg| {
+                        if let nexus_common::protocol::ServerMessage::UserMessage {
+                            from_nickname,
+                            from_admin,
+                            from_shared,
+                            message,
+                            action,
+                            timestamp,
+                            ..
+                        } = msg
+                        {
+                            let datetime = if *timestamp > 0 {
+                                chrono::TimeZone::timestamp_opt(
+                                    &chrono::Local,
+                                    *timestamp as i64,
+                                    0,
+                                )
+                                .single()
+                                .unwrap_or_else(chrono::Local::now)
+                            } else {
+                                chrono::Local::now()
+                            };
+                            Some(crate::types::ChatMessage::with_timestamp_and_status(
+                                from_nickname.clone(),
+                                message.clone(),
+                                datetime,
+                                *from_admin,
+                                *from_shared,
+                                *action,
+                            ))
+                        } else {
+                            None
+                        }
+                    })
+                    .collect();
+
+                server_conn.user_messages.insert(tab_name, chat_messages);
+            }
+        }
 
         // Always start on chat screen - close any app-wide panels (Settings/About)
         self.ui_state.active_panel = ActivePanel::None;

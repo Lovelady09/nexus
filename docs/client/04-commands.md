@@ -146,7 +146,7 @@ Clear the chat history for the current tab. This only affects your local view �
 
 ### /focus
 
-Switch focus to a channel or user's private message tab.
+Switch focus to a channel or user message tab.
 
 **Aliases:** `/f`
 
@@ -155,12 +155,12 @@ Switch focus to a channel or user's private message tab.
 **Usage:**
 ```
 /focus #general     # Switch to #general channel
-/focus alice        # Switch to (or open) Alice's PM tab
+/focus alice        # Switch to (or open) Alice's message tab
 /f #support         # Switch to #support channel
-/f bob              # Switch to Bob's PM tab
+/f bob              # Switch to Bob's message tab
 ```
 
-If the target is a user who is online but you don't have a PM tab open with them, this command opens one.
+If the target is a user who is online but you don't have a message tab open with them, this command opens one.
 
 ### /info
 
@@ -266,11 +266,11 @@ Send an action message (like IRC). Action messages are displayed in italics with
 *** alice is thinking...
 ```
 
-Action messages work in both server chat and private message tabs. The message is sent to whichever chat tab is currently active.
+Action messages work in both channel and user message tabs. The message is sent to whichever chat tab is currently active.
 
 ### /message
 
-Send a private message to a user.
+Send a message to a user.
 
 **Aliases:** `/m`, `/msg`
 
@@ -283,7 +283,7 @@ Send a private message to a user.
 /m charlie Quick question...
 ```
 
-After sending, the client switches to that user's PM tab.
+After sending, the client switches to that user's message tab.
 
 ### /reindex
 
@@ -441,7 +441,7 @@ Remove a trusted IP entry.
 
 ### /window
 
-Manage chat tabs (server chat and PM conversations).
+Manage chat tabs (channels and user message conversations).
 
 **Aliases:** `/w`
 
@@ -452,8 +452,8 @@ Manage chat tabs (server chat and PM conversations).
 /window              # List all open tabs
 /window next         # Switch to next tab
 /window prev         # Switch to previous tab
-/window close        # Close current PM tab
-/window close alice  # Close Alice's PM tab
+/window close        # Close current user message tab
+/window close alice  # Close Alice's message tab
 ```
 
 **Note:** You cannot close the server chat tab.
@@ -469,7 +469,7 @@ Manage chat tabs (server chat and PM conversations).
 | `/broadcast` | `/bc` | `user_broadcast` | Send a broadcast to all users |
 | `/channels` | `/ch` | `chat_list` | List available channels |
 | `/clear` | — | None | Clear chat history for current tab |
-| `/focus` | `/f` | None | Focus a channel or user's PM tab |
+| `/focus` | `/f` | None | Focus a channel or user message tab |
 | `/help` | `/h`, `/?` | None | Show available commands |
 | `/info` | `/i`, `/userinfo`, `/whois` | `user_info` | Show information about a user |
 | `/join` | `/j` | `chat_join` / `chat_create` | Join or create a channel |
@@ -502,5 +502,5 @@ These shortcuts work without typing a command:
 
 ## Next Steps
 
-- [Chat](03-chat.md) — Chat features and private messaging
+- [Chat](03-chat.md) — Chat features and user messaging
 - [Settings](07-settings.md) — Configure notifications and preferences

@@ -64,14 +64,32 @@ Leave blank to be prompted for a nickname when connecting to shared accounts.
 
 ## Chat Tab
 
+### Chat History
+
+Controls how long user message history is retained on disk. User message conversations are stored locally and restored when you reconnect to a server.
+
+| Setting | Behavior |
+|---------|----------|
+| **Forever** | Keep all history indefinitely (default) |
+| **30 Days** | Delete messages older than 30 days |
+| **14 Days** | Delete messages older than 14 days |
+| **7 Days** | Delete messages older than 7 days |
+| **Disabled** | Don't save new history (existing files are preserved) |
+
+**Notes:**
+- Only user messages are saved; console and channel history is not persisted
+- Stored locally at `~/.local/share/nexus/history/` (Linux/macOS) or `%APPDATA%\nexus\history\` (Windows)
+- Changing this setting only affects new connections
+- Disabling does not delete existing history files
+
 ### Max Scrollback
 
-Limits how many messages are kept in each chat tab's history. When the limit is reached, oldest messages are removed as new ones arrive.
+Limits how many messages are displayed in each chat tab. When the limit is reached, oldest messages are removed from display as new ones arrive.
 
 - Default: 5000 messages per tab
 - Set to 0 for unlimited (not recommended for long sessions)
 
-This affects all chat tabs: Console, channels, and private messages.
+This affects all chat tabs: Console, channels, and user messages. Note that user message history saved to disk is not affected by this limit.
 
 ### Font Size
 
@@ -162,7 +180,7 @@ Select an event type from the dropdown to configure its notifications:
 | **User Connected** | User joined the server |
 | **User Disconnected** | User left the server |
 | **User Kicked** | You were kicked from the server |
-| **User Message** | Private message received |
+| **User Message** | User message received |
 
 ### Per-Event Settings
 

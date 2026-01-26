@@ -258,7 +258,7 @@ All human-readable error messages are translated **server-side** before being se
 |-------|-------|------------|
 | Cannot delete your own account | Self-deletion | Stays connected |
 | Cannot kick yourself | Self-kick | Stays connected |
-| Cannot send a message to yourself | Self-PM | Stays connected |
+| Cannot send a message to yourself | Self-message | Stays connected |
 
 ### Protected Account Errors
 

@@ -22,11 +22,20 @@ pub fn execute(
         return app.add_active_tab_message(connection_id, ChatMessage::error(error_msg));
     }
 
+    // Get active tab for clearing
+    let active_tab = {
+        let Some(conn) = app.connections.get(&connection_id) else {
+            return Task::none();
+        };
+        conn.active_chat_tab.clone()
+    };
+
+    // Clear in-memory messages
     let Some(conn) = app.connections.get_mut(&connection_id) else {
         return Task::none();
     };
 
-    match &conn.active_chat_tab {
+    match &active_tab {
         ChatTab::Console => {
             conn.console_messages.clear();
         }
@@ -41,6 +50,15 @@ pub fn execute(
                 messages.clear();
             }
         }
+    }
+
+    // Clear history file for user message tabs (keyed by nickname)
+    // Silently ignore failures - history is non-critical
+    if let ChatTab::UserMessage(nickname) = &active_tab
+        && let Some(base_dir) = app.connection_history_keys.get(&connection_id)
+        && let Some(history_manager) = app.history_managers.get_mut(base_dir)
+    {
+        let _ = history_manager.clear_conversation(nickname);
     }
 
     Task::none()
