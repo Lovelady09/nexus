@@ -13,6 +13,7 @@ mod ip_rule_cache;
 mod transfers;
 mod upnp;
 mod users;
+mod voice;
 mod websocket;
 
 use std::fs;
@@ -38,6 +39,7 @@ use files::FileIndex;
 use ip_rule_cache::IpRuleCache;
 use transfers::{TransferParams, TransferRegistry};
 use users::UserManager;
+use voice::VoiceRegistry;
 
 #[tokio::main]
 async fn main() {
@@ -175,6 +177,9 @@ async fn main() {
     // Create transfer registry for tracking active transfers (enables ban disconnection)
     let transfer_registry = Arc::new(TransferRegistry::new());
 
+    // Create voice registry for tracking active voice sessions (ephemeral, in-memory only)
+    let voice_registry = VoiceRegistry::new();
+
     // Create channel manager for multi-channel chat
     let channel_manager = ChannelManager::new(database.channels.clone(), user_manager.clone());
 
@@ -302,6 +307,7 @@ async fn main() {
                             file_index: file_index.clone(),
                             channel_manager: channel_manager.clone(),
                             transfer_registry: transfer_registry.clone(),
+                            voice_registry: voice_registry.clone(),
                         };
                         let tls_acceptor = tls_acceptor.clone();
 
@@ -466,6 +472,7 @@ async fn main() {
                             file_index: file_index.clone(),
                             channel_manager: channel_manager.clone(),
                             transfer_registry: transfer_registry.clone(),
+                            voice_registry: voice_registry.clone(),
                         };
                         let tls_acceptor = tls_acceptor.clone();
                         let ip_rule_cache_for_check = ip_rule_cache.clone();

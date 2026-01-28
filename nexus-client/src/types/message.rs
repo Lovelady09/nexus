@@ -535,6 +535,12 @@ pub enum Message {
     /// Transfer: Retry a failed transfer (re-queue)
     TransferRetry(Uuid),
 
+    // ==================== Voice ====================
+    /// Voice: Join voice for a channel or user message
+    VoiceJoinPressed(String),
+    /// Voice: Leave current voice session
+    VoiceLeavePressed,
+
     // ==================== URI Scheme ====================
     /// URI: Handle a nexus:// URI (from startup arg or IPC)
     HandleNexusUri(NexusUri),

@@ -45,6 +45,8 @@ mod user_list;
 mod user_message;
 mod user_status;
 mod user_update;
+mod voice_join;
+mod voice_leave;
 
 #[cfg(test)]
 pub mod testing;
@@ -93,6 +95,8 @@ pub use user_list::handle_user_list;
 pub use user_message::handle_user_message;
 pub use user_status::handle_user_status;
 pub use user_update::{UserUpdateRequest, handle_user_update};
+pub use voice_join::handle_voice_join;
+pub use voice_leave::handle_voice_leave;
 
 use std::io;
 use std::net::SocketAddr;
@@ -115,6 +119,7 @@ use crate::files::FileIndex;
 use crate::ip_rule_cache::IpRuleCache;
 use crate::transfers::TransferRegistry;
 use crate::users::UserManager;
+use crate::voice::VoiceRegistry;
 
 /// Context passed to all handlers with shared resources
 pub struct HandlerContext<'a, W> {
@@ -143,6 +148,8 @@ pub struct HandlerContext<'a, W> {
     pub channel_manager: &'a ChannelManager,
     /// Transfer registry for disconnecting active transfers on ban
     pub transfer_registry: Arc<TransferRegistry>,
+    /// Voice registry for managing active voice sessions
+    pub voice_registry: &'a VoiceRegistry,
 }
 
 impl<'a, W: AsyncWrite + Unpin> HandlerContext<'a, W> {

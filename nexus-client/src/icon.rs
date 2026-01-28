@@ -1,6 +1,6 @@
 // Generated automatically by iced_fontello at build time.
 // Do not edit manually. Source: ../fonts/icons.toml
-// ed6577ae888ad459ba3999093089852388c0286c7a0bc4e750663e17b9704111
+// bd4e424b7628fbc81c961b6ab19884069705709a68999b739a27f9595146f82c
 use iced::Font;
 use iced::widget::{Text, text};
 
@@ -114,6 +114,10 @@ pub fn folder_root<'a>() -> Text<'a> {
     icon("\u{F0E8}")
 }
 
+pub fn headphones<'a>() -> Text<'a> {
+    icon("\u{1F3A7}")
+}
+
 pub fn home<'a>() -> Text<'a> {
     icon("\u{2302}")
 }
@@ -140,6 +144,10 @@ pub fn megaphone<'a>() -> Text<'a> {
 
 pub fn message<'a>() -> Text<'a> {
     icon("\u{E720}")
+}
+
+pub fn mic<'a>() -> Text<'a> {
+    icon("\u{F130}")
 }
 
 pub fn newspaper<'a>() -> Text<'a> {

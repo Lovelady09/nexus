@@ -27,6 +27,7 @@ use crate::ip_rule_cache::IpRuleCache;
 use crate::transfers::TransferRegistry;
 use crate::users::UserManager;
 use crate::users::user::NewSessionParams;
+use crate::voice::VoiceRegistry;
 
 /// Type alias for the write half used in tests
 type TestWriteHalf = tokio::net::tcp::OwnedWriteHalf;
@@ -98,6 +99,7 @@ pub struct TestContext {
     pub file_index: Arc<FileIndex>,
     pub channel_manager: ChannelManager,
     pub transfer_registry: Arc<TransferRegistry>,
+    pub voice_registry: VoiceRegistry,
     /// Keep temp dir alive for tests that use file areas
     #[allow(dead_code)]
     temp_dir: TempDir,
@@ -123,6 +125,7 @@ impl TestContext {
             file_index: self.file_index.clone(),
             channel_manager: &self.channel_manager,
             transfer_registry: self.transfer_registry.clone(),
+            voice_registry: &self.voice_registry,
         }
     }
 }
@@ -188,6 +191,9 @@ pub async fn create_test_context() -> TestContext {
     // Create transfer registry for tests
     let transfer_registry = Arc::new(TransferRegistry::new());
 
+    // Create voice registry for tests
+    let voice_registry = VoiceRegistry::new();
+
     TestContext {
         frame_reader,
         frame_writer,
@@ -203,6 +209,7 @@ pub async fn create_test_context() -> TestContext {
         file_index,
         channel_manager,
         transfer_registry,
+        voice_registry,
         temp_dir,
     }
 }

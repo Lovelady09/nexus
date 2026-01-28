@@ -27,6 +27,7 @@ mod user_info;
 mod user_kick;
 mod user_message;
 mod user_status;
+mod voice;
 
 pub use user_admin::UserEditResponseData;
 
@@ -486,6 +487,33 @@ impl NexusApp {
                 results,
             } => {
                 self.handle_file_search_response(connection_id, message_id, success, error, results)
+            }
+
+            ServerMessage::VoiceJoinResponse {
+                success,
+                token,
+                target,
+                participants,
+                error,
+            } => self.handle_voice_join_response(
+                connection_id,
+                success,
+                token,
+                target,
+                participants,
+                error,
+            ),
+
+            ServerMessage::VoiceLeaveResponse { success, error } => {
+                self.handle_voice_leave_response(connection_id, success, error)
+            }
+
+            ServerMessage::VoiceUserJoined { nickname, target } => {
+                self.handle_voice_user_joined(connection_id, nickname, target)
+            }
+
+            ServerMessage::VoiceUserLeft { nickname, target } => {
+                self.handle_voice_user_left(connection_id, nickname, target)
             }
 
             // Catch-all for any unhandled message types

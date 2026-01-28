@@ -95,6 +95,8 @@ struct ServerContentContext<'a> {
     pub sound_enabled: bool,
     /// Master volume for sounds (0.0 - 1.0)
     pub sound_volume: f32,
+    /// Voice target for the current tab (channel or nickname)
+    pub voice_target: Option<String>,
 }
 
 // ============================================================================
@@ -265,6 +267,7 @@ pub fn main_layout<'a>(config: ViewConfig<'a>) -> Element<'a, Message> {
                 notifications_enabled: config.notifications_enabled,
                 sound_enabled: config.sound_enabled,
                 sound_volume: config.sound_volume,
+                voice_target: config.voice_target.clone(),
             })
         } else if config.active_connection.is_some() {
             // Connection exists but couldn't get all required state
@@ -734,6 +737,7 @@ fn server_content_view<'a>(ctx: ServerContentContext<'a>) -> Element<'a, Message
         ctx.theme.clone(),
         ctx.chat_font_size,
         ctx.timestamp_settings,
+        ctx.voice_target.clone(),
     );
 
     // Build the main content based on active panel

@@ -13,3 +13,4 @@ pub mod ip_rule_cache;
 pub mod transfers;
 pub mod upnp;
 pub mod users;
+pub mod voice;

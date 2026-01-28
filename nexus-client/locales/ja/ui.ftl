@@ -200,6 +200,8 @@ permission-trust_create = 信頼作成
 permission-trust_delete = 信頼削除
 permission-trust_list = 信頼リスト
 permission-connection_monitor = 接続モニター
+permission-voice_listen = ボイス受信
+permission-voice_talk = ボイス送信
 
 # =============================================================================
 # Tooltips
@@ -931,3 +933,29 @@ msg-trust-remaining = 残り { $time }
 msg-trust-remaining-days = { $days }日 { $hours }時間
 msg-trust-remaining-hours = { $hours }時間 { $minutes }分
 msg-trust-remaining-minutes = { $minutes }分
+
+# =============================================================================
+# Voice Chat
+# =============================================================================
+
+# Voice error messages
+err-voice-join = Failed to join voice: { $error }
+err-voice-leave = Failed to leave voice: { $error }
+err-voice-no-token = Voice join succeeded but no token received
+err-voice-already-active = You are already in a voice session on another server
+err-voice-no-permission = You don't have permission to join voice chat
+err-voice-not-in-channel = You must be in the channel to join voice
+err-voice-not-in-session = You are not in a voice session
+
+# Voice success messages
+msg-voice-joined = Joined voice in { $target } ({ $count } others)
+msg-voice-joined-empty = Joined voice in { $target }
+msg-voice-left = Left voice in { $target }
+msg-voice-user-joined = { $nickname } joined voice
+msg-voice-user-left = { $nickname } left voice
+
+# Voice UI
+voice-join-tooltip = Join voice chat
+voice-leave-tooltip = Leave voice chat
+voice-bar-participants = { $count } in voice
+voice-indicator-tooltip = In voice chat

@@ -3,8 +3,7 @@
 use iced::widget::scrollable::{Direction, Scrollbar};
 use iced::widget::text::Wrapping;
 use iced::widget::{
-    Column, Id, button, column, container, rich_text, row, scrollable, span, text::Rich,
-    text_input, tooltip,
+    Column, button, column, container, rich_text, row, scrollable, span, text::Rich, tooltip,
 };
 use iced::{Color, Element, Fill, Font, Theme};
 use linkify::{LinkFinder, LinkKind};
@@ -19,7 +18,9 @@ use crate::style::{
     TOOLTIP_PADDING, TOOLTIP_TEXT_SIZE, chat, chat_tab_active_style, close_button_on_primary_style,
     content_background_style, shaped_text, tooltip_container_style,
 };
-use crate::types::{ChatTab, InputId, Message, MessageType, ScrollableId, ServerConnection};
+use crate::types::{ChatTab, Message, MessageType, ScrollableId, ServerConnection};
+use crate::views::constants::{PERMISSION_VOICE_LISTEN, PERMISSION_VOICE_TALK};
+use crate::views::voice::{build_input_row_with_voice, build_voice_bar};
 
 const CONSOLE_TAB_TOOLTIP_KEY: &str = "console-tab";
 
@@ -495,30 +496,6 @@ fn build_message_list<'a>(
 }
 
 // ============================================================================
-// Input Row
-// ============================================================================
-
-/// Build the message input row with text field and send button
-fn build_input_row<'a>(message_input: &'a str, font_size: f32) -> iced::widget::Row<'a, Message> {
-    let text_field = text_input(&t("placeholder-message"), message_input)
-        .on_input(Message::ChatInputChanged)
-        .on_submit(Message::SendMessagePressed)
-        .id(Id::from(InputId::ChatInput))
-        .padding(INPUT_PADDING)
-        .size(font_size)
-        .font(MONOSPACE_FONT)
-        .width(Fill);
-
-    let send_button = button(shaped_text(t("button-send")).size(font_size))
-        .on_press(Message::SendMessagePressed)
-        .padding(INPUT_PADDING);
-
-    row![text_field, send_button]
-        .spacing(SMALL_SPACING)
-        .width(Fill)
-}
-
-// ============================================================================
 // Tab Bar
 // ============================================================================
 
@@ -578,12 +555,19 @@ fn build_tab_bar(conn: &ServerConnection) -> (iced::widget::Row<'static, Message
 /// - Chat messages (server enforces chat_receive permission)
 ///
 /// The send input is only enabled with chat_send permission.
+///
+/// # Voice Chat Integration
+///
+/// A voice button appears in the input row when the user has voice permissions
+/// and is on a channel or user message tab. When in a voice session, a voice bar
+/// appears above the input showing the target and participant count.
 pub fn chat_view<'a>(
     conn: &'a ServerConnection,
     message_input: &'a str,
     theme: Theme,
     chat_font_size: u8,
     timestamp_settings: TimestampSettings,
+    voice_target: Option<String>,
 ) -> Element<'a, Message> {
     let font_size = chat_font_size as f32;
 
@@ -601,12 +585,33 @@ pub fn chat_view<'a>(
         .width(Fill)
         .height(Fill);
 
-    // Build input row (always enabled - permission checked on send)
-    let input_row = build_input_row(message_input, font_size);
+    // Check if user has voice permissions (for enabling the voice button)
+    let has_voice_permission =
+        conn.has_permission(PERMISSION_VOICE_LISTEN) || conn.has_permission(PERMISSION_VOICE_TALK);
+
+    // Build input row with voice button
+    let input_row = build_input_row_with_voice(
+        message_input,
+        font_size,
+        conn,
+        has_voice_permission,
+        voice_target,
+    );
+
+    // Build the bottom section (voice bar + input row)
+    let bottom_section = if let Some(ref session) = conn.voice_session {
+        // Show voice bar above input when in a voice session
+        let voice_bar = build_voice_bar(session);
+        column![voice_bar, input_row]
+            .spacing(SMALL_SPACING)
+            .width(Fill)
+    } else {
+        column![input_row].width(Fill)
+    };
 
     // Chat content with background
     let chat_content = container(
-        column![chat_scrollable, input_row]
+        column![chat_scrollable, bottom_section]
             .spacing(SMALL_SPACING)
             .padding(SMALL_PADDING),
     )

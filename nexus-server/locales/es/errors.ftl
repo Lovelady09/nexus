@@ -233,3 +233,11 @@ err-search-failed = La búsqueda falló
 err-trust-invalid-target = Objetivo inválido (use apodo, dirección IP o rango CIDR)
 err-trust-invalid-duration = Formato de duración inválido (use 10m, 4h, 7d, o 0 para permanente)
 err-trust-not-found = No se encontró entrada de confianza para '{ $target }'
+
+# Voice Errors
+err-voice-listen-required = Necesitas el permiso voice_listen para unirte a voz
+err-voice-already-joined = Ya estás en una sesión de voz
+err-voice-not-joined = No estás en una sesión de voz
+err-voice-not-channel-member = Debes ser miembro de { $channel } para unirte a voz
+err-voice-target-not-online = { $nickname } no está conectado
+err-voice-invalid-target = Destino de voz inválido

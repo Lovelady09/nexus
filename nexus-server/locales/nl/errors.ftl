@@ -232,3 +232,11 @@ err-search-failed = Zoekopdracht mislukt
 err-trust-invalid-target = Ongeldig doel (gebruik nickname, IP-adres of CIDR-bereik)
 err-trust-invalid-duration = Ongeldig duurformaat (gebruik 10m, 4h, 7d, of 0 voor permanent)
 err-trust-not-found = Geen vertrouwde invoer gevonden voor '{ $target }'
+
+# Voice Errors
+err-voice-listen-required = Je hebt de voice_listen machtiging nodig om deel te nemen aan spraak
+err-voice-already-joined = Je bent al in een spraaksessie
+err-voice-not-joined = Je bent niet in een spraaksessie
+err-voice-not-channel-member = Je moet lid zijn van { $channel } om deel te nemen aan spraak
+err-voice-target-not-online = { $nickname } is niet online
+err-voice-invalid-target = Ongeldig spraakdoel

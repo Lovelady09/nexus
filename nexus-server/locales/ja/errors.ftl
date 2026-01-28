@@ -232,3 +232,11 @@ err-search-failed = 検索に失敗しました
 err-trust-invalid-target = 無効なターゲットです（ニックネーム、IPアドレス、またはCIDRレンジを使用してください）
 err-trust-invalid-duration = 無効な期間形式です（10m、4h、7d、または永続の場合は0を使用してください）
 err-trust-not-found = '{ $target }' の信頼エントリが見つかりません
+
+# Voice Errors
+err-voice-listen-required = ボイスに参加するにはvoice_listen権限が必要です
+err-voice-already-joined = すでにボイスセッションに参加しています
+err-voice-not-joined = ボイスセッションに参加していません
+err-voice-not-channel-member = ボイスに参加するには{ $channel }のメンバーである必要があります
+err-voice-target-not-online = { $nickname }はオンラインではありません
+err-voice-invalid-target = 無効なボイス対象です

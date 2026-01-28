@@ -232,3 +232,11 @@ err-search-failed = 搜索失败
 err-trust-invalid-target = 无效的目标（请使用昵称、IP地址或CIDR范围）
 err-trust-invalid-duration = 无效的持续时间格式（使用 10m、4h、7d 或 0 表示永久）
 err-trust-not-found = 未找到 '{ $target }' 的信任条目
+
+# Voice Errors
+err-voice-listen-required = 您需要 voice_listen 权限才能加入语音
+err-voice-already-joined = 您已在语音会话中
+err-voice-not-joined = 您不在语音会话中
+err-voice-not-channel-member = 您必须是 { $channel } 的成员才能加入语音
+err-voice-target-not-online = { $nickname } 不在线
+err-voice-invalid-target = 无效的语音目标

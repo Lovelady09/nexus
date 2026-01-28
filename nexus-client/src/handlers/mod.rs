@@ -15,3 +15,4 @@ mod transfers;
 mod ui;
 mod uri;
 mod user_management;
+mod voice;

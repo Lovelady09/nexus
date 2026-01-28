@@ -3779,6 +3779,7 @@ dependencies = [
  "sha2",
  "tempfile",
  "tokio",
+ "uuid",
 ]
 
 [[package]]
@@ -3816,6 +3817,7 @@ dependencies = [
  "tokio-rustls",
  "tokio-tungstenite",
  "unic-langid",
+ "uuid",
  "walkdir",
 ]
 

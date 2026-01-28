@@ -72,6 +72,9 @@ pub const DEFAULT_PORT_STR: &str = "7500";
 /// - `news_delete`: Delete any news post (without: only own posts)
 /// - `news_edit`: Edit any news post (without: only own posts)
 /// - `news_list`: View news posts
+/// - `trust_create`: Create/update trusted IPs
+/// - `trust_delete`: Remove trusted IPs
+/// - `trust_list`: View list of trusted IPs
 /// - `user_broadcast`: Send broadcast messages to all users
 /// - `user_create`: Create new user accounts
 /// - `user_delete`: Delete user accounts
@@ -80,6 +83,8 @@ pub const DEFAULT_PORT_STR: &str = "7500";
 /// - `user_kick`: Kick/disconnect users
 /// - `user_list`: View the list of connected users
 /// - `user_message`: Send user messages
+/// - `voice_listen`: Receive audio from others in voice chat
+/// - `voice_talk`: Transmit audio in voice chat
 pub const ALL_PERMISSIONS: &[&str] = &[
     "ban_create",
     "ban_delete",
@@ -120,6 +125,8 @@ pub const ALL_PERMISSIONS: &[&str] = &[
     "user_kick",
     "user_list",
     "user_message",
+    "voice_listen",
+    "voice_talk",
 ];
 
 /// Number of permissions in the system.
@@ -153,6 +160,8 @@ pub const PERMISSIONS_COUNT: usize = ALL_PERMISSIONS.len();
 /// - `user_info`: View detailed user information
 /// - `user_list`: View the list of connected users
 /// - `user_message`: Send user messages
+/// - `voice_listen`: Receive audio from others in voice chat
+/// - `voice_talk`: Transmit audio in voice chat
 pub const SHARED_ACCOUNT_PERMISSIONS: &[&str] = &[
     "ban_list",
     "chat_create",
@@ -172,6 +181,8 @@ pub const SHARED_ACCOUNT_PERMISSIONS: &[&str] = &[
     "user_info",
     "user_list",
     "user_message",
+    "voice_listen",
+    "voice_talk",
 ];
 
 /// Check if a permission is allowed for shared accounts
@@ -234,14 +245,14 @@ mod tests {
 
     #[test]
     fn test_all_permissions_count() {
-        // Verify we have the expected number of permissions (39)
-        assert_eq!(ALL_PERMISSIONS.len(), 39);
+        // Verify we have the expected number of permissions (41)
+        assert_eq!(ALL_PERMISSIONS.len(), 41);
     }
 
     #[test]
     fn test_shared_account_permissions_count() {
-        // Verify we have the expected number of shared account permissions (18)
-        assert_eq!(SHARED_ACCOUNT_PERMISSIONS.len(), 18);
+        // Verify we have the expected number of shared account permissions (20)
+        assert_eq!(SHARED_ACCOUNT_PERMISSIONS.len(), 20);
     }
 
     #[test]

@@ -85,6 +85,10 @@ pub enum Permission {
     FileMove,
     /// Permission to copy files and directories
     FileCopy,
+    /// Permission to receive audio from others in voice chat
+    VoiceListen,
+    /// Permission to transmit audio in voice chat
+    VoiceTalk,
 }
 
 impl Permission {
@@ -144,6 +148,8 @@ impl Permission {
             "file_move" => Some(Permission::FileMove),
             "file_rename" => Some(Permission::FileRename),
             "file_root" => Some(Permission::FileRoot),
+            "voice_listen" => Some(Permission::VoiceListen),
+            "voice_talk" => Some(Permission::VoiceTalk),
             _ => None,
         }
     }
@@ -460,6 +466,8 @@ mod tests {
             Permission::UserKick,
             Permission::UserList,
             Permission::UserMessage,
+            Permission::VoiceListen,
+            Permission::VoiceTalk,
         ];
 
         for variant in all_variants {

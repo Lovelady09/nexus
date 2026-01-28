@@ -421,6 +421,18 @@ const FILE_SEARCH_SIZE: usize = json_type_base("FileSearch")
 const FILE_REINDEX_SIZE: usize = json_type_base("FileReindex");
 
 // -----------------------------------------------------------------------------
+// Voice client messages
+// -----------------------------------------------------------------------------
+
+/// VoiceJoin: {"type":"VoiceJoin","target":"...32..."}
+/// Target is either "#channel" (max 32) or "nickname" (max 32)
+const VOICE_JOIN_SIZE: usize =
+    json_type_base("VoiceJoin") + json_string_field("target", MAX_CHANNEL_LENGTH);
+
+/// VoiceLeave: {"type":"VoiceLeave"}
+const VOICE_LEAVE_SIZE: usize = json_type_base("VoiceLeave");
+
+// -----------------------------------------------------------------------------
 // Transfer messages (shared between client and server)
 // -----------------------------------------------------------------------------
 
@@ -444,6 +456,38 @@ const TRANSFER_COMPLETE_SIZE: usize = json_type_base("TransferComplete")
     + json_bool_field("success")
     + json_string_field("error", MAX_ERROR_LENGTH)
     + json_string_field("error_kind", MAX_ERROR_KIND_LENGTH);
+
+// -----------------------------------------------------------------------------
+// Server messages - Voice
+// -----------------------------------------------------------------------------
+
+/// Maximum participants in a voice session (for sizing VoiceJoinResponse)
+const MAX_VOICE_PARTICIPANTS: usize = 100;
+
+/// UUID string length when serialized (e.g., "550e8400-e29b-41d4-a716-446655440000")
+const UUID_STRING_LENGTH: usize = 36;
+
+/// VoiceJoinResponse: {"type":"VoiceJoinResponse","success":false,"token":"...36...","participants":["...64...",...100...],"error":"...2048..."}
+const VOICE_JOIN_RESPONSE_SIZE: usize = json_type_base("VoiceJoinResponse")
+    + json_bool_field("success")
+    + json_string_field("token", UUID_STRING_LENGTH)
+    + json_string_array_field("participants", MAX_VOICE_PARTICIPANTS, MAX_NICKNAME_LENGTH)
+    + json_string_field("error", MAX_ERROR_LENGTH);
+
+/// VoiceLeaveResponse: {"type":"VoiceLeaveResponse","success":false,"error":"...2048..."}
+const VOICE_LEAVE_RESPONSE_SIZE: usize = json_type_base("VoiceLeaveResponse")
+    + json_bool_field("success")
+    + json_string_field("error", MAX_ERROR_LENGTH);
+
+/// VoiceUserJoined: {"type":"VoiceUserJoined","nickname":"...32...","target":"...32..."}
+const VOICE_USER_JOINED_SIZE: usize = json_type_base("VoiceUserJoined")
+    + json_string_field("nickname", MAX_NICKNAME_LENGTH)
+    + json_string_field("target", MAX_CHANNEL_LENGTH);
+
+/// VoiceUserLeft: {"type":"VoiceUserLeft","nickname":"...32...","target":"...32..."}
+const VOICE_USER_LEFT_SIZE: usize = json_type_base("VoiceUserLeft")
+    + json_string_field("nickname", MAX_NICKNAME_LENGTH)
+    + json_string_field("target", MAX_CHANNEL_LENGTH);
 
 // -----------------------------------------------------------------------------
 // Server messages - Chat
@@ -1000,6 +1044,10 @@ static MESSAGE_TYPE_LIMITS: LazyLock<HashMap<&'static str, u64>> = LazyLock::new
     m.insert("FileSearch", pad_limit(FILE_SEARCH_SIZE as u64));
     m.insert("FileReindex", pad_limit(FILE_REINDEX_SIZE as u64));
 
+    // Voice client messages (self-documenting via const calculations)
+    m.insert("VoiceJoin", pad_limit(VOICE_JOIN_SIZE as u64));
+    m.insert("VoiceLeave", pad_limit(VOICE_LEAVE_SIZE as u64));
+
     // Server messages - Chat (self-documenting via const calculations)
     m.insert("ChatMessage", pad_limit(CHAT_MESSAGE_SIZE as u64));
     m.insert("ChatUpdated", pad_limit(CHAT_UPDATED_SIZE as u64));
@@ -1179,6 +1227,18 @@ static MESSAGE_TYPE_LIMITS: LazyLock<HashMap<&'static str, u64>> = LazyLock::new
         "FileReindexResponse",
         pad_limit(FILE_REINDEX_RESPONSE_SIZE as u64),
     );
+
+    // Voice server messages (self-documenting via const calculations)
+    m.insert(
+        "VoiceJoinResponse",
+        pad_limit(VOICE_JOIN_RESPONSE_SIZE as u64),
+    );
+    m.insert(
+        "VoiceLeaveResponse",
+        pad_limit(VOICE_LEAVE_RESPONSE_SIZE as u64),
+    );
+    m.insert("VoiceUserJoined", pad_limit(VOICE_USER_JOINED_SIZE as u64));
+    m.insert("VoiceUserLeft", pad_limit(VOICE_USER_LEFT_SIZE as u64));
 
     // Transfer messages (self-documenting via const calculations)
     m.insert("FileStart", pad_limit(FILE_START_SIZE as u64));
@@ -1660,8 +1720,8 @@ mod tests {
         //
         // Note: Some type names are shared between client and server enums
         // (UserMessage, FileStart, FileStartResponse, FileData, FileHashing), so they're only counted once in the HashMap.
-        const CLIENT_MESSAGE_COUNT: usize = 49; // Added 6 News + 7 File + 6 Transfer + 3 Away/Status + 3 Ban + 3 Trust + 2 FileSearch + 4 Chat channel + 1 ConnectionMonitor client messages
-        const SERVER_MESSAGE_COUNT: usize = 62; // Added 7 News + 8 File + 7 Transfer + 3 Away/Status + 3 Ban + 3 Trust + 2 FileSearch + 6 Chat channel + 1 ConnectionMonitor server messages
+        const CLIENT_MESSAGE_COUNT: usize = 51; // Added 6 News + 7 File + 6 Transfer + 3 Away/Status + 3 Ban + 3 Trust + 2 FileSearch + 4 Chat channel + 1 ConnectionMonitor + 2 Voice client messages
+        const SERVER_MESSAGE_COUNT: usize = 66; // Added 7 News + 8 File + 7 Transfer + 3 Away/Status + 3 Ban + 3 Trust + 2 FileSearch + 6 Chat channel + 1 ConnectionMonitor + 4 Voice server messages
         const SHARED_MESSAGE_COUNT: usize = 5; // UserMessage, FileStart, FileStartResponse, FileData, FileHashing
         const TOTAL_MESSAGE_COUNT: usize =
             CLIENT_MESSAGE_COUNT + SERVER_MESSAGE_COUNT - SHARED_MESSAGE_COUNT;

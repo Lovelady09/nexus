@@ -232,3 +232,11 @@ err-search-failed = Ошибка поиска
 err-trust-invalid-target = Недопустимая цель (используйте никнейм, IP-адрес или диапазон CIDR)
 err-trust-invalid-duration = Недопустимый формат продолжительности (используйте 10m, 4h, 7d или 0 для постоянного)
 err-trust-not-found = Доверенная запись для '{ $target }' не найдена
+
+# Voice Errors
+err-voice-listen-required = Для подключения к голосовому чату требуется разрешение voice_listen
+err-voice-already-joined = Вы уже находитесь в голосовой сессии
+err-voice-not-joined = Вы не находитесь в голосовой сессии
+err-voice-not-channel-member = Для подключения к голосовому чату вы должны быть участником { $channel }
+err-voice-target-not-online = { $nickname } не в сети
+err-voice-invalid-target = Недопустимая цель голосового чата

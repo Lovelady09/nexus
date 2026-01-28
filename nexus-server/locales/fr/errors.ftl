@@ -232,3 +232,11 @@ err-search-failed = La recherche a échoué
 err-trust-invalid-target = Cible invalide (utilisez un pseudo, une adresse IP ou une plage CIDR)
 err-trust-invalid-duration = Format de durée invalide (utilisez 10m, 4h, 7d, ou 0 pour permanent)
 err-trust-not-found = Aucune entrée de confiance trouvée pour '{ $target }'
+
+# Voice Errors
+err-voice-listen-required = Vous avez besoin de la permission voice_listen pour rejoindre le vocal
+err-voice-already-joined = Vous êtes déjà dans une session vocale
+err-voice-not-joined = Vous n'êtes pas dans une session vocale
+err-voice-not-channel-member = Vous devez être membre de { $channel } pour rejoindre le vocal
+err-voice-target-not-online = { $nickname } n'est pas en ligne
+err-voice-invalid-target = Cible vocale invalide

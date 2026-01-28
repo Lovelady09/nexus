@@ -7,9 +7,8 @@
 use super::shaping::shaped_text;
 use super::ui;
 use super::{
-    CONTEXT_MENU_BORDER_RADIUS, CONTEXT_MENU_BORDER_WIDTH, CONTEXT_MENU_SHADOW_BLUR,
-    CONTEXT_MENU_SHADOW_OFFSET, CONTEXT_MENU_SHADOW_OPACITY, TITLE_ROW_HEIGHT_WITH_ACTION,
-    TITLE_SIZE,
+    CONTEXT_MENU_BORDER_WIDTH, CONTEXT_MENU_SHADOW_BLUR, CONTEXT_MENU_SHADOW_OFFSET,
+    CONTEXT_MENU_SHADOW_OPACITY, STANDARD_BORDER_RADIUS, TITLE_ROW_HEIGHT_WITH_ACTION, TITLE_SIZE,
 };
 use crate::types::Message;
 use crate::widgets::{MenuButtonStatus, MenuButtonStyle};
@@ -259,7 +258,7 @@ pub fn menu_button_style(theme: &Theme, status: MenuButtonStatus) -> MenuButtonS
             MenuButtonStatus::Active => ui::text_color(theme),
         },
         border: Border {
-            radius: CONTEXT_MENU_BORDER_RADIUS.into(),
+            radius: STANDARD_BORDER_RADIUS.into(),
             ..Default::default()
         },
     }
@@ -283,7 +282,7 @@ pub fn menu_button_danger_style(theme: &Theme, status: MenuButtonStatus) -> Menu
             MenuButtonStatus::Active => theme.palette().danger,
         },
         border: Border {
-            radius: CONTEXT_MENU_BORDER_RADIUS.into(),
+            radius: STANDARD_BORDER_RADIUS.into(),
             ..Default::default()
         },
     }
@@ -297,7 +296,7 @@ pub fn context_menu_container_style(theme: &Theme) -> container::Style {
         border: Border {
             color: palette.background.strong.color,
             width: CONTEXT_MENU_BORDER_WIDTH,
-            radius: CONTEXT_MENU_BORDER_RADIUS.into(),
+            radius: STANDARD_BORDER_RADIUS.into(),
         },
         shadow: iced::Shadow {
             color: Color::from_rgba(0.0, 0.0, 0.0, CONTEXT_MENU_SHADOW_OPACITY),
@@ -391,6 +390,23 @@ pub fn badge_style(theme: &Theme) -> container::Style {
         text_color: Some(ext.primary.strong.text),
         border: Border {
             radius: super::BADGE_BORDER_RADIUS.into(),
+            ..Default::default()
+        },
+        ..Default::default()
+    }
+}
+
+/// Voice bar container style - subtle background for the voice status bar
+///
+/// Uses a slightly tinted background to distinguish the voice bar from the
+/// rest of the chat area while remaining visually unobtrusive.
+pub fn voice_bar_style(theme: &Theme) -> container::Style {
+    let palette = theme.extended_palette();
+    container::Style {
+        background: Some(Background::Color(palette.primary.weak.color)),
+        text_color: Some(palette.primary.weak.text),
+        border: Border {
+            radius: STANDARD_BORDER_RADIUS.into(),
             ..Default::default()
         },
         ..Default::default()

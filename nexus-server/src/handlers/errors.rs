@@ -1056,3 +1056,45 @@ pub fn err_search_query_invalid(locale: &str) -> String {
 pub fn err_search_failed(locale: &str) -> String {
     t(locale, "err-search-failed")
 }
+
+// ========================================================================
+// Voice Errors
+// ========================================================================
+
+/// Get translated "voice listen permission required" error
+pub fn err_voice_listen_required(locale: &str) -> String {
+    t(locale, "err-voice-listen-required")
+}
+
+/// Get translated "already in voice" error
+pub fn err_voice_already_joined(locale: &str) -> String {
+    t(locale, "err-voice-already-joined")
+}
+
+/// Get translated "not in voice" error
+pub fn err_voice_not_joined(locale: &str) -> String {
+    t(locale, "err-voice-not-joined")
+}
+
+/// Get translated "must be channel member" error
+pub fn err_voice_not_channel_member(locale: &str, channel: &str) -> String {
+    t_args(
+        locale,
+        "err-voice-not-channel-member",
+        &[("channel", channel)],
+    )
+}
+
+/// Get translated "voice target not online" error
+pub fn err_voice_target_not_online(locale: &str, nickname: &str) -> String {
+    t_args(
+        locale,
+        "err-voice-target-not-online",
+        &[("nickname", nickname)],
+    )
+}
+
+/// Get translated "invalid voice target" error
+pub fn err_voice_invalid_target(locale: &str) -> String {
+    t(locale, "err-voice-invalid-target")
+}

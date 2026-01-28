@@ -82,7 +82,7 @@ impl NexusApp {
     /// Add a message to a user message tab and auto-scroll if viewing that tab
     ///
     /// Used for command output in user message tabs.
-    fn add_user_message(
+    pub fn add_user_message(
         &mut self,
         connection_id: usize,
         nickname: &str,

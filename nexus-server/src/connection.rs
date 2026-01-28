@@ -28,6 +28,7 @@ use crate::handlers::{
 use crate::ip_rule_cache::IpRuleCache;
 use crate::transfers::TransferRegistry;
 use crate::users::UserManager;
+use crate::voice::VoiceRegistry;
 
 /// Parameters for handling a connection
 pub struct ConnectionParams {
@@ -43,6 +44,7 @@ pub struct ConnectionParams {
     pub file_index: Arc<FileIndex>,
     pub channel_manager: ChannelManager,
     pub transfer_registry: Arc<TransferRegistry>,
+    pub voice_registry: VoiceRegistry,
 }
 
 /// Connection state for a single client
@@ -95,6 +97,7 @@ where
         file_index,
         channel_manager,
         transfer_registry,
+        voice_registry,
     } = params;
 
     let (reader, writer) = tokio::io::split(socket);
@@ -150,6 +153,7 @@ where
                             file_index: file_index.clone(),
                             channel_manager: &channel_manager,
                             transfer_registry: transfer_registry.clone(),
+                            voice_registry: &voice_registry,
                         };
 
                         if let Err(e) = handle_client_message(
@@ -237,6 +241,46 @@ where
                             user_manager
                                 .send_to_session(member_session_id, leave_msg.clone())
                                 .await;
+                        }
+                    }
+                }
+            }
+
+            // Remove from voice session and notify remaining participants
+            if let Some(voice_session) = voice_registry.remove_by_session_id(id).await {
+                // Check if this nickname still has other sessions in voice for this target
+                // Only broadcast VoiceUserLeft on last leave of a nickname
+                let target_key = voice_session.target_key();
+                let nickname_still_in_voice = voice_registry
+                    .is_nickname_in_target(&target_key, &user.nickname, None)
+                    .await;
+
+                if !nickname_still_in_voice {
+                    // Get remaining participants and notify them
+                    let remaining_participants = voice_registry.get_participants(&target_key).await;
+
+                    let is_channel = voice_session.is_channel();
+
+                    for participant_nickname in &remaining_participants {
+                        // Determine what target string to send to this participant
+                        let broadcast_target = if is_channel {
+                            // Channel: send channel name
+                            voice_session.target.first().cloned().unwrap_or_default()
+                        } else {
+                            // User message: send the leaving user's nickname
+                            user.nickname.clone()
+                        };
+
+                        let leave_notification = ServerMessage::VoiceUserLeft {
+                            nickname: user.nickname.clone(),
+                            target: broadcast_target,
+                        };
+
+                        if let Some(participant_user) = user_manager
+                            .get_session_by_nickname(participant_nickname)
+                            .await
+                        {
+                            let _ = participant_user.tx.send((leave_notification, None));
                         }
                     }
                 }
@@ -537,6 +581,12 @@ where
         }
         ClientMessage::FileReindex => {
             handlers::handle_file_reindex(conn_state.session_id, ctx).await?;
+        }
+        ClientMessage::VoiceJoin { target } => {
+            handlers::handle_voice_join(target, conn_state.session_id, ctx).await?;
+        }
+        ClientMessage::VoiceLeave => {
+            handlers::handle_voice_leave(conn_state.session_id, ctx).await?;
         }
     }
 

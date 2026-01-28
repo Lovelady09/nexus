@@ -55,5 +55,6 @@ pub use widgets::{
     muted_text_style, panel_title, separator_style, sidebar_panel_style, toolbar_background_style,
     toolbar_button_style, tooltip_container_style, transparent_icon_button_style,
     upload_folder_style, user_list_item_button_style, user_toolbar_separator_style,
+    voice_bar_style,
 };
 pub use window::*;

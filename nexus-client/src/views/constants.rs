@@ -133,3 +133,11 @@ pub(crate) const PERMISSION_TRUST_LIST: &str = "trust_list";
 
 /// Permission to view active connections
 pub(crate) const PERMISSION_CONNECTION_MONITOR: &str = "connection_monitor";
+
+// === Voice Permissions ===
+
+/// Permission to receive audio from others in voice chat
+pub(crate) const PERMISSION_VOICE_LISTEN: &str = "voice_listen";
+
+/// Permission to transmit audio in voice chat
+pub(crate) const PERMISSION_VOICE_TALK: &str = "voice_talk";

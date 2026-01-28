@@ -9,6 +9,7 @@ mod message;
 mod pending;
 mod ui;
 mod view_config;
+mod voice;
 
 // Re-export types for convenience
 pub use bookmark::{BookmarkEditMode, BookmarkEditState, ServerBookmark};
@@ -32,3 +33,4 @@ pub use ui::{
     ActivePanel, FingerprintMismatch, FingerprintMismatchDetails, InputId, ScrollableId, UiState,
 };
 pub use view_config::{ToolbarState, ViewConfig};
+pub use voice::VoiceSession;

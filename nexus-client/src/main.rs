@@ -295,6 +295,12 @@ struct NexusApp {
     transfer_manager: transfers::TransferManager,
 
     // -------------------------------------------------------------------------
+    // Voice
+    // -------------------------------------------------------------------------
+    /// Connection ID with active voice session (only one voice session per client)
+    active_voice_connection: Option<usize>,
+
+    // -------------------------------------------------------------------------
     // Drag and Drop
     // -------------------------------------------------------------------------
     /// Whether files are currently being dragged over the window
@@ -318,6 +324,7 @@ impl Default for NexusApp {
             // Connections
             connections: HashMap::new(),
             active_connection: None,
+            active_voice_connection: None,
             next_connection_id: 0,
             connecting_bookmarks: HashSet::new(),
             // Forms
@@ -866,6 +873,10 @@ impl NexusApp {
             Message::TransferMoveDown(id) => self.handle_transfer_move_down(id),
             Message::TransferRetry(id) => self.handle_transfer_retry(id),
 
+            // Voice
+            Message::VoiceJoinPressed(target) => self.handle_voice_join_pressed(target),
+            Message::VoiceLeavePressed => self.handle_voice_leave_pressed(),
+
             // URI scheme
             Message::HandleNexusUri(uri) => self.handle_nexus_uri(uri),
             Message::UriReceivedFromIpc(uri_str) => {
@@ -1053,6 +1064,7 @@ impl NexusApp {
             notifications_enabled: self.config.settings.notifications_enabled,
             sound_enabled: self.config.settings.sound_enabled,
             sound_volume: self.config.settings.sound_volume,
+            voice_target: self.get_voice_target_for_current_tab(),
         };
 
         let main_view = views::main_layout(config);

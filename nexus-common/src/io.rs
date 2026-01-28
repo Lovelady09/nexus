@@ -331,6 +331,8 @@ pub fn client_message_type(message: &ClientMessage) -> &'static str {
         ClientMessage::ConnectionMonitor => "ConnectionMonitor",
         ClientMessage::FileSearch { .. } => "FileSearch",
         ClientMessage::FileReindex => "FileReindex",
+        ClientMessage::VoiceJoin { .. } => "VoiceJoin",
+        ClientMessage::VoiceLeave => "VoiceLeave",
     }
 }
 
@@ -400,6 +402,10 @@ pub fn server_message_type(message: &ServerMessage) -> &'static str {
         ServerMessage::ConnectionMonitorResponse { .. } => "ConnectionMonitorResponse",
         ServerMessage::FileSearchResponse { .. } => "FileSearchResponse",
         ServerMessage::FileReindexResponse { .. } => "FileReindexResponse",
+        ServerMessage::VoiceJoinResponse { .. } => "VoiceJoinResponse",
+        ServerMessage::VoiceLeaveResponse { .. } => "VoiceLeaveResponse",
+        ServerMessage::VoiceUserJoined { .. } => "VoiceUserJoined",
+        ServerMessage::VoiceUserLeft { .. } => "VoiceUserLeft",
     }
 }
 

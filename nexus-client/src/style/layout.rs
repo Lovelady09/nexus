@@ -104,8 +104,8 @@ pub const CONTEXT_MENU_SEPARATOR_MARGIN: f32 = 4.0;
 /// Context menu minimum width (accommodates longest translations)
 pub const CONTEXT_MENU_MIN_WIDTH: f32 = 140.0;
 
-/// Context menu border radius
-pub const CONTEXT_MENU_BORDER_RADIUS: f32 = 4.0;
+/// Standard border radius (matches Iced's default button radius)
+pub const STANDARD_BORDER_RADIUS: f32 = 2.0;
 
 /// Context menu border width
 pub const CONTEXT_MENU_BORDER_WIDTH: f32 = 1.0;

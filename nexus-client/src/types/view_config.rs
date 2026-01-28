@@ -120,6 +120,9 @@ pub struct ViewConfig<'a> {
 
     /// Master volume for sounds (0.0 - 1.0)
     pub sound_volume: f32,
+
+    /// Voice target for the current tab (channel or nickname)
+    pub voice_target: Option<String>,
 }
 
 /// Toolbar state configuration

@@ -9,6 +9,7 @@
 //! admin operations use usernames.
 
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 /// Action type for chat and user messages
 ///
@@ -343,6 +344,13 @@ pub enum ClientMessage {
     },
     /// Request a file index rebuild (admin command)
     FileReindex,
+    /// Join voice chat for a channel or user message
+    VoiceJoin {
+        /// Target channel (e.g., "#general") or nickname for user message voice
+        target: String,
+    },
+    /// Leave current voice session
+    VoiceLeave,
 }
 
 /// Helper for skip_serializing_if on ChatAction
@@ -912,6 +920,41 @@ pub enum ServerMessage {
         #[serde(skip_serializing_if = "Option::is_none")]
         error: Option<String>,
     },
+    /// Response to VoiceJoin request
+    VoiceJoinResponse {
+        success: bool,
+        /// Voice token for UDP authentication (only on success)
+        #[serde(skip_serializing_if = "Option::is_none")]
+        token: Option<Uuid>,
+        /// Target (same as requested, or the other user's nickname for user message voice)
+        #[serde(skip_serializing_if = "Option::is_none")]
+        target: Option<String>,
+        /// Nicknames of users already in this voice session
+        #[serde(skip_serializing_if = "Option::is_none")]
+        participants: Option<Vec<String>>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        error: Option<String>,
+    },
+    /// Response to VoiceLeave request
+    VoiceLeaveResponse {
+        success: bool,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        error: Option<String>,
+    },
+    /// Notification that a user joined voice
+    VoiceUserJoined {
+        /// Nickname of the user who joined
+        nickname: String,
+        /// Target channel or the other user's nickname for user message voice
+        target: String,
+    },
+    /// Notification that a user left voice
+    VoiceUserLeft {
+        /// Nickname of the user who left
+        nickname: String,
+        /// Target channel or the other user's nickname for user message voice
+        target: String,
+    },
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -1470,6 +1513,10 @@ impl std::fmt::Debug for ClientMessage {
                 .field("root", root)
                 .finish(),
             ClientMessage::FileReindex => f.debug_struct("FileReindex").finish(),
+            ClientMessage::VoiceJoin { target } => {
+                f.debug_struct("VoiceJoin").field("target", target).finish()
+            }
+            ClientMessage::VoiceLeave => f.debug_struct("VoiceLeave").finish(),
         }
     }
 }

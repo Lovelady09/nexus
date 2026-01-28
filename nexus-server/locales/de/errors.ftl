@@ -232,3 +232,11 @@ err-search-failed = Suche fehlgeschlagen
 err-trust-invalid-target = Ungültiges Ziel (verwenden Sie Nickname, IP-Adresse oder CIDR-Bereich)
 err-trust-invalid-duration = Ungültiges Dauerformat (verwenden Sie 10m, 4h, 7d oder 0 für permanent)
 err-trust-not-found = Kein Vertrauenseintrag für '{ $target }' gefunden
+
+# Voice Errors
+err-voice-listen-required = Sie benötigen die Berechtigung voice_listen, um Voice beizutreten
+err-voice-already-joined = Sie sind bereits in einer Voice-Sitzung
+err-voice-not-joined = Sie sind nicht in einer Voice-Sitzung
+err-voice-not-channel-member = Sie müssen Mitglied von { $channel } sein, um Voice beizutreten
+err-voice-target-not-online = { $nickname } ist nicht online
+err-voice-invalid-target = Ungültiges Voice-Ziel

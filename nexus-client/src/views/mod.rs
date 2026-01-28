@@ -19,6 +19,7 @@ pub(crate) mod transfers;
 mod user_info;
 mod user_list;
 mod users;
+pub(crate) mod voice;
 
 // Re-export the main layout function and fingerprint dialog (public API)
 pub use fingerprint::fingerprint_mismatch_dialog;

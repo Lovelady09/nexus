@@ -230,3 +230,11 @@ err-search-query-too-short = Search query is too short (min { $min_length } char
 err-search-query-too-long = Search query is too long (max { $max_length } characters)
 err-search-query-invalid = Search query contains invalid characters
 err-search-failed = Search failed
+
+# Voice Errors
+err-voice-listen-required = You need voice_listen permission to join voice
+err-voice-already-joined = You are already in a voice session
+err-voice-not-joined = You are not in a voice session
+err-voice-not-channel-member = You must be a member of { $channel } to join voice
+err-voice-target-not-online = { $nickname } is not online
+err-voice-invalid-target = Invalid voice target

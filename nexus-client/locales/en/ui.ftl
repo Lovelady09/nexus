@@ -205,6 +205,8 @@ permission-trust_create = Trust Create
 permission-trust_delete = Trust Delete
 permission-trust_list = Trust List
 permission-connection_monitor = Connection Monitor
+permission-voice_listen = Voice Listen
+permission-voice_talk = Voice Talk
 
 # =============================================================================
 # Tooltips
@@ -971,3 +973,29 @@ msg-channel-list-header = Available channels:
 msg-no-channels = No channels available
 msg-channel-member-count = { $count } members
 channel-secret = secret
+
+# =============================================================================
+# Voice Chat
+# =============================================================================
+
+# Voice error messages
+err-voice-join = Failed to join voice: { $error }
+err-voice-leave = Failed to leave voice: { $error }
+err-voice-no-token = Voice join succeeded but no token received
+err-voice-already-active = You are already in a voice session on another server
+err-voice-no-permission = You don't have permission to join voice chat
+err-voice-not-in-channel = You must be in the channel to join voice
+err-voice-not-in-session = You are not in a voice session
+
+# Voice success messages
+msg-voice-joined = Joined voice in { $target } ({ $count } others)
+msg-voice-joined-empty = Joined voice in { $target }
+msg-voice-left = Left voice in { $target }
+msg-voice-user-joined = { $nickname } joined voice
+msg-voice-user-left = { $nickname } left voice
+
+# Voice UI
+voice-join-tooltip = Join voice chat
+voice-leave-tooltip = Leave voice chat
+voice-bar-participants = { $count } in voice
+voice-indicator-tooltip = In voice chat
