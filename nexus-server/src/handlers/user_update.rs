@@ -538,6 +538,103 @@ where
                         ctx.user_manager
                             .broadcast_to_username(&updated_account.username, &permissions_update)
                             .await;
+
+                        // If voice_listen was revoked, kick user from voice
+                        let had_voice_listen = old_permissions
+                            .permissions
+                            .contains(&Permission::VoiceListen);
+                        let has_voice_listen = final_permissions
+                            .permissions
+                            .contains(&Permission::VoiceListen);
+
+                        if had_voice_listen && !has_voice_listen {
+                            // Get all session IDs for this user and remove them from voice
+                            let session_ids = ctx
+                                .user_manager
+                                .get_session_ids_for_user(&updated_account.username)
+                                .await;
+
+                            for session_id in session_ids {
+                                if let Some(voice_session) =
+                                    ctx.voice_registry.remove_by_session_id(session_id).await
+                                {
+                                    // Check if this nickname still has other sessions in voice
+                                    let target_key = voice_session.target_key();
+                                    let nickname_still_in_voice = ctx
+                                        .voice_registry
+                                        .is_nickname_in_target(
+                                            &target_key,
+                                            &voice_session.nickname,
+                                            None,
+                                        )
+                                        .await;
+
+                                    // Broadcast VoiceUserLeft if this was the last session
+                                    if !nickname_still_in_voice {
+                                        let remaining_participants =
+                                            ctx.voice_registry.get_participants(&target_key).await;
+                                        let is_channel = voice_session.is_channel();
+
+                                        for participant_nickname in &remaining_participants {
+                                            let broadcast_target = if is_channel {
+                                                voice_session
+                                                    .target
+                                                    .first()
+                                                    .cloned()
+                                                    .unwrap_or_default()
+                                            } else {
+                                                voice_session.nickname.clone()
+                                            };
+
+                                            let leave_notification = ServerMessage::VoiceUserLeft {
+                                                nickname: voice_session.nickname.clone(),
+                                                target: broadcast_target,
+                                            };
+
+                                            if let Some(participant_user) = ctx
+                                                .user_manager
+                                                .get_session_by_nickname(participant_nickname)
+                                                .await
+                                            {
+                                                let _ = participant_user
+                                                    .tx
+                                                    .send((leave_notification, None));
+                                            }
+                                        }
+                                    }
+
+                                    // Notify the kicked user that they left voice
+                                    if let Some(user) =
+                                        ctx.user_manager.get_user_by_session_id(session_id).await
+                                    {
+                                        let target_for_user = if voice_session.is_channel() {
+                                            voice_session
+                                                .target
+                                                .first()
+                                                .cloned()
+                                                .unwrap_or_default()
+                                        } else {
+                                            // For user message, send the other user's nickname
+                                            voice_session
+                                                .target
+                                                .iter()
+                                                .find(|n| {
+                                                    n.to_lowercase()
+                                                        != voice_session.nickname.to_lowercase()
+                                                })
+                                                .cloned()
+                                                .unwrap_or_default()
+                                        };
+
+                                        let left_notification = ServerMessage::VoiceUserLeft {
+                                            nickname: voice_session.nickname.clone(),
+                                            target: target_for_user,
+                                        };
+                                        let _ = user.tx.send((left_notification, None));
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
 
@@ -3028,5 +3125,212 @@ mod tests {
 
         // Clean up
         let _ = bob_session;
+    }
+
+    #[tokio::test]
+    async fn test_userupdate_voice_listen_revoked_kicks_from_voice() {
+        use std::collections::HashSet;
+
+        let mut test_ctx = create_test_context().await;
+
+        // Create a user with voice_listen permission
+        let mut voice_perms = Permissions::new();
+        voice_perms.permissions.insert(Permission::VoiceListen);
+        test_ctx
+            .db
+            .users
+            .create_user("voiceuser", "hash", false, false, true, &voice_perms)
+            .await
+            .unwrap();
+
+        // Login as admin
+        let admin_session = login_user(&mut test_ctx, "admin", "password", &[], true).await;
+
+        // Login as voiceuser
+        let perms: HashSet<Permission> = [Permission::VoiceListen].iter().copied().collect();
+        let voice_user_session = test_ctx
+            .user_manager
+            .add_user(NewSessionParams {
+                session_id: 0,
+                db_user_id: 2,
+                username: "voiceuser".to_string(),
+                nickname: "voiceuser".to_string(),
+                is_admin: false,
+                is_shared: false,
+                permissions: perms,
+                address: test_ctx.peer_addr,
+                created_at: 0,
+                tx: test_ctx.tx.clone(),
+                features: vec![],
+                locale: DEFAULT_TEST_LOCALE.to_string(),
+                avatar: None,
+                is_away: false,
+                status: None,
+            })
+            .await
+            .expect("Failed to add voice user session");
+
+        // Have the voice user join voice in a channel
+        // First, join a channel
+        let _ = test_ctx
+            .channel_manager
+            .join("#general", voice_user_session)
+            .await;
+
+        // Create a voice session for the user
+        let voice_session = crate::voice::VoiceSession::new(
+            "voiceuser".to_string(),
+            "voiceuser".to_string(),
+            vec!["#general".to_string()],
+            voice_user_session,
+            test_ctx.peer_addr.ip(),
+        );
+        test_ctx.voice_registry.add(voice_session).await;
+
+        // Verify user is in voice
+        assert!(
+            test_ctx
+                .voice_registry
+                .has_session(voice_user_session)
+                .await
+        );
+
+        // Now revoke voice_listen permission via UserUpdate
+        let request = UserUpdateRequest {
+            current_password: None,
+            username: "voiceuser".to_string(),
+            requested_username: None,
+            requested_password: None,
+            requested_is_admin: None,
+            requested_enabled: None,
+            requested_permissions: Some(vec![]), // Remove all permissions including voice_listen
+            session_id: Some(admin_session),
+        };
+        let result = handle_user_update(request, &mut test_ctx.handler_context()).await;
+
+        assert!(result.is_ok());
+
+        // Read the UserUpdateResponse
+        let response = read_server_message(&mut test_ctx).await;
+        match response {
+            ServerMessage::UserUpdateResponse { success, .. } => {
+                assert!(success);
+            }
+            _ => panic!("Expected UserUpdateResponse, got {:?}", response),
+        }
+
+        // Verify user was kicked from voice
+        assert!(
+            !test_ctx
+                .voice_registry
+                .has_session(voice_user_session)
+                .await,
+            "User should be kicked from voice when voice_listen is revoked"
+        );
+    }
+
+    #[tokio::test]
+    async fn test_userupdate_voice_talk_revoked_stays_in_voice() {
+        use std::collections::HashSet;
+
+        let mut test_ctx = create_test_context().await;
+
+        // Create a user with voice_listen and voice_talk permissions
+        let mut voice_perms = Permissions::new();
+        voice_perms.permissions.insert(Permission::VoiceListen);
+        voice_perms.permissions.insert(Permission::VoiceTalk);
+        test_ctx
+            .db
+            .users
+            .create_user("voiceuser", "hash", false, false, true, &voice_perms)
+            .await
+            .unwrap();
+
+        // Login as admin
+        let admin_session = login_user(&mut test_ctx, "admin", "password", &[], true).await;
+
+        // Login as voiceuser
+        let perms: HashSet<Permission> = [Permission::VoiceListen, Permission::VoiceTalk]
+            .iter()
+            .copied()
+            .collect();
+        let voice_user_session = test_ctx
+            .user_manager
+            .add_user(NewSessionParams {
+                session_id: 0,
+                db_user_id: 2,
+                username: "voiceuser".to_string(),
+                nickname: "voiceuser".to_string(),
+                is_admin: false,
+                is_shared: false,
+                permissions: perms,
+                address: test_ctx.peer_addr,
+                created_at: 0,
+                tx: test_ctx.tx.clone(),
+                features: vec![],
+                locale: DEFAULT_TEST_LOCALE.to_string(),
+                avatar: None,
+                is_away: false,
+                status: None,
+            })
+            .await
+            .expect("Failed to add voice user session");
+
+        // Have the voice user join voice in a channel
+        let _ = test_ctx
+            .channel_manager
+            .join("#general", voice_user_session)
+            .await;
+
+        // Create a voice session for the user
+        let voice_session = crate::voice::VoiceSession::new(
+            "voiceuser".to_string(),
+            "voiceuser".to_string(),
+            vec!["#general".to_string()],
+            voice_user_session,
+            test_ctx.peer_addr.ip(),
+        );
+        test_ctx.voice_registry.add(voice_session).await;
+
+        // Verify user is in voice
+        assert!(
+            test_ctx
+                .voice_registry
+                .has_session(voice_user_session)
+                .await
+        );
+
+        // Now revoke only voice_talk permission (keep voice_listen)
+        let request = UserUpdateRequest {
+            current_password: None,
+            username: "voiceuser".to_string(),
+            requested_username: None,
+            requested_password: None,
+            requested_is_admin: None,
+            requested_enabled: None,
+            requested_permissions: Some(vec!["voice_listen".to_string()]), // Keep voice_listen, remove voice_talk
+            session_id: Some(admin_session),
+        };
+        let result = handle_user_update(request, &mut test_ctx.handler_context()).await;
+
+        assert!(result.is_ok());
+
+        // Read the UserUpdateResponse
+        let response = read_server_message(&mut test_ctx).await;
+        match response {
+            ServerMessage::UserUpdateResponse { success, .. } => {
+                assert!(success);
+            }
+            _ => panic!("Expected UserUpdateResponse, got {:?}", response),
+        }
+
+        // Verify user is STILL in voice (only voice_talk was revoked)
+        assert!(
+            test_ctx
+                .voice_registry
+                .has_session(voice_user_session)
+                .await,
+            "User should stay in voice when only voice_talk is revoked (can still listen)"
+        );
     }
 }

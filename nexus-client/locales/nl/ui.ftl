@@ -960,23 +960,24 @@ msg-trust-remaining-minutes = { $minutes }m
 # =============================================================================
 
 # Voice error messages
-err-voice-join = Failed to join voice: { $error }
-err-voice-leave = Failed to leave voice: { $error }
-err-voice-no-token = Voice join succeeded but no token received
-err-voice-already-active = You are already in a voice session on another server
-err-voice-no-permission = You don't have permission to join voice chat
-err-voice-not-in-channel = You must be in the channel to join voice
-err-voice-not-in-session = You are not in a voice session
+err-voice-join = Kon niet deelnemen aan spraakchat: { $error }
+err-voice-leave = Kon spraakchat niet verlaten: { $error }
+err-voice-no-token = Spraakchat gestart maar geen token ontvangen
+err-voice-already-active = Je bent al in een spraakchat op een andere server
+err-voice-no-permission = Je hebt geen toestemming om deel te nemen aan spraakchat
+err-voice-not-in-channel = Je moet in het kanaal zijn om deel te nemen aan spraakchat
+err-voice-not-in-session = Je bent niet in een spraakchat
 
 # Voice success messages
-msg-voice-joined = Joined voice in { $target } ({ $count } others)
-msg-voice-joined-empty = Joined voice in { $target }
-msg-voice-left = Left voice in { $target }
-msg-voice-user-joined = { $nickname } joined voice
-msg-voice-user-left = { $nickname } left voice
+msg-voice-joined = Spraakchat in { $target } gestart ({ $count } anderen)
+msg-voice-joined-empty = Spraakchat in { $target } gestart
+msg-voice-left = Spraakchat in { $target } verlaten
+msg-voice-user-joined = { $nickname } is toegetreden tot spraakchat
+msg-voice-user-left = { $nickname } heeft spraakchat verlaten
+msg-voice-you-left = Je bent verwijderd uit spraakchat
 
 # Voice UI
-voice-join-tooltip = Join voice chat
-voice-leave-tooltip = Leave voice chat
-voice-bar-participants = { $count } in voice
-voice-indicator-tooltip = In voice chat
+voice-join-tooltip = Spraakchat starten
+voice-leave-tooltip = Spraakchat verlaten
+voice-bar-participants = { $count } in spraakchat
+voice-indicator-tooltip = In spraakchat

@@ -993,6 +993,7 @@ msg-voice-joined-empty = Joined voice in { $target }
 msg-voice-left = Left voice in { $target }
 msg-voice-user-joined = { $nickname } joined voice
 msg-voice-user-left = { $nickname } left voice
+msg-voice-you-left = You have been removed from voice
 
 # Voice UI
 voice-join-tooltip = Join voice chat

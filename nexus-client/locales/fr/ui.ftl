@@ -960,23 +960,24 @@ msg-trust-remaining-minutes = { $minutes }m
 # =============================================================================
 
 # Voice error messages
-err-voice-join = Failed to join voice: { $error }
-err-voice-leave = Failed to leave voice: { $error }
-err-voice-no-token = Voice join succeeded but no token received
-err-voice-already-active = You are already in a voice session on another server
-err-voice-no-permission = You don't have permission to join voice chat
-err-voice-not-in-channel = You must be in the channel to join voice
-err-voice-not-in-session = You are not in a voice session
+err-voice-join = Échec de connexion au chat vocal : { $error }
+err-voice-leave = Échec de déconnexion du chat vocal : { $error }
+err-voice-no-token = Connexion au chat vocal réussie mais aucun jeton reçu
+err-voice-already-active = Vous êtes déjà dans une session vocale sur un autre serveur
+err-voice-no-permission = Vous n'avez pas la permission de rejoindre le chat vocal
+err-voice-not-in-channel = Vous devez être dans le canal pour rejoindre le chat vocal
+err-voice-not-in-session = Vous n'êtes pas dans une session vocale
 
 # Voice success messages
-msg-voice-joined = Joined voice in { $target } ({ $count } others)
-msg-voice-joined-empty = Joined voice in { $target }
-msg-voice-left = Left voice in { $target }
-msg-voice-user-joined = { $nickname } joined voice
-msg-voice-user-left = { $nickname } left voice
+msg-voice-joined = Rejoint le chat vocal dans { $target } ({ $count } autres)
+msg-voice-joined-empty = Rejoint le chat vocal dans { $target }
+msg-voice-left = Quitté le chat vocal dans { $target }
+msg-voice-user-joined = { $nickname } a rejoint le chat vocal
+msg-voice-user-left = { $nickname } a quitté le chat vocal
+msg-voice-you-left = Vous avez été retiré du chat vocal
 
 # Voice UI
-voice-join-tooltip = Join voice chat
-voice-leave-tooltip = Leave voice chat
-voice-bar-participants = { $count } in voice
-voice-indicator-tooltip = In voice chat
+voice-join-tooltip = Rejoindre le chat vocal
+voice-leave-tooltip = Quitter le chat vocal
+voice-bar-participants = { $count } en vocal
+voice-indicator-tooltip = En chat vocal

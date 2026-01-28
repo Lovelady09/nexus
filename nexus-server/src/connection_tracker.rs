@@ -1,8 +1,8 @@
 //! Connection tracking for DoS protection
 //!
 //! This module provides connection limiting per IP address to prevent
-//! resource exhaustion attacks. It tracks both main BBS connections
-//! and file transfer connections with separate limits.
+//! resource exhaustion attacks. It tracks main BBS connections,
+//! file transfer connections, and voice connections with separate limits.
 
 use std::collections::HashMap;
 use std::net::IpAddr;

@@ -5,7 +5,7 @@
 //!
 //! Note: Some fields and methods are for Phase 2 (UDP voice) and are currently unused.
 
-use std::net::SocketAddr;
+use std::net::{IpAddr, SocketAddr};
 
 use uuid::Uuid;
 
@@ -33,6 +33,8 @@ pub struct VoiceSession {
     pub udp_addr: Option<SocketAddr>,
     /// TCP session ID (for correlating with the BBS connection and permission checks)
     pub session_id: u32,
+    /// Client's IP address (for validating DTLS connections)
+    pub ip: IpAddr,
 }
 
 impl VoiceSession {
@@ -41,7 +43,13 @@ impl VoiceSession {
     /// Permissions (voice_listen, voice_talk) are checked dynamically via
     /// UserManager using the session_id, not cached here. This ensures
     /// permission changes take effect immediately.
-    pub fn new(nickname: String, username: String, target: Vec<String>, session_id: u32) -> Self {
+    pub fn new(
+        nickname: String,
+        username: String,
+        target: Vec<String>,
+        session_id: u32,
+        ip: IpAddr,
+    ) -> Self {
         Self {
             token: Uuid::new_v4(),
             nickname,
@@ -53,6 +61,7 @@ impl VoiceSession {
                 .as_secs() as i64,
             udp_addr: None,
             session_id,
+            ip,
         }
     }
 
@@ -86,11 +95,13 @@ mod tests {
 
     #[test]
     fn test_new_session_generates_token() {
+        let ip: std::net::IpAddr = "192.168.1.1".parse().unwrap();
         let session = VoiceSession::new(
             "alice".to_string(),
             "alice".to_string(),
             vec!["#general".to_string()],
             1,
+            ip,
         );
 
         // Token should be a valid UUID v4
@@ -99,11 +110,13 @@ mod tests {
 
     #[test]
     fn test_is_channel() {
+        let ip: std::net::IpAddr = "192.168.1.1".parse().unwrap();
         let channel_session = VoiceSession::new(
             "alice".to_string(),
             "alice".to_string(),
             vec!["#general".to_string()],
             1,
+            ip,
         );
         assert!(channel_session.is_channel());
         assert!(!channel_session.is_user_message());
@@ -113,6 +126,7 @@ mod tests {
             "alice".to_string(),
             vec!["alice".to_string(), "bob".to_string()],
             1,
+            ip,
         );
         assert!(!user_msg_session.is_channel());
         assert!(user_msg_session.is_user_message());
@@ -120,11 +134,13 @@ mod tests {
 
     #[test]
     fn test_target_key() {
+        let ip: std::net::IpAddr = "192.168.1.1".parse().unwrap();
         let channel_session = VoiceSession::new(
             "alice".to_string(),
             "alice".to_string(),
             vec!["#general".to_string()],
             1,
+            ip,
         );
         assert_eq!(channel_session.target_key(), "#general");
 
@@ -133,17 +149,20 @@ mod tests {
             "alice".to_string(),
             vec!["alice".to_string(), "bob".to_string()],
             1,
+            ip,
         );
         assert_eq!(user_msg_session.target_key(), "alice:bob");
     }
 
     #[test]
     fn test_set_udp_addr() {
+        let ip: std::net::IpAddr = "192.168.1.1".parse().unwrap();
         let mut session = VoiceSession::new(
             "alice".to_string(),
             "alice".to_string(),
             vec!["#general".to_string()],
             1,
+            ip,
         );
 
         assert!(session.udp_addr.is_none());
@@ -161,11 +180,13 @@ mod tests {
             .unwrap()
             .as_secs() as i64;
 
+        let ip: std::net::IpAddr = "192.168.1.1".parse().unwrap();
         let session = VoiceSession::new(
             "alice".to_string(),
             "alice".to_string(),
             vec!["#general".to_string()],
             1,
+            ip,
         );
 
         let after = std::time::SystemTime::now()

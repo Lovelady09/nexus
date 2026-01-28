@@ -149,6 +149,7 @@ where
         user.username.clone(),
         internal_target,
         session_id,
+        ctx.peer_addr.ip(),
     );
     let token = ctx.voice_registry.add(voice_session).await;
 

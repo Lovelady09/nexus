@@ -960,23 +960,24 @@ msg-trust-remaining-minutes = { $minutes }m
 # =============================================================================
 
 # Voice error messages
-err-voice-join = Failed to join voice: { $error }
-err-voice-leave = Failed to leave voice: { $error }
-err-voice-no-token = Voice join succeeded but no token received
-err-voice-already-active = You are already in a voice session on another server
-err-voice-no-permission = You don't have permission to join voice chat
-err-voice-not-in-channel = You must be in the channel to join voice
-err-voice-not-in-session = You are not in a voice session
+err-voice-join = Falha ao entrar no chat de voz: { $error }
+err-voice-leave = Falha ao sair do chat de voz: { $error }
+err-voice-no-token = Entrada no chat de voz bem-sucedida, mas nenhum token recebido
+err-voice-already-active = Já está numa sessão de voz noutro servidor
+err-voice-no-permission = Não tem permissão para entrar no chat de voz
+err-voice-not-in-channel = Tem de estar no canal para entrar no chat de voz
+err-voice-not-in-session = Não está numa sessão de voz
 
 # Voice success messages
-msg-voice-joined = Joined voice in { $target } ({ $count } others)
-msg-voice-joined-empty = Joined voice in { $target }
-msg-voice-left = Left voice in { $target }
-msg-voice-user-joined = { $nickname } joined voice
-msg-voice-user-left = { $nickname } left voice
+msg-voice-joined = Entrou no chat de voz em { $target } ({ $count } outros)
+msg-voice-joined-empty = Entrou no chat de voz em { $target }
+msg-voice-left = Saiu do chat de voz em { $target }
+msg-voice-user-joined = { $nickname } entrou no chat de voz
+msg-voice-user-left = { $nickname } saiu do chat de voz
+msg-voice-you-left = Foi removido do chat de voz
 
 # Voice UI
-voice-join-tooltip = Join voice chat
-voice-leave-tooltip = Leave voice chat
-voice-bar-participants = { $count } in voice
-voice-indicator-tooltip = In voice chat
+voice-join-tooltip = Entrar no chat de voz
+voice-leave-tooltip = Sair do chat de voz
+voice-bar-participants = { $count } no chat de voz
+voice-indicator-tooltip = No chat de voz

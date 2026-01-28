@@ -939,23 +939,24 @@ msg-trust-remaining-minutes = { $minutes }분
 # =============================================================================
 
 # Voice error messages
-err-voice-join = Failed to join voice: { $error }
-err-voice-leave = Failed to leave voice: { $error }
-err-voice-no-token = Voice join succeeded but no token received
-err-voice-already-active = You are already in a voice session on another server
-err-voice-no-permission = You don't have permission to join voice chat
-err-voice-not-in-channel = You must be in the channel to join voice
-err-voice-not-in-session = You are not in a voice session
+err-voice-join = 음성 채팅 참여 실패: { $error }
+err-voice-leave = 음성 채팅 나가기 실패: { $error }
+err-voice-no-token = 음성 채팅 참여에 성공했지만 토큰을 받지 못했습니다
+err-voice-already-active = 이미 다른 서버에서 음성 채팅 중입니다
+err-voice-no-permission = 음성 채팅에 참여할 권한이 없습니다
+err-voice-not-in-channel = 음성 채팅에 참여하려면 채널에 있어야 합니다
+err-voice-not-in-session = 음성 채팅 세션에 있지 않습니다
 
 # Voice success messages
-msg-voice-joined = Joined voice in { $target } ({ $count } others)
-msg-voice-joined-empty = Joined voice in { $target }
-msg-voice-left = Left voice in { $target }
-msg-voice-user-joined = { $nickname } joined voice
-msg-voice-user-left = { $nickname } left voice
+msg-voice-joined = { $target }의 음성 채팅에 참여했습니다 ({ $count }명 참여 중)
+msg-voice-joined-empty = { $target }의 음성 채팅에 참여했습니다
+msg-voice-left = { $target }의 음성 채팅에서 나갔습니다
+msg-voice-user-joined = { $nickname }님이 음성 채팅에 참여했습니다
+msg-voice-user-left = { $nickname }님이 음성 채팅에서 나갔습니다
+msg-voice-you-left = 음성 채팅에서 퇴장되었습니다
 
 # Voice UI
-voice-join-tooltip = Join voice chat
-voice-leave-tooltip = Leave voice chat
-voice-bar-participants = { $count } in voice
-voice-indicator-tooltip = In voice chat
+voice-join-tooltip = 음성 채팅 참여
+voice-leave-tooltip = 음성 채팅 나가기
+voice-bar-participants = { $count }명 참여 중
+voice-indicator-tooltip = 음성 채팅 중

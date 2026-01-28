@@ -152,9 +152,10 @@ impl NexusApp {
         Task::none()
     }
 
-    /// Handle VoiceUserLeft - notification when another user leaves voice
+    /// Handle VoiceUserLeft - notification when a user leaves voice
     ///
-    /// Removes the user from our local participants list if we're in the same voice session.
+    /// If the leaving user is us (kicked due to permission revocation), clears our voice session.
+    /// Otherwise, removes the user from our local participants list.
     /// Shows notification in the target tab (channel or user message) if join/leave events are enabled.
     pub fn handle_voice_user_left(
         &mut self,
@@ -166,7 +167,29 @@ impl NexusApp {
             return Task::none();
         };
 
-        // Only update if we're in the same voice session
+        // Check if we're the one who left (kicked due to permission revocation)
+        let is_self = conn.nickname.to_lowercase() == nickname.to_lowercase();
+
+        if is_self {
+            // We were kicked from voice - clear our session
+            conn.voice_session = None;
+
+            // Clear active voice connection if it was this one
+            if self.active_voice_connection == Some(connection_id) {
+                self.active_voice_connection = None;
+            }
+
+            // Show notification in target tab
+            let message = ChatMessage::system(t("msg-voice-you-left"));
+
+            if target.starts_with('#') {
+                return self.add_channel_message(connection_id, &target, message);
+            } else {
+                return self.add_user_message(connection_id, &target, message);
+            }
+        }
+
+        // Another user left - update if we're in the same voice session
         if let Some(ref mut session) = conn.voice_session
             && session.target.to_lowercase() == target.to_lowercase()
         {

@@ -10,6 +10,7 @@ pub mod protocol;
 pub mod time;
 pub mod validators;
 pub mod version;
+pub mod voice;
 
 pub use error_kind::{
     ERROR_KIND_CONFLICT, ERROR_KIND_EXISTS, ERROR_KIND_HASH_MISMATCH, ERROR_KIND_INVALID,

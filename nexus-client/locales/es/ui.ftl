@@ -962,23 +962,24 @@ msg-trust-remaining-minutes = { $minutes }m
 # =============================================================================
 
 # Voice error messages
-err-voice-join = Failed to join voice: { $error }
-err-voice-leave = Failed to leave voice: { $error }
-err-voice-no-token = Voice join succeeded but no token received
-err-voice-already-active = You are already in a voice session on another server
-err-voice-no-permission = You don't have permission to join voice chat
-err-voice-not-in-channel = You must be in the channel to join voice
-err-voice-not-in-session = You are not in a voice session
+err-voice-join = Error al unirse al chat de voz: { $error }
+err-voice-leave = Error al salir del chat de voz: { $error }
+err-voice-no-token = La conexión al chat de voz fue exitosa pero no se recibió un token
+err-voice-already-active = Ya estás en una sesión de voz en otro servidor
+err-voice-no-permission = No tienes permiso para unirte al chat de voz
+err-voice-not-in-channel = Debes estar en el canal para unirte al chat de voz
+err-voice-not-in-session = No estás en una sesión de voz
 
 # Voice success messages
-msg-voice-joined = Joined voice in { $target } ({ $count } others)
-msg-voice-joined-empty = Joined voice in { $target }
-msg-voice-left = Left voice in { $target }
-msg-voice-user-joined = { $nickname } joined voice
-msg-voice-user-left = { $nickname } left voice
+msg-voice-joined = Te uniste al chat de voz en { $target } ({ $count } otros)
+msg-voice-joined-empty = Te uniste al chat de voz en { $target }
+msg-voice-left = Saliste del chat de voz en { $target }
+msg-voice-user-joined = { $nickname } se unió al chat de voz
+msg-voice-user-left = { $nickname } salió del chat de voz
+msg-voice-you-left = Has sido eliminado del chat de voz
 
 # Voice UI
-voice-join-tooltip = Join voice chat
-voice-leave-tooltip = Leave voice chat
-voice-bar-participants = { $count } in voice
-voice-indicator-tooltip = In voice chat
+voice-join-tooltip = Unirse al chat de voz
+voice-leave-tooltip = Salir del chat de voz
+voice-bar-participants = { $count } en voz
+voice-indicator-tooltip = En chat de voz

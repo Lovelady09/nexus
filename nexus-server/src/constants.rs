@@ -203,6 +203,9 @@ pub const MSG_WS_LISTENING: &str = "WebSocket port: ";
 /// WebSocket transfer port listening display
 pub const MSG_WS_TRANSFER_LISTENING: &str = "WebSocket transfer port: ";
 
+/// Voice UDP port listening display
+pub const MSG_VOICE_LISTENING: &str = "Voice UDP port: ";
+
 /// Certificate fingerprint display
 pub const MSG_CERT_FINGERPRINT: &str = "Certificate fingerprint (SHA-256): ";
 

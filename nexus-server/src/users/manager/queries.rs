@@ -3,6 +3,7 @@
 use ipnet::IpNet;
 
 use super::UserManager;
+use crate::db::Permission;
 use crate::users::user::UserSession;
 
 #[cfg(test)]
@@ -23,6 +24,24 @@ impl UserManager {
     pub async fn get_user_by_session_id(&self, session_id: u32) -> Option<UserSession> {
         let users = self.users.read().await;
         users.get(&session_id).cloned()
+    }
+
+    /// Check if a user has a specific permission (without cloning the session)
+    ///
+    /// This is optimized for hot paths like voice packet relay where we don't need
+    /// the full UserSession, just a permission check. Returns None if user not found.
+    pub async fn has_permission(&self, session_id: u32, permission: Permission) -> Option<bool> {
+        let users = self.users.read().await;
+        users.get(&session_id).map(|u| u.has_permission(permission))
+    }
+
+    /// Check if a user session exists (without cloning)
+    ///
+    /// Useful for checking if a user is still connected without the overhead of cloning.
+    #[allow(dead_code)] // Useful helper for future use
+    pub async fn session_exists(&self, session_id: u32) -> bool {
+        let users = self.users.read().await;
+        users.contains_key(&session_id)
     }
 
     /// Get all sessions for a username (case-insensitive)

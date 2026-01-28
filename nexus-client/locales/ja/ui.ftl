@@ -939,23 +939,24 @@ msg-trust-remaining-minutes = { $minutes }分
 # =============================================================================
 
 # Voice error messages
-err-voice-join = Failed to join voice: { $error }
-err-voice-leave = Failed to leave voice: { $error }
-err-voice-no-token = Voice join succeeded but no token received
-err-voice-already-active = You are already in a voice session on another server
-err-voice-no-permission = You don't have permission to join voice chat
-err-voice-not-in-channel = You must be in the channel to join voice
-err-voice-not-in-session = You are not in a voice session
+err-voice-join = ボイスチャットへの参加に失敗しました: { $error }
+err-voice-leave = ボイスチャットからの退出に失敗しました: { $error }
+err-voice-no-token = ボイスチャットに参加しましたが、トークンを受信できませんでした
+err-voice-already-active = 別のサーバーでボイスチャットに参加中です
+err-voice-no-permission = ボイスチャットに参加する権限がありません
+err-voice-not-in-channel = ボイスチャットに参加するにはチャンネルに入室してください
+err-voice-not-in-session = ボイスチャットに参加していません
 
 # Voice success messages
-msg-voice-joined = Joined voice in { $target } ({ $count } others)
-msg-voice-joined-empty = Joined voice in { $target }
-msg-voice-left = Left voice in { $target }
-msg-voice-user-joined = { $nickname } joined voice
-msg-voice-user-left = { $nickname } left voice
+msg-voice-joined = { $target } のボイスチャットに参加しました（他 { $count } 人）
+msg-voice-joined-empty = { $target } のボイスチャットに参加しました
+msg-voice-left = { $target } のボイスチャットから退出しました
+msg-voice-user-joined = { $nickname } がボイスチャットに参加しました
+msg-voice-user-left = { $nickname } がボイスチャットから退出しました
+msg-voice-you-left = ボイスチャットから削除されました
 
 # Voice UI
-voice-join-tooltip = Join voice chat
-voice-leave-tooltip = Leave voice chat
-voice-bar-participants = { $count } in voice
-voice-indicator-tooltip = In voice chat
+voice-join-tooltip = ボイスチャットに参加
+voice-leave-tooltip = ボイスチャットから退出
+voice-bar-participants = { $count } 人参加中
+voice-indicator-tooltip = ボイスチャット中

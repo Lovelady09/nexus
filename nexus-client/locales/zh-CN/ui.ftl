@@ -940,23 +940,24 @@ msg-trust-remaining-minutes = { $minutes }分钟
 # =============================================================================
 
 # Voice error messages
-err-voice-join = Failed to join voice: { $error }
-err-voice-leave = Failed to leave voice: { $error }
-err-voice-no-token = Voice join succeeded but no token received
-err-voice-already-active = You are already in a voice session on another server
-err-voice-no-permission = You don't have permission to join voice chat
-err-voice-not-in-channel = You must be in the channel to join voice
-err-voice-not-in-session = You are not in a voice session
+err-voice-join = 加入语音聊天失败：{ $error }
+err-voice-leave = 离开语音聊天失败：{ $error }
+err-voice-no-token = 成功加入语音聊天但未收到令牌
+err-voice-already-active = 您已在另一个服务器的语音聊天中
+err-voice-no-permission = 您没有加入语音聊天的权限
+err-voice-not-in-channel = 您必须在频道中才能加入语音聊天
+err-voice-not-in-session = 您不在语音聊天中
 
 # Voice success messages
-msg-voice-joined = Joined voice in { $target } ({ $count } others)
-msg-voice-joined-empty = Joined voice in { $target }
-msg-voice-left = Left voice in { $target }
-msg-voice-user-joined = { $nickname } joined voice
-msg-voice-user-left = { $nickname } left voice
+msg-voice-joined = 已加入 { $target } 的语音聊天（{ $count } 人在线）
+msg-voice-joined-empty = 已加入 { $target } 的语音聊天
+msg-voice-left = 已离开 { $target } 的语音聊天
+msg-voice-user-joined = { $nickname } 加入了语音聊天
+msg-voice-user-left = { $nickname } 离开了语音聊天
+msg-voice-you-left = 您已被移出语音聊天
 
 # Voice UI
-voice-join-tooltip = Join voice chat
-voice-leave-tooltip = Leave voice chat
-voice-bar-participants = { $count } in voice
-voice-indicator-tooltip = In voice chat
+voice-join-tooltip = 加入语音聊天
+voice-leave-tooltip = 离开语音聊天
+voice-bar-participants = { $count } 人在语音中
+voice-indicator-tooltip = 在语音聊天中

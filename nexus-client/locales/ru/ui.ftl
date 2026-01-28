@@ -967,23 +967,24 @@ msg-trust-remaining-minutes = { $minutes }м
 # =============================================================================
 
 # Voice error messages
-err-voice-join = Failed to join voice: { $error }
-err-voice-leave = Failed to leave voice: { $error }
-err-voice-no-token = Voice join succeeded but no token received
-err-voice-already-active = You are already in a voice session on another server
-err-voice-no-permission = You don't have permission to join voice chat
-err-voice-not-in-channel = You must be in the channel to join voice
-err-voice-not-in-session = You are not in a voice session
+err-voice-join = Не удалось подключиться к голосовому чату: { $error }
+err-voice-leave = Не удалось выйти из голосового чата: { $error }
+err-voice-no-token = Подключение к голосовому чату выполнено, но токен не получен
+err-voice-already-active = Вы уже находитесь в голосовом чате на другом сервере
+err-voice-no-permission = У вас нет разрешения на подключение к голосовому чату
+err-voice-not-in-channel = Вы должны быть в канале, чтобы присоединиться к голосовому чату
+err-voice-not-in-session = Вы не находитесь в голосовом чате
 
 # Voice success messages
-msg-voice-joined = Joined voice in { $target } ({ $count } others)
-msg-voice-joined-empty = Joined voice in { $target }
-msg-voice-left = Left voice in { $target }
-msg-voice-user-joined = { $nickname } joined voice
-msg-voice-user-left = { $nickname } left voice
+msg-voice-joined = Присоединился к голосовому чату в { $target } ({ $count } других)
+msg-voice-joined-empty = Присоединился к голосовому чату в { $target }
+msg-voice-left = Покинул голосовой чат в { $target }
+msg-voice-user-joined = { $nickname } присоединился к голосовому чату
+msg-voice-user-left = { $nickname } покинул голосовой чат
+msg-voice-you-left = Вы были удалены из голосового чата
 
 # Voice UI
-voice-join-tooltip = Join voice chat
-voice-leave-tooltip = Leave voice chat
-voice-bar-participants = { $count } in voice
-voice-indicator-tooltip = In voice chat
+voice-join-tooltip = Присоединиться к голосовому чату
+voice-leave-tooltip = Покинуть голосовой чат
+voice-bar-participants = { $count } в голосовом чате
+voice-indicator-tooltip = В голосовом чате

@@ -39,7 +39,7 @@ use files::FileIndex;
 use ip_rule_cache::IpRuleCache;
 use transfers::{TransferParams, TransferRegistry};
 use users::UserManager;
-use voice::VoiceRegistry;
+use voice::{VoiceRegistry, VoiceUdpServer, create_voice_listener};
 
 #[tokio::main]
 async fn main() {
@@ -109,7 +109,7 @@ async fn main() {
 
     // Setup network (TCP listeners + TLS, optionally WebSocket listeners)
     let websocket_enabled = args.websocket;
-    let (listener, transfer_listener, ws_listener, ws_transfer_listener, tls_acceptor) =
+    let (listener, transfer_listener, ws_listener, ws_transfer_listener, tls_acceptor, cert_dir) =
         setup_network(
             args.bind,
             args.port,
@@ -127,6 +127,22 @@ async fn main() {
             &db_path,
         )
         .await;
+
+    // Setup voice DTLS listener (same port as TCP, OS routes by protocol)
+    let voice_addr = SocketAddr::new(args.bind, args.port);
+    let cert_path = cert_dir.join(CERT_FILENAME);
+    let key_path = cert_dir.join(KEY_FILENAME);
+    let voice_listener = match create_voice_listener(voice_addr, &cert_path, &key_path).await {
+        Ok(listener) => {
+            println!("{}{}", MSG_VOICE_LISTENING, voice_addr);
+            Some(listener)
+        }
+        Err(e) => {
+            eprintln!("Warning: Voice DTLS listener failed: {}", e);
+            eprintln!("Voice chat will be unavailable");
+            None
+        }
+    };
 
     // Store transfer ports for ServerInfo
     let transfer_port = args.transfer_port;
@@ -179,6 +195,17 @@ async fn main() {
 
     // Create voice registry for tracking active voice sessions (ephemeral, in-memory only)
     let voice_registry = VoiceRegistry::new();
+
+    // Create voice UDP server if listener was created successfully
+    let voice_server = voice_listener.map(|listener| {
+        Arc::new(VoiceUdpServer::new(
+            listener,
+            voice_registry.clone(),
+            ip_rule_cache.clone(),
+            user_manager.clone(),
+            args.debug,
+        ))
+    });
 
     // Create channel manager for multi-channel chat
     let channel_manager = ChannelManager::new(database.channels.clone(), user_manager.clone());
@@ -593,6 +620,15 @@ async fn main() {
                 }
             }
         } => {}
+        // Voice UDP server (DTLS)
+        _ = async {
+            let Some(server) = voice_server else {
+                // Voice listener failed to create, just wait forever
+                std::future::pending::<()>().await;
+                return;
+            };
+            server.run().await;
+        } => {}
         // File reindex timer task - checks config each minute
         _ = async {
             loop {
@@ -816,6 +852,7 @@ async fn setup_network(
     Option<TcpListener>,
     Option<TcpListener>,
     TlsAcceptor,
+    std::path::PathBuf, // cert_dir for voice DTLS
 ) {
     // Get certificate directory (same parent as database)
     let cert_dir = db_path.parent().expect(ERR_DB_PATH_NO_PARENT).to_path_buf();
@@ -889,6 +926,7 @@ async fn setup_network(
         ws_listener,
         ws_transfer_listener,
         tls_acceptor,
+        cert_dir,
     )
 }
 

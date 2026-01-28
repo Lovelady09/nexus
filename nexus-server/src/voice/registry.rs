@@ -102,6 +102,15 @@ impl VoiceRegistry {
         id_to_token.contains_key(&session_id)
     }
 
+    /// Check if any voice session exists for the given IP address
+    ///
+    /// Used to validate DTLS connections - only IPs that have joined voice
+    /// via TCP signaling should be allowed to connect via UDP.
+    pub async fn has_session_for_ip(&self, ip: std::net::IpAddr) -> bool {
+        let sessions = self.sessions.read().await;
+        sessions.values().any(|s| s.ip == ip)
+    }
+
     /// Check if a nickname is already present in voice for a target
     ///
     /// Used to prevent duplicate join/leave broadcasts when the same user
@@ -207,11 +216,13 @@ mod tests {
             // Single nickname - create a pair with test user
             vec![nickname.to_string(), target.to_string()]
         };
+        let ip: std::net::IpAddr = "192.168.1.1".parse().unwrap();
         VoiceSession::new(
             nickname.to_string(),
             nickname.to_string(),
             target_vec,
             session_id,
+            ip,
         )
     }
 
@@ -390,17 +401,20 @@ mod tests {
 
         // User message voice session uses canonical sorted target ["alice", "bob"]
         // Both users should end up in the same voice session
+        let ip: std::net::IpAddr = "192.168.1.1".parse().unwrap();
         let alice_session = VoiceSession::new(
             "alice".to_string(),
             "alice".to_string(),
             vec!["alice".to_string(), "bob".to_string()],
             1,
+            ip,
         );
         let bob_session = VoiceSession::new(
             "bob".to_string(),
             "bob".to_string(),
             vec!["alice".to_string(), "bob".to_string()],
             2,
+            ip,
         );
         registry.add(alice_session).await;
         registry.add(bob_session).await;

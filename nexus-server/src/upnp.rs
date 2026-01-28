@@ -85,6 +85,7 @@ pub struct UpnpGateway {
 /// This is a helper to reduce duplication across setup, renewal, and rediscovery.
 async fn add_port_mapping(
     gateway: &igd_next::Gateway,
+    protocol: igd_next::PortMappingProtocol,
     port: u16,
     local_ip: std::net::Ipv4Addr,
 ) -> Result<(), String> {
@@ -92,7 +93,7 @@ async fn add_port_mapping(
     let gw = gateway.clone();
     tokio::task::spawn_blocking(move || {
         gw.add_port(
-            igd_next::PortMappingProtocol::TCP,
+            protocol,
             port,
             std::net::SocketAddr::V4(socket),
             LEASE_DURATION,
@@ -184,32 +185,37 @@ impl UpnpGateway {
         .map_err(|e| format!("{}{}", ERR_UPNP_GET_EXTERNAL_IP_TASK, e))?
         .map_err(|e| format!("{}{}", ERR_UPNP_GET_EXTERNAL_IP, e))?;
 
-        // Request port forwarding for all ports
-        add_port_mapping(&gateway, main_port, local_addr).await?;
-        add_port_mapping(&gateway, transfer_port, local_addr).await?;
+        use igd_next::PortMappingProtocol::{TCP, UDP};
+
+        // Request port forwarding for all TCP ports
+        add_port_mapping(&gateway, TCP, main_port, local_addr).await?;
+        add_port_mapping(&gateway, TCP, transfer_port, local_addr).await?;
+
+        // Request UDP port forwarding for voice (same port as main)
+        add_port_mapping(&gateway, UDP, main_port, local_addr).await?;
 
         // Build port list for summary message
-        let mut ports = vec![main_port, transfer_port];
+        let mut tcp_ports = vec![main_port, transfer_port];
 
         if let Some(ws_port) = websocket_port {
-            add_port_mapping(&gateway, ws_port, local_addr).await?;
-            ports.push(ws_port);
+            add_port_mapping(&gateway, TCP, ws_port, local_addr).await?;
+            tcp_ports.push(ws_port);
         }
 
         if let Some(ws_transfer_port) = transfer_websocket_port {
-            add_port_mapping(&gateway, ws_transfer_port, local_addr).await?;
-            ports.push(ws_transfer_port);
+            add_port_mapping(&gateway, TCP, ws_transfer_port, local_addr).await?;
+            tcp_ports.push(ws_transfer_port);
         }
 
         // Print single summary line
-        let port_list = ports
+        let tcp_port_list = tcp_ports
             .iter()
             .map(|p| p.to_string())
             .collect::<Vec<_>>()
             .join(", ");
         println!(
-            "{}{} → {} (ports {})",
-            MSG_UPNP_CONFIGURED, external_ip, local_addr, port_list
+            "{}{} → {} (TCP: {}, UDP: {})",
+            MSG_UPNP_CONFIGURED, external_ip, local_addr, tcp_port_list, main_port
         );
 
         Ok(Self {
@@ -253,6 +259,16 @@ impl UpnpGateway {
         .map_err(|e| format!("{}{}", ERR_UPNP_REMOVE_PORT_TASK, e))?
         .map_err(|e| format!("{}{}", ERR_UPNP_REMOVE_PORT_MAPPING, e))?;
 
+        // Remove UDP voice port mapping (same port as main)
+        let voice_port = self.main_port;
+        let gw_voice = gateway.clone();
+        tokio::task::spawn_blocking(move || {
+            gw_voice.remove_port(igd_next::PortMappingProtocol::UDP, voice_port)
+        })
+        .await
+        .map_err(|e| format!("{}{}", ERR_UPNP_REMOVE_PORT_TASK, e))?
+        .map_err(|e| format!("{}{}", ERR_UPNP_REMOVE_PORT_MAPPING, e))?;
+
         // Remove WebSocket BBS port mapping if enabled
         if let Some(websocket_port) = self.websocket_port {
             let gw3 = gateway.clone();
@@ -289,26 +305,33 @@ impl UpnpGateway {
             .clone();
         let local_ip = *self.local_addr.ip();
 
-        // Renew main port lease
-        add_port_mapping(&gateway, self.main_port, local_ip)
+        use igd_next::PortMappingProtocol::{TCP, UDP};
+
+        // Renew main port lease (TCP)
+        add_port_mapping(&gateway, TCP, self.main_port, local_ip)
             .await
             .map_err(|e| format!("{}{}", ERR_UPNP_RENEW_LEASE, e))?;
 
-        // Renew transfer port lease
-        add_port_mapping(&gateway, self.transfer_port, local_ip)
+        // Renew transfer port lease (TCP)
+        add_port_mapping(&gateway, TCP, self.transfer_port, local_ip)
+            .await
+            .map_err(|e| format!("{}{}", ERR_UPNP_RENEW_LEASE, e))?;
+
+        // Renew voice port lease (UDP, same port as main)
+        add_port_mapping(&gateway, UDP, self.main_port, local_ip)
             .await
             .map_err(|e| format!("{}{}", ERR_UPNP_RENEW_LEASE, e))?;
 
         // Renew WebSocket BBS port lease if enabled
         if let Some(websocket_port) = self.websocket_port {
-            add_port_mapping(&gateway, websocket_port, local_ip)
+            add_port_mapping(&gateway, TCP, websocket_port, local_ip)
                 .await
                 .map_err(|e| format!("{}{}", ERR_UPNP_RENEW_LEASE, e))?;
         }
 
         // Renew WebSocket transfer port lease if enabled
         if let Some(transfer_websocket_port) = self.transfer_websocket_port {
-            add_port_mapping(&gateway, transfer_websocket_port, local_ip)
+            add_port_mapping(&gateway, TCP, transfer_websocket_port, local_ip)
                 .await
                 .map_err(|e| format!("{}{}", ERR_UPNP_RENEW_LEASE, e))?;
         }
@@ -334,20 +357,25 @@ impl UpnpGateway {
         .map_err(|e| format!("{}{}", ERR_UPNP_SEARCH_TASK_FAILED, e))?
         .map_err(|e| format!("{}{}", ERR_UPNP_GATEWAY_NOT_FOUND, e))?;
 
-        // Add main port mapping
-        add_port_mapping(&new_gateway, self.main_port, local_ip).await?;
+        use igd_next::PortMappingProtocol::{TCP, UDP};
 
-        // Add transfer port mapping
-        add_port_mapping(&new_gateway, self.transfer_port, local_ip).await?;
+        // Add main port mapping (TCP)
+        add_port_mapping(&new_gateway, TCP, self.main_port, local_ip).await?;
+
+        // Add transfer port mapping (TCP)
+        add_port_mapping(&new_gateway, TCP, self.transfer_port, local_ip).await?;
+
+        // Add voice port mapping (UDP, same port as main)
+        add_port_mapping(&new_gateway, UDP, self.main_port, local_ip).await?;
 
         // Add WebSocket BBS port mapping if enabled
         if let Some(websocket_port) = self.websocket_port {
-            add_port_mapping(&new_gateway, websocket_port, local_ip).await?;
+            add_port_mapping(&new_gateway, TCP, websocket_port, local_ip).await?;
         }
 
         // Add WebSocket transfer port mapping if enabled
         if let Some(transfer_websocket_port) = self.transfer_websocket_port {
-            add_port_mapping(&new_gateway, transfer_websocket_port, local_ip).await?;
+            add_port_mapping(&new_gateway, TCP, transfer_websocket_port, local_ip).await?;
         }
 
         // Update stored gateway
