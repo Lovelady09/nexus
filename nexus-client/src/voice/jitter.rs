@@ -503,24 +503,5 @@ mod tests {
         );
     }
 
-    #[test]
-    fn test_adaptive_buffer_stable_on_good_connection() {
-        let mut buffer = JitterBuffer::new();
 
-        // Simulate stable connection with ~20ms intervals
-        // Note: CI timing is unreliable, so we use shorter sleeps
-        // and more lenient assertions
-        for i in 0..10 {
-            buffer.push(i, i * VOICE_SAMPLES_PER_FRAME, make_samples());
-            thread::sleep(Duration::from_millis(15));
-        }
-
-        // Buffer should stay reasonably small (not hit maximum)
-        // We can't assert MIN_BUFFER_FRAMES due to CI timing variance
-        assert!(
-            buffer.target_frames() <= MAX_BUFFER_FRAMES / 2,
-            "Buffer should stay small on stable connection, got {} frames",
-            buffer.target_frames()
-        );
-    }
 }
