@@ -27,6 +27,8 @@ jobs:
     name: Test (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     timeout-minutes: 45
+    env:
+      MSYS2_PATH_TYPE: inherit
     strategy:
       fail-fast: false
       matrix:
@@ -118,8 +120,14 @@ jobs:
       - name: Run tests (Windows)
         if: runner.os == 'Windows'
         shell: msys2 {0}
+        env:
+          MSYSTEM: UCRT64
+          CHERE_INVOKING: 1
         run: |
+          source /etc/profile
+          export PATH="/ucrt64/bin:/usr/bin:$PATH"
           export PATH="/c/Users/runneradmin/.cargo/bin:$PATH"
+          which libtoolize
           cargo test --workspace --verbose
 
   clippy:
@@ -490,8 +498,14 @@ jobs:
 
       - name: Build MSI installer
         shell: msys2 {0}
+        env:
+          MSYSTEM: UCRT64
+          CHERE_INVOKING: 1
         run: |
+          source /etc/profile
+          export PATH="/ucrt64/bin:/usr/bin:$PATH"
           export PATH="/c/Users/runneradmin/.cargo/bin:$PATH"
+          which libtoolize
           cd nexus-client
           cargo bundle --target x86_64-pc-windows-msvc --format wxsmsi --release
 
