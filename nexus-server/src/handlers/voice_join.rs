@@ -134,7 +134,7 @@ where
     let target_key = internal_target.join(":");
 
     // Get current participants before adding the new session
-    let participants = ctx.voice_registry.get_participants(&target_key).await;
+    let mut participants = ctx.voice_registry.get_participants(&target_key).await;
 
     // Check if this nickname is already in voice for this target (multi-session case)
     // Only broadcast VoiceUserJoined on first join of a nickname
@@ -152,6 +152,10 @@ where
     );
     let token = ctx.voice_registry.add(voice_session).await;
 
+    // Add self to participants list (sorted by lowercase)
+    participants.push(user.nickname.clone());
+    participants.sort_by_key(|a| a.to_lowercase());
+
     // Broadcast VoiceUserJoined to existing participants only if this is the first
     // session of this nickname joining (prevents duplicate announcements)
     if !nickname_already_in_voice {
@@ -159,6 +163,11 @@ where
         // For channels: everyone gets the channel name
         // For user messages: each participant gets the OTHER user's nickname
         for participant_nickname in &participants {
+            // Skip self - we already know we joined
+            if participant_nickname.to_lowercase() == user.nickname.to_lowercase() {
+                continue;
+            }
+
             // Determine what target string to send to this participant
             let broadcast_target = if is_channel {
                 client_target.clone()
@@ -361,7 +370,10 @@ mod tests {
                 assert!(token.is_some());
                 assert_eq!(target, Some("#general".to_string()));
                 assert!(participants.is_some());
-                assert!(participants.unwrap().is_empty()); // First to join
+                // Participants includes self
+                let p = participants.unwrap();
+                assert_eq!(p.len(), 1);
+                assert!(p.contains(&"alice".to_string()));
                 assert!(error.is_none());
             }
             _ => panic!("Expected VoiceJoinResponse, got {:?}", response),
@@ -514,7 +526,8 @@ mod tests {
             _ => panic!("Expected VoiceJoinResponse, got {:?}", response),
         }
 
-        // Verify internal registry uses canonical key
+        // Verify response includes self
+        // Registry lookup returns same result
         let participants = test_ctx.voice_registry.get_participants("alice:bob").await;
         assert_eq!(participants.len(), 1);
         assert!(participants.contains(&"alice".to_string()));
@@ -574,8 +587,10 @@ mod tests {
                 assert!(success);
                 // Bob sees "alice" as the target
                 assert_eq!(target, Some("alice".to_string()));
-                // Alice is already in the session
-                assert!(participants.unwrap().contains(&"alice".to_string()));
+                // Alice is already in the session, and bob (self) is now included
+                let p = participants.unwrap();
+                assert!(p.contains(&"alice".to_string()));
+                assert!(p.contains(&"bob".to_string()));
             }
             _ => panic!("Expected VoiceJoinResponse, got {:?}", response),
         }

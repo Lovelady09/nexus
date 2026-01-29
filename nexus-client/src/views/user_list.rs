@@ -386,12 +386,13 @@ pub fn user_list_panel<'a>(conn: &'a ServerConnection, theme: &Theme) -> Element
                 .as_ref()
                 .is_some_and(|s| s.is_speaking(nickname));
 
-            // Build user row with avatar, optional voice icon, and nickname
+            // Build user row with avatar, nickname, and optional voice icon
             let mut user_row = Row::new().spacing(USER_LIST_AVATAR_SPACING).align_y(Center);
 
             user_row = user_row.push(avatar_element);
+            user_row = user_row.push(nickname_text);
 
-            // Add voice indicator if in voice
+            // Add voice indicator at end if in voice
             if is_in_voice {
                 let voice_icon = if is_speaking {
                     // Speaking - show mic icon with highlight
@@ -403,8 +404,6 @@ pub fn user_list_panel<'a>(conn: &'a ServerConnection, theme: &Theme) -> Element
                 };
                 user_row = user_row.push(voice_icon);
             }
-
-            user_row = user_row.push(nickname_text);
 
             let user_button = button(container(user_row).width(Fill))
                 .on_press(Message::UserListItemClicked(nickname_clone))

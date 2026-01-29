@@ -39,7 +39,12 @@ impl VoiceState {
 
     /// Add a participant to the session
     pub fn add_participant(&mut self, nickname: String) {
-        if !self.participants.iter().any(|n| n == &nickname) {
+        let nickname_lower = nickname.to_lowercase();
+        if !self
+            .participants
+            .iter()
+            .any(|n| n.to_lowercase() == nickname_lower)
+        {
             self.participants.push(nickname);
             self.participants.sort_by_key(|a| a.to_lowercase());
         }
