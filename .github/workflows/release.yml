@@ -460,11 +460,11 @@ jobs:
           update: true
           install: >-
             base-devel
-            autoconf
-            automake
-            libtool
-            pkg-config
             mingw-w64-ucrt-x86_64-toolchain
+            mingw-w64-ucrt-x86_64-autoconf
+            mingw-w64-ucrt-x86_64-automake
+            mingw-w64-ucrt-x86_64-libtool
+            mingw-w64-ucrt-x86_64-pkg-config
 
 
 
