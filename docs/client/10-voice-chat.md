@@ -185,6 +185,8 @@ Configure voice in **Settings > Audio**:
 
 Higher quality uses more bandwidth but sounds better.
 
+**Note:** Quality changes apply immediately—you don't need to leave and rejoin voice. If you're experiencing audio issues, try lowering the quality while in the call.
+
 ### Testing Your Microphone
 
 1. Open **Settings > Audio**

@@ -61,6 +61,8 @@ pub enum VoiceCommand {
     UnmuteUser(String),
     /// Set deafened state (mute all incoming audio)
     SetDeafened(bool),
+    /// Update voice quality (bitrate) dynamically
+    SetQuality(VoiceQuality),
     /// Stop voice session
     Stop,
 }
@@ -314,6 +316,11 @@ pub async fn run_voice_session(
                     Some(VoiceCommand::SetDeafened(deafened)) => {
                         mixer.set_deafened(deafened);
                     }
+                    Some(VoiceCommand::SetQuality(quality)) => {
+                        if let Err(e) = encoder.set_quality(quality) {
+                            eprintln!("Failed to update voice quality: {}", e);
+                        }
+                    }
                     Some(VoiceCommand::Stop) | None => {
                         // Clean shutdown
                         if transmitting {
@@ -420,6 +427,14 @@ impl VoiceSessionHandle {
     /// Set deafened state (mute all incoming audio)
     pub fn set_deafened(&self, deafened: bool) {
         let _ = self.command_tx.send(VoiceCommand::SetDeafened(deafened));
+    }
+
+    /// Update voice quality (bitrate) dynamically
+    ///
+    /// Can be called while in a voice session to change quality without
+    /// needing to leave and rejoin.
+    pub fn set_quality(&self, quality: VoiceQuality) {
+        let _ = self.command_tx.send(VoiceCommand::SetQuality(quality));
     }
 
     /// Stop the voice session and wait for cleanup

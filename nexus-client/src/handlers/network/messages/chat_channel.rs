@@ -80,7 +80,8 @@ impl NexusApp {
             // Populate voiced nicknames if provided
             if let Some(voiced) = data.voiced {
                 let voiced_set = voiced.into_iter().map(|n| n.to_lowercase()).collect();
-                conn.channel_voiced.insert(channel_lower.clone(), voiced_set);
+                conn.channel_voiced
+                    .insert(channel_lower.clone(), voiced_set);
             }
 
             // Add to known_channels for tab completion (sorted, deduplicated)

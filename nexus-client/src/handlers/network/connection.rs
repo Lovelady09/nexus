@@ -265,7 +265,8 @@ impl NexusApp {
                 // Populate voiced nicknames if provided (requires voice_listen permission)
                 if let Some(ref voiced) = channel_info.voiced {
                     let voiced_set = voiced.iter().map(|n| n.to_lowercase()).collect();
-                    conn.channel_voiced.insert(channel_lower.clone(), voiced_set);
+                    conn.channel_voiced
+                        .insert(channel_lower.clone(), voiced_set);
                 }
 
                 // Add to known_channels for tab completion (sorted, deduplicated)

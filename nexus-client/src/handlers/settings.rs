@@ -676,8 +676,17 @@ impl NexusApp {
     }
 
     /// Handle voice quality selection
+    ///
+    /// Updates the config and also applies the change to any active voice session
+    /// immediately, so users don't need to leave and rejoin to change quality.
     pub fn handle_audio_quality_selected(&mut self, quality: VoiceQuality) -> Task<Message> {
         self.config.settings.audio.voice_quality = quality;
+
+        // Update active voice session if one exists
+        if let Some(ref handle) = self.voice_session_handle {
+            handle.set_quality(quality);
+        }
+
         Task::none()
     }
 

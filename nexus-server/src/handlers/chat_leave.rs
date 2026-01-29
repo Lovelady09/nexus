@@ -70,7 +70,13 @@ where
     {
         // Remove from voice and notify using the consolidated helper
         if let Some(info) = ctx.voice_registry.remove_by_session_id(session_id).await {
-            send_voice_leave_notifications(&info, Some(&user.tx), ctx.user_manager, ctx.channel_manager).await;
+            send_voice_leave_notifications(
+                &info,
+                Some(&user.tx),
+                ctx.user_manager,
+                ctx.channel_manager,
+            )
+            .await;
         }
     }
 

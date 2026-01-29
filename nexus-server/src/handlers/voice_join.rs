@@ -163,7 +163,11 @@ where
             // For channels: broadcast to ALL channel members with voice_listen permission
             // (not just voice participants) so everyone can see who's in voice
             let channel_name = client_target.clone();
-            let members = ctx.channel_manager.get_members(&channel_name).await.unwrap_or_default();
+            let members = ctx
+                .channel_manager
+                .get_members(&channel_name)
+                .await
+                .unwrap_or_default();
 
             for member_session_id in members {
                 // Skip self
@@ -172,7 +176,10 @@ where
                 }
 
                 // Check if member has voice_listen permission
-                if let Some(member) = ctx.user_manager.get_user_by_session_id(member_session_id).await
+                if let Some(member) = ctx
+                    .user_manager
+                    .get_user_by_session_id(member_session_id)
+                    .await
                     && member.has_permission(Permission::VoiceListen)
                 {
                     let join_notification = ServerMessage::VoiceUserJoined {

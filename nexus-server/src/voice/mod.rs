@@ -66,7 +66,10 @@ pub async fn send_voice_leave_notifications(
             // For channels: broadcast to ALL channel members with voice_listen permission
             // (not just voice participants) so everyone can see who's in voice
             let channel_name = info.session.target.first().cloned().unwrap_or_default();
-            let members = channel_manager.get_members(&channel_name).await.unwrap_or_default();
+            let members = channel_manager
+                .get_members(&channel_name)
+                .await
+                .unwrap_or_default();
 
             for member_session_id in members {
                 // Skip the leaving user

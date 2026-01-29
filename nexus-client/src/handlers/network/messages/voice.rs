@@ -204,10 +204,8 @@ impl NexusApp {
 
         // Show notification in target tab if events are enabled
         if self.config.settings.show_join_leave_events {
-            let message = ChatMessage::system(t_args(
-                "msg-voice-user-joined",
-                &[("nickname", &nickname)],
-            ));
+            let message =
+                ChatMessage::system(t_args("msg-voice-user-joined", &[("nickname", &nickname)]));
 
             // Route to channel or user message tab based on target
             if target.starts_with('#') {

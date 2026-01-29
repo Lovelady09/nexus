@@ -56,6 +56,20 @@ impl VoiceEncoder {
         Ok(Self { encoder })
     }
 
+    /// Update the encoder's bitrate dynamically
+    ///
+    /// # Arguments
+    /// * `quality` - New voice quality preset
+    ///
+    /// # Returns
+    /// * `Ok(())` - Bitrate updated successfully
+    /// * `Err(String)` - Error message if bitrate couldn't be set
+    pub fn set_quality(&mut self, quality: VoiceQuality) -> Result<(), String> {
+        self.encoder
+            .set_bitrate(opus::Bitrate::Bits(quality.bitrate()))
+            .map_err(|e| format!("Failed to set bitrate: {}", e))
+    }
+
     /// Encode a frame of audio samples
     ///
     /// # Arguments
@@ -269,6 +283,21 @@ mod tests {
         let encoder = VoiceEncoder::new(VoiceQuality::High);
         assert!(encoder.is_ok());
     }
+
+    #[test]
+    fn test_encoder_set_quality() {
+        let mut encoder = VoiceEncoder::new(VoiceQuality::High).unwrap();
+
+        // Change quality dynamically
+        assert!(encoder.set_quality(VoiceQuality::Low).is_ok());
+        assert!(encoder.set_quality(VoiceQuality::Medium).is_ok());
+        assert!(encoder.set_quality(VoiceQuality::VeryHigh).is_ok());
+
+        // Encoding should still work after quality change
+        let samples: Vec<i16> = (0..VOICE_SAMPLES_PER_FRAME).map(|_| 0).collect();
+        assert!(encoder.encode(&samples).is_ok());
+    }
+
     #[test]
     fn test_decoder_creation() {
         let decoder = VoiceDecoder::new();
