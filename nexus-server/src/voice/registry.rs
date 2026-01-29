@@ -270,6 +270,27 @@ impl VoiceRegistry {
             false
         }
     }
+
+    /// Find sessions that never established a UDP connection and are older than the timeout.
+    ///
+    /// Returns tokens of stale sessions that should be cleaned up.
+    /// This handles the case where a client sends VoiceJoin but fails to connect via DTLS.
+    pub async fn find_stale_sessions(&self, timeout_secs: u64) -> Vec<Uuid> {
+        let now = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .expect("System time should be after UNIX_EPOCH")
+            .as_secs() as i64;
+
+        let sessions = self.sessions.read().await;
+        sessions
+            .iter()
+            .filter(|(_, session)| {
+                // Session never got a UDP connection and is older than timeout
+                session.udp_addr.is_none() && (now - session.joined_at) > timeout_secs as i64
+            })
+            .map(|(token, _)| *token)
+            .collect()
+    }
 }
 
 impl Default for VoiceRegistry {

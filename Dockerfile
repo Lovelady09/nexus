@@ -76,12 +76,12 @@ USER nexus
 # Data volume for database, certificates, and files
 VOLUME /home/nexus/.local/share/nexusd
 
-# Expose all ports (TCP and WebSocket)
-# 7500: Main BBS port
-# 7501: File transfer port
+# Expose all ports (TCP, UDP, and WebSocket)
+# 7500: Main BBS port (TCP) and Voice UDP port
+# 7501: File transfer port (TCP)
 # 7502: WebSocket BBS port (requires --websocket)
 # 7503: WebSocket transfer port (requires --websocket)
-EXPOSE 7500 7501 7502 7503
+EXPOSE 7500/tcp 7500/udp 7501 7502 7503
 
 # Health check - verify server is accepting connections
 HEALTHCHECK --interval=5s --timeout=3s --start-period=2s --retries=3 \

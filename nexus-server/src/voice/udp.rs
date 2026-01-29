@@ -470,6 +470,39 @@ impl VoiceUdpServer {
                     }
                 }
             }
+
+            // Also clean up sessions that never established a DTLS connection
+            // (e.g., client sent VoiceJoin but DTLS handshake failed due to firewall)
+            let stale_tokens = self
+                .registry
+                .find_stale_sessions(VOICE_SESSION_TIMEOUT_SECS)
+                .await;
+
+            for token in stale_tokens {
+                if let Some(info) = self.registry.remove_by_token(token).await {
+                    // Get the leaving user's tx if still connected
+                    let leaving_user_tx = self
+                        .user_manager
+                        .get_user_by_session_id(info.session.session_id)
+                        .await
+                        .map(|u| u.tx.clone());
+
+                    // Send notifications using the consolidated helper
+                    send_voice_leave_notifications(
+                        &info,
+                        leaving_user_tx.as_ref(),
+                        &self.user_manager,
+                    )
+                    .await;
+
+                    if self.debug {
+                        eprintln!(
+                            "Voice DTLS: Removed stale voice session for {} (no UDP connection)",
+                            info.session.nickname
+                        );
+                    }
+                }
+            }
         }
     }
 }

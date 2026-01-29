@@ -502,6 +502,4 @@ mod tests {
             "Buffer should not exceed maximum"
         );
     }
-
-
 }
