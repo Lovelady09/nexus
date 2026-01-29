@@ -488,7 +488,7 @@ jobs:
       - name: Build client
         shell: msys2 {0}
         run: |
-          export PATH="/c/msys64/ucrt64/bin:/c/msys64/usr/bin:$PATH"
+          export PATH="/c/Users/runneradmin/.cargo/bin:/c/msys64/ucrt64/bin:/c/msys64/usr/bin:$PATH"
           which libtoolize
           cargo build --release --package nexus-client --target x86_64-pc-windows-msvc
 
@@ -516,7 +516,7 @@ jobs:
       - name: Create MSI installer
         shell: msys2 {0}
         run: |
-          export PATH="/c/msys64/ucrt64/bin:/c/msys64/usr/bin:$PATH"
+          export PATH="/c/Users/runneradmin/.cargo/bin:/c/msys64/ucrt64/bin:/c/msys64/usr/bin:$PATH"
           which libtoolize
           cargo bundle --target x86_64-pc-windows-msvc --format wxsmsi --release -p nexus-client
 
