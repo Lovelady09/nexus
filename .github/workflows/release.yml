@@ -470,16 +470,24 @@ jobs:
           echo "PATH=C:\msys64\ucrt64\bin;C:\msys64\usr\bin;$env:PATH" >> $env:GITHUB_ENV
 
       - name: Create autotools wrapper scripts for Windows
-        shell: cmd
+        shell: pwsh
         run: |
-          echo @echo off > C:\msys64\usr\bin\libtoolize.bat
-          echo C:\msys64\usr\bin\sh.exe /ucrt64/bin/libtoolize %%* >> C:\msys64\usr\bin\libtoolize.bat
-          echo @echo off > C:\msys64\usr\bin\aclocal.bat
-          echo C:\msys64\usr\bin\sh.exe /ucrt64/bin/aclocal %%* >> C:\msys64\usr\bin\aclocal.bat
-          echo @echo off > C:\msys64\usr\bin\automake.bat
-          echo C:\msys64\usr\bin\sh.exe /ucrt64/bin/automake %%* >> C:\msys64\usr\bin\automake.bat
-          echo @echo off > C:\msys64\usr\bin\autoconf.bat
-          echo C:\msys64\usr\bin\sh.exe /ucrt64/bin/autoconf %%* >> C:\msys64\usr\bin\autoconf.bat
+          @'
+          @echo off
+          C:\msys64\usr\bin\sh.exe -c "/ucrt64/bin/libtoolize %*"
+          '@ | Set-Content -Path "C:\msys64\ucrt64\bin\libtoolize.bat" -Encoding ASCII
+          @'
+          @echo off
+          C:\msys64\usr\bin\sh.exe -c "/ucrt64/bin/aclocal %*"
+          '@ | Set-Content -Path "C:\msys64\ucrt64\bin\aclocal.bat" -Encoding ASCII
+          @'
+          @echo off
+          C:\msys64\usr\bin\sh.exe -c "/ucrt64/bin/automake %*"
+          '@ | Set-Content -Path "C:\msys64\ucrt64\bin\automake.bat" -Encoding ASCII
+          @'
+          @echo off
+          C:\msys64\usr\bin\sh.exe -c "/ucrt64/bin/autoconf %*"
+          '@ | Set-Content -Path "C:\msys64\ucrt64\bin\autoconf.bat" -Encoding ASCII
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
