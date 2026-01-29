@@ -221,8 +221,19 @@ impl NexusApp {
             }
 
             VoiceEvent::LocalSpeakingChanged(speaking) => {
-                // Local user started/stopped speaking - update PTT indicator
+                // Local user started/stopped speaking - update PTT indicator and speaking set
                 self.is_local_speaking = speaking;
+
+                // Also update the speaking set so the user list shows the mic icon
+                if let Some(conn) = self.connections.get_mut(&connection_id)
+                    && let Some(ref mut session) = conn.voice_session
+                {
+                    if speaking {
+                        session.set_speaking(&conn.nickname);
+                    } else {
+                        session.set_not_speaking(&conn.nickname);
+                    }
+                }
                 Task::none()
             }
         }

@@ -382,16 +382,25 @@ pub fn user_list_panel<'a>(conn: &'a ServerConnection, theme: &Theme) -> Element
                 shaped_text(nickname).size(USER_LIST_TEXT_SIZE)
             };
 
-            // Check if user is in voice
-            // - If we're in voice: check our participants list (includes speaking status)
-            // - If viewing a channel: check channel_voiced (tracked for all users with voice_listen)
+            // Check if user is in voice for the current tab
+            // Only show voice indicators when viewing the channel/target we're in voice for
             let nickname_lower = nickname.to_lowercase();
+            let current_tab_target = match &conn.active_chat_tab {
+                ChatTab::Channel(name) => Some(name.to_lowercase()),
+                ChatTab::UserMessage(name) => Some(name.to_lowercase()),
+                ChatTab::Console => None,
+            };
+
             let is_in_voice = if let Some(ref session) = conn.voice_session {
-                // We're in voice - check our session participants
-                session
-                    .participants
-                    .iter()
-                    .any(|p| p.to_lowercase() == nickname_lower)
+                // We're in voice - only show indicators if viewing the same target
+                let session_target = session.target.to_lowercase();
+                current_tab_target
+                    .as_ref()
+                    .is_some_and(|tab| *tab == session_target)
+                    && session
+                        .participants
+                        .iter()
+                        .any(|p| p.to_lowercase() == nickname_lower)
             } else if let ChatTab::Channel(channel_name) = &conn.active_chat_tab {
                 // Not in voice, but viewing a channel - check channel_voiced
                 conn.channel_voiced
@@ -402,10 +411,14 @@ pub fn user_list_panel<'a>(conn: &'a ServerConnection, theme: &Theme) -> Element
                 false
             };
 
-            let is_speaking = conn
-                .voice_session
-                .as_ref()
-                .is_some_and(|s| s.is_speaking(nickname));
+            let is_speaking = conn.voice_session.as_ref().is_some_and(|s| {
+                // Only show speaking indicator if viewing the same target as our voice session
+                let session_target = s.target.to_lowercase();
+                current_tab_target
+                    .as_ref()
+                    .is_some_and(|tab| *tab == session_target)
+                    && s.is_speaking(nickname)
+            });
 
             // Build user row with avatar, nickname, and optional voice icon
             let mut user_row = Row::new().spacing(USER_LIST_AVATAR_SPACING).align_y(Center);
