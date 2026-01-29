@@ -79,7 +79,9 @@ Configure in **Settings > Audio**:
 | Mode | Behavior |
 |------|----------|
 | **Hold** | Press and hold the key to talk; release to stop |
-| **Toggle** | Press once to start talking; press again to stop |
+| **Toggle** | Press once to enable voice-activated transmission; press again to stop |
+
+**Toggle mode with Voice Activity Detection (VAD):** When you toggle on, your microphone becomes "hot" but only transmits when you're actually speaking. Background noise and silence are automatically filtered out. This gives you hands-free operation while preventing constant transmission of ambient sound. Toggle off to fully mute.
 
 ### Default Key
 
@@ -204,6 +206,8 @@ Nexus uses the same audio processing technology as Discord, Google Meet, and oth
 **Why is echo cancellation off by default?** Most users wear headphones, which don't cause echo. Echo cancellation adds processing overhead and is only needed when using speakers. Enable it if others hear themselves echoing back.
 
 All audio processing settings apply immediately—you don't need to leave and rejoin voice.
+
+**Voice Activity Detection (VAD):** The processor also includes VAD, which is used automatically in Toggle PTT mode to detect when you're speaking and only transmit voice (not background noise).
 
 ### Testing Your Microphone
 

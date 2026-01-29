@@ -8,7 +8,8 @@
 use nexus_common::voice::{VOICE_CHANNELS, VOICE_SAMPLES_PER_FRAME};
 use webrtc_audio_processing::{
     Config, EchoCancellation, EchoCancellationSuppressionLevel, GainControl, GainControlMode,
-    InitializationConfig, NoiseSuppression, NoiseSuppressionLevel, Processor,
+    InitializationConfig, NoiseSuppression, NoiseSuppressionLevel, Processor, VoiceDetection,
+    VoiceDetectionLikelihood,
 };
 
 // =============================================================================
@@ -112,7 +113,9 @@ impl AudioProcessor {
             } else {
                 None
             },
-            voice_detection: None,
+            voice_detection: Some(VoiceDetection {
+                detection_likelihood: VoiceDetectionLikelihood::Moderate,
+            }),
             enable_transient_suppressor: false,
             enable_high_pass_filter: true,
         }
@@ -134,6 +137,13 @@ impl AudioProcessor {
     #[cfg_attr(not(test), allow(dead_code))]
     pub fn settings(&self) -> AudioProcessorSettings {
         self.settings
+    }
+
+    /// Check if voice was detected in the last processed capture frame
+    ///
+    /// Used for VAD-gated transmission in toggle PTT mode.
+    pub fn has_voice(&self) -> bool {
+        self.processor.get_stats().has_voice.unwrap_or(false)
     }
 
     /// Process a capture (microphone) frame

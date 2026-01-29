@@ -117,6 +117,7 @@ impl NexusApp {
                 echo_cancellation: self.config.settings.audio.echo_cancellation,
                 agc: self.config.settings.audio.agc,
             },
+            ptt_mode: self.config.settings.audio.ptt_mode,
         });
 
         // Store the handle

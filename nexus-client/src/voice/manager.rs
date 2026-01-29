@@ -13,6 +13,8 @@ use uuid::Uuid;
 
 use nexus_common::voice::VoiceQuality;
 
+use crate::config::audio::PttMode;
+
 use super::audio::{AudioCapture, AudioMixer};
 use super::codec::{DecoderPool, VoiceEncoder};
 use super::dtls::{VoiceDtlsCommand, VoiceDtlsEvent, run_voice_client};
@@ -37,6 +39,8 @@ pub struct VoiceSessionConfig {
     pub quality: VoiceQuality,
     /// Audio processing settings (noise suppression, AEC, AGC)
     pub processor_settings: AudioProcessorSettings,
+    /// Push-to-talk mode (hold or toggle)
+    pub ptt_mode: PttMode,
 }
 
 // =============================================================================
@@ -219,6 +223,7 @@ async fn run_voice_session(
     // State tracking
     let mut transmitting = false;
     let mut muted_users: HashSet<String> = HashSet::new();
+    let ptt_mode = config.ptt_mode;
 
     // Audio processing interval
     let mut audio_interval =
@@ -247,6 +252,12 @@ async fn run_voice_session(
                     // Apply audio processing (noise suppression, AGC) to capture
                     if let Some(ref mut proc) = processor {
                         let _ = proc.process_capture_frame(&mut samples);
+
+                        // In toggle mode, use VAD to gate transmission
+                        // This prevents sending silence/noise when mic is "open"
+                        if ptt_mode == PttMode::Toggle && !proc.has_voice() {
+                            continue;
+                        }
                     }
                     if let Ok(encoded) = encoder.encode(&samples) {
                         let _ = dtls_command_tx.send(VoiceDtlsCommand::SendVoice(encoded));

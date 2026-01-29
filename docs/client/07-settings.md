@@ -218,7 +218,9 @@ How the push-to-talk key behaves:
 | Mode | Behavior |
 |------|----------|
 | **Hold** | Press and hold to talk; release to stop |
-| **Toggle** | Press once to start; press again to stop |
+| **Toggle** | Press once to enable voice-activated transmission; press again to stop |
+
+**Toggle mode with VAD:** When toggled on, your microphone is "hot" but only transmits when you're speaking. Background noise and silence are automatically filtered using Voice Activity Detection. Toggle off to fully mute.
 
 ### Microphone Test
 
