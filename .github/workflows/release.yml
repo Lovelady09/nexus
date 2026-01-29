@@ -234,6 +234,8 @@ jobs:
     name: Build macOS Client (x64)
     runs-on: macos-14
     timeout-minutes: 30
+    env:
+      CMAKE_POLICY_VERSION_MINIMUM: "3.5"
     steps:
       - uses: actions/checkout@v4
 
@@ -432,6 +434,8 @@ jobs:
     name: Build Windows Client
     runs-on: windows-latest
     timeout-minutes: 30
+    env:
+      CMAKE_POLICY_VERSION_MINIMUM: "3.5"
     steps:
       - uses: actions/checkout@v4
 
