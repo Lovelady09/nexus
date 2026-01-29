@@ -700,6 +700,7 @@ impl NexusApp {
                 noise_suppression: self.config.settings.audio.noise_suppression,
                 echo_cancellation: self.config.settings.audio.echo_cancellation,
                 agc: self.config.settings.audio.agc,
+                transient_suppression: self.config.settings.audio.transient_suppression,
             });
         }
     }

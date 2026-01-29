@@ -945,6 +945,12 @@ impl NexusApp {
                 self.update_voice_processor_settings();
                 Task::none()
             }
+            Message::AudioTransientSuppression(enabled) => {
+                self.config.settings.audio.transient_suppression = enabled;
+                let _ = self.config.save();
+                self.update_voice_processor_settings();
+                Task::none()
+            }
 
             // URI scheme
             Message::HandleNexusUri(uri) => self.handle_nexus_uri(uri),
@@ -1216,6 +1222,7 @@ impl NexusApp {
             noise_suppression: self.config.settings.audio.noise_suppression,
             echo_cancellation: self.config.settings.audio.echo_cancellation,
             agc: self.config.settings.audio.agc,
+            transient_suppression: self.config.settings.audio.transient_suppression,
             is_local_speaking: self.is_local_speaking,
             is_deafened: self.is_deafened,
         };

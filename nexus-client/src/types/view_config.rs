@@ -167,6 +167,9 @@ pub struct ViewConfig<'a> {
     /// Enable automatic gain control
     pub agc: bool,
 
+    /// Enable transient suppression (keyboard/click noise reduction)
+    pub transient_suppression: bool,
+
     /// Whether local user is currently transmitting (PTT active)
     pub is_local_speaking: bool,
 

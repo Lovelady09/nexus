@@ -76,27 +76,23 @@ jobs:
         shell: pwsh
         run: |
           echo "PATH=C:\msys64\ucrt64\bin;C:\msys64\usr\bin;$env:PATH" >> $env:GITHUB_ENV
+          # Ensure PATHEXT includes .CMD for Command::new() to find our wrappers
+          echo "PATHEXT=.COM;.EXE;.BAT;.CMD;.VBS;.VBE;.JS;.JSE;.WSF;.WSH;.MSC" >> $env:GITHUB_ENV
 
       - name: Create autotools wrapper scripts for Windows
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          @'
-          @echo off
-          C:\msys64\usr\bin\sh.exe -c "/ucrt64/bin/libtoolize %*"
-          '@ | Set-Content -Path "C:\msys64\ucrt64\bin\libtoolize.bat" -Encoding ASCII
-          @'
-          @echo off
-          C:\msys64\usr\bin\sh.exe -c "/ucrt64/bin/aclocal %*"
-          '@ | Set-Content -Path "C:\msys64\ucrt64\bin\aclocal.bat" -Encoding ASCII
-          @'
-          @echo off
-          C:\msys64\usr\bin\sh.exe -c "/ucrt64/bin/automake %*"
-          '@ | Set-Content -Path "C:\msys64\ucrt64\bin\automake.bat" -Encoding ASCII
-          @'
-          @echo off
-          C:\msys64\usr\bin\sh.exe -c "/ucrt64/bin/autoconf %*"
-          '@ | Set-Content -Path "C:\msys64\ucrt64\bin\autoconf.bat" -Encoding ASCII
+          # Create .cmd wrappers that invoke the shell scripts via sh.exe
+          $tools = @("libtoolize", "aclocal", "automake", "autoconf")
+          foreach ($tool in $tools) {
+            $content = "@echo off`r`nC:\msys64\usr\bin\sh.exe -l -c `"$tool %*`""
+            Set-Content -Path "C:\msys64\ucrt64\bin\$tool.cmd" -Value $content -Encoding ASCII
+          }
+          # Verify the wrappers were created
+          Get-ChildItem C:\msys64\ucrt64\bin\*.cmd | ForEach-Object { Write-Host "Created: $($_.FullName)" }
+          # Debug: show PATH and PATHEXT
+          Write-Host "PATHEXT: $env:PATHEXT"
 
 
 
@@ -135,7 +131,14 @@ jobs:
       - name: Run tests (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
-        run: cargo test --workspace --verbose
+        run: |
+          # Debug: verify wrappers exist and PATHEXT is set
+          Write-Host "PATHEXT: $env:PATHEXT"
+          Write-Host "Checking for libtoolize.cmd:"
+          Get-Command libtoolize -ErrorAction SilentlyContinue | Format-List
+          Get-ChildItem C:\msys64\ucrt64\bin\libtoolize* | ForEach-Object { Write-Host $_.FullName }
+          # Run tests
+          cargo test --workspace --verbose
 
   clippy:
     name: Clippy
@@ -458,26 +461,17 @@ jobs:
         shell: pwsh
         run: |
           echo "PATH=C:\msys64\ucrt64\bin;C:\msys64\usr\bin;$env:PATH" >> $env:GITHUB_ENV
+          echo "PATHEXT=.COM;.EXE;.BAT;.CMD;.VBS;.VBE;.JS;.JSE;.WSF;.WSH;.MSC" >> $env:GITHUB_ENV
 
       - name: Create autotools wrapper scripts for Windows
         shell: pwsh
         run: |
-          @'
-          @echo off
-          C:\msys64\usr\bin\sh.exe -c "/ucrt64/bin/libtoolize %*"
-          '@ | Set-Content -Path "C:\msys64\ucrt64\bin\libtoolize.bat" -Encoding ASCII
-          @'
-          @echo off
-          C:\msys64\usr\bin\sh.exe -c "/ucrt64/bin/aclocal %*"
-          '@ | Set-Content -Path "C:\msys64\ucrt64\bin\aclocal.bat" -Encoding ASCII
-          @'
-          @echo off
-          C:\msys64\usr\bin\sh.exe -c "/ucrt64/bin/automake %*"
-          '@ | Set-Content -Path "C:\msys64\ucrt64\bin\automake.bat" -Encoding ASCII
-          @'
-          @echo off
-          C:\msys64\usr\bin\sh.exe -c "/ucrt64/bin/autoconf %*"
-          '@ | Set-Content -Path "C:\msys64\ucrt64\bin\autoconf.bat" -Encoding ASCII
+          $tools = @("libtoolize", "aclocal", "automake", "autoconf")
+          foreach ($tool in $tools) {
+            $content = "@echo off`r`nC:\msys64\usr\bin\sh.exe -l -c `"$tool %*`""
+            Set-Content -Path "C:\msys64\ucrt64\bin\$tool.cmd" -Value $content -Encoding ASCII
+          }
+          Get-ChildItem C:\msys64\ucrt64\bin\*.cmd | ForEach-Object { Write-Host "Created: $($_.FullName)" }
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable

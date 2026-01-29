@@ -1008,3 +1008,4 @@ audio-stop-test = テストを停止
 audio-noise-suppression = ノイズ抑制
 audio-echo-cancellation = エコーキャンセル
 audio-agc = 自動ゲイン制御
+audio-transient-suppression = キーボードノイズ低減

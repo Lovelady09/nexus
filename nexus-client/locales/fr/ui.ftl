@@ -1029,3 +1029,4 @@ audio-stop-test = Arrêter le test
 audio-noise-suppression = Suppression du bruit
 audio-echo-cancellation = Annulation d'écho
 audio-agc = Contrôle automatique du gain
+audio-transient-suppression = Réduction du bruit de clavier

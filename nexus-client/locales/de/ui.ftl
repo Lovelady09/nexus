@@ -1032,3 +1032,4 @@ audio-stop-test = Test beenden
 audio-noise-suppression = Rauschunterdrückung
 audio-echo-cancellation = Echounterdrückung
 audio-agc = Automatische Lautstärkeregelung
+audio-transient-suppression = Tastaturgeräuschunterdrückung

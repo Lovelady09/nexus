@@ -128,6 +128,8 @@ struct ServerContentContext<'a> {
     pub echo_cancellation: bool,
     /// Enable automatic gain control
     pub agc: bool,
+    /// Enable transient suppression (keyboard/click noise reduction)
+    pub transient_suppression: bool,
     /// Whether local user is currently transmitting (PTT active)
     pub is_local_speaking: bool,
     /// Whether local user has deafened (muted all incoming voice audio)
@@ -316,6 +318,7 @@ pub fn main_layout<'a>(config: ViewConfig<'a>) -> Element<'a, Message> {
                 noise_suppression: config.noise_suppression,
                 echo_cancellation: config.echo_cancellation,
                 agc: config.agc,
+                transient_suppression: config.transient_suppression,
                 is_local_speaking: config.is_local_speaking,
                 is_deafened: config.is_deafened,
             })
@@ -368,6 +371,7 @@ pub fn main_layout<'a>(config: ViewConfig<'a>) -> Element<'a, Message> {
                         noise_suppression: config.noise_suppression,
                         echo_cancellation: config.echo_cancellation,
                         agc: config.agc,
+                        transient_suppression: config.transient_suppression,
                     })
                 ]
                 .width(Fill)
@@ -860,6 +864,7 @@ fn server_content_view<'a>(ctx: ServerContentContext<'a>) -> Element<'a, Message
                 noise_suppression: ctx.noise_suppression,
                 echo_cancellation: ctx.echo_cancellation,
                 agc: ctx.agc,
+                transient_suppression: ctx.transient_suppression,
             })
         ]
         .width(Fill)

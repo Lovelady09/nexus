@@ -25,6 +25,9 @@ pub struct AudioProcessorSettings {
     pub echo_cancellation: bool,
     /// Enable automatic gain control (default: true)
     pub agc: bool,
+    /// Enable transient suppression (default: false)
+    /// Reduces keyboard clicks, mouse clicks, and other sudden noises
+    pub transient_suppression: bool,
 }
 
 impl Default for AudioProcessorSettings {
@@ -33,6 +36,7 @@ impl Default for AudioProcessorSettings {
             noise_suppression: true,
             echo_cancellation: false,
             agc: true,
+            transient_suppression: false,
         }
     }
 }
@@ -116,7 +120,7 @@ impl AudioProcessor {
             voice_detection: Some(VoiceDetection {
                 detection_likelihood: VoiceDetectionLikelihood::Moderate,
             }),
-            enable_transient_suppressor: false,
+            enable_transient_suppressor: settings.transient_suppression,
             enable_high_pass_filter: true,
         }
     }
@@ -248,6 +252,7 @@ mod tests {
             noise_suppression: false,
             echo_cancellation: true,
             agc: false,
+            transient_suppression: true,
         };
 
         processor.update_settings(new_settings);
@@ -260,6 +265,7 @@ mod tests {
             noise_suppression: true,
             echo_cancellation: false,
             agc: true,
+            transient_suppression: false,
         })
         .unwrap();
 

@@ -1008,3 +1008,4 @@ audio-stop-test = 停止測試
 audio-noise-suppression = 噪音抑制
 audio-echo-cancellation = 回音消除
 audio-agc = 自動增益控制
+audio-transient-suppression = 鍵盤噪音抑制

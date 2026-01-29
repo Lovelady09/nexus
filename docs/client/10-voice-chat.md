@@ -211,11 +211,14 @@ Nexus uses the same audio processing technology as Discord, Google Meet, and oth
 
 | Feature | Default | Description |
 |---------|---------|-------------|
-| **Noise Suppression** | On | Filters out background noise (fans, keyboards, AC) |
+| **Noise Suppression** | On | Filters out background noise (fans, AC, ambient noise) |
 | **Echo Cancellation** | Off | Removes speaker audio picked up by your microphone |
 | **Automatic Gain Control** | On | Normalizes your volume so you're not too quiet or too loud |
+| **Keyboard Noise Reduction** | Off | Suppresses transient sounds like keyboard clicks and mouse clicks |
 
 **Why is echo cancellation off by default?** Most users wear headphones, which don't cause echo. Echo cancellation adds processing overhead and is only needed when using speakers. Enable it if others hear themselves echoing back.
+
+**Why is keyboard noise reduction off by default?** Transient suppression can occasionally clip the start of words. Enable it if you type while talking and want to reduce keyboard noise for others.
 
 All audio processing settings apply immediately—you don't need to leave and rejoin voice.
 

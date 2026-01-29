@@ -90,7 +90,8 @@ pub fn list_output_devices() -> Vec<AudioDevice> {
 
     if let Ok(output_devices) = host.output_devices() {
         for device in output_devices {
-            if let Ok(name) = device.name() {
+            if let Ok(desc) = device.description() {
+                let name = desc.name().to_string();
                 // Skip adding if it's already in the list
                 if !devices.iter().any(|d| d.name == name) {
                     devices.push(AudioDevice::new(name, false));
@@ -111,7 +112,8 @@ pub fn list_input_devices() -> Vec<AudioDevice> {
 
     if let Ok(input_devices) = host.input_devices() {
         for device in input_devices {
-            if let Ok(name) = device.name() {
+            if let Ok(desc) = device.description() {
+                let name = desc.name().to_string();
                 // Skip adding if it's already in the list
                 if !devices.iter().any(|d| d.name == name) {
                     devices.push(AudioDevice::new(name, false));
@@ -133,7 +135,7 @@ fn find_output_device(name: &str) -> Option<Device> {
 
     host.output_devices()
         .ok()?
-        .find(|d| d.name().is_ok_and(|n| n == name))
+        .find(|d| d.description().is_ok_and(|desc| desc.name() == name))
         .or_else(|| host.default_output_device())
 }
 
@@ -147,7 +149,7 @@ fn find_input_device(name: &str) -> Option<Device> {
 
     host.input_devices()
         .ok()?
-        .find(|d| d.name().is_ok_and(|n| n == name))
+        .find(|d| d.description().is_ok_and(|desc| desc.name() == name))
         .or_else(|| host.default_input_device())
 }
 
@@ -202,8 +204,8 @@ impl AudioCapture {
             .map_err(|e| format!("Failed to get supported configs: {}", e))?
             .find(|c| {
                 c.channels() == 1
-                    && c.min_sample_rate().0 <= VOICE_SAMPLE_RATE
-                    && c.max_sample_rate().0 >= VOICE_SAMPLE_RATE
+                    && c.min_sample_rate() <= VOICE_SAMPLE_RATE
+                    && c.max_sample_rate() >= VOICE_SAMPLE_RATE
                     && supported_formats.contains(&c.sample_format())
             });
 
@@ -216,8 +218,8 @@ impl AudioCapture {
                 .map_err(|e| format!("Failed to get supported configs: {}", e))?
                 .find(|c| {
                     c.channels() == 2
-                        && c.min_sample_rate().0 <= VOICE_SAMPLE_RATE
-                        && c.max_sample_rate().0 >= VOICE_SAMPLE_RATE
+                        && c.min_sample_rate() <= VOICE_SAMPLE_RATE
+                        && c.max_sample_rate() >= VOICE_SAMPLE_RATE
                         && supported_formats.contains(&c.sample_format())
                 });
 
@@ -232,7 +234,7 @@ impl AudioCapture {
 
         let config = StreamConfig {
             channels,
-            sample_rate: cpal::SampleRate(VOICE_SAMPLE_RATE),
+            sample_rate: VOICE_SAMPLE_RATE,
             buffer_size: cpal::BufferSize::Default,
         };
 
@@ -529,8 +531,8 @@ impl AudioMixer {
             .map_err(|e| format!("Failed to get supported configs: {}", e))?
             .find(|c| {
                 c.channels() == 1
-                    && c.min_sample_rate().0 <= VOICE_SAMPLE_RATE
-                    && c.max_sample_rate().0 >= VOICE_SAMPLE_RATE
+                    && c.min_sample_rate() <= VOICE_SAMPLE_RATE
+                    && c.max_sample_rate() >= VOICE_SAMPLE_RATE
                     && supported_formats.contains(&c.sample_format())
             });
 
@@ -543,8 +545,8 @@ impl AudioMixer {
                 .map_err(|e| format!("Failed to get supported configs: {}", e))?
                 .find(|c| {
                     c.channels() == 2
-                        && c.min_sample_rate().0 <= VOICE_SAMPLE_RATE
-                        && c.max_sample_rate().0 >= VOICE_SAMPLE_RATE
+                        && c.min_sample_rate() <= VOICE_SAMPLE_RATE
+                        && c.max_sample_rate() >= VOICE_SAMPLE_RATE
                         && supported_formats.contains(&c.sample_format())
                 })
                 .ok_or_else(|| {
@@ -556,7 +558,7 @@ impl AudioMixer {
 
         let config = StreamConfig {
             channels,
-            sample_rate: cpal::SampleRate(VOICE_SAMPLE_RATE),
+            sample_rate: VOICE_SAMPLE_RATE,
             buffer_size: cpal::BufferSize::Default,
         };
 

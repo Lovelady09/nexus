@@ -1029,3 +1029,4 @@ audio-stop-test = Test stoppen
 audio-noise-suppression = Ruisonderdrukking
 audio-echo-cancellation = Echo-onderdrukking
 audio-agc = Automatische versterkingsregeling
+audio-transient-suppression = Toetsenbordruisonderdrukking

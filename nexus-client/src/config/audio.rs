@@ -128,6 +128,11 @@ pub struct AudioSettings {
     /// Enable automatic gain control (default: true)
     #[serde(default = "default_true")]
     pub agc: bool,
+
+    /// Enable transient suppression (default: false)
+    /// Reduces keyboard clicks, mouse clicks, and other sudden noises
+    #[serde(default)]
+    pub transient_suppression: bool,
 }
 
 fn default_true() -> bool {
@@ -145,6 +150,7 @@ impl Default for AudioSettings {
             noise_suppression: true,
             echo_cancellation: false,
             agc: true,
+            transient_suppression: false,
         }
     }
 }
@@ -186,6 +192,7 @@ mod tests {
         assert!(settings.noise_suppression);
         assert!(!settings.echo_cancellation);
         assert!(settings.agc);
+        assert!(!settings.transient_suppression);
     }
 
     #[test]
@@ -199,6 +206,7 @@ mod tests {
             noise_suppression: false,
             echo_cancellation: true,
             agc: false,
+            transient_suppression: true,
         };
 
         let json = serde_json::to_string(&settings).expect("serialize");
@@ -212,6 +220,10 @@ mod tests {
         assert_eq!(settings.noise_suppression, deserialized.noise_suppression);
         assert_eq!(settings.echo_cancellation, deserialized.echo_cancellation);
         assert_eq!(settings.agc, deserialized.agc);
+        assert_eq!(
+            settings.transient_suppression,
+            deserialized.transient_suppression
+        );
     }
 
     #[test]

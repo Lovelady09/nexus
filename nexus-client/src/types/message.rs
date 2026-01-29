@@ -591,6 +591,8 @@ pub enum Message {
     AudioEchoCancellation(bool),
     /// Audio: Toggle automatic gain control
     AudioAgc(bool),
+    /// Audio: Toggle transient suppression (keyboard/click noise reduction)
+    AudioTransientSuppression(bool),
 
     // ==================== URI Scheme ====================
     /// URI: Handle a nexus:// URI (from startup arg or IPC)

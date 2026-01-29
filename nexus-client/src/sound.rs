@@ -1,16 +1,16 @@
 //! Sound playback for event notifications
 //!
-//! Uses a persistent audio thread with a queue to ensure all sounds play reliably,
-//! even when multiple sounds are requested simultaneously. Supports user-selected
-//! output device from audio settings.
+//! Uses cpal directly for audio output, with lewton for OGG/Vorbis decoding.
+//! Provides a simple queue-based system for playing notification sounds.
 
 use std::io::Cursor;
 use std::sync::Mutex;
 use std::sync::mpsc::{self, Sender};
 
+use cpal::StreamConfig;
+use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
+use lewton::inside_ogg::OggStreamReader;
 use once_cell::sync::Lazy;
-use rodio::cpal::traits::{DeviceTrait, HostTrait};
-use rodio::{Decoder, OutputStream, Sink};
 
 use crate::config::events::SoundChoice;
 
@@ -71,82 +71,120 @@ fn ensure_audio_thread() -> bool {
     true
 }
 
-/// Run the audio thread - handles device switching and sound playback
+/// Run the audio thread - handles sound playback requests
 fn run_audio_thread(rx: mpsc::Receiver<SoundRequest>) {
-    // Current output stream and its device name
-    let mut current_device_name: String = String::new();
-    let mut current_stream: Option<(OutputStream, rodio::OutputStreamHandle)> = None;
-
-    // Keep track of active sinks so they stay alive until finished
-    let mut active_sinks: Vec<Sink> = Vec::new();
-
-    // Process sound requests forever
     for request in rx {
-        // Clean up finished sinks
-        active_sinks.retain(|sink| !sink.empty());
-
-        // Check if we need to switch devices
-        if current_stream.is_none() || current_device_name != request.device_name {
-            // Drop old stream first
-            drop(current_stream.take());
-            active_sinks.clear();
-
-            // Get the new stream
-            current_stream = get_output_stream(&request.device_name);
-            current_device_name = request.device_name.clone();
-
-            if current_stream.is_none() {
-                // Can't get output stream, skip this sound
-                continue;
-            }
+        // Play each sound request (blocking until complete)
+        if let Err(e) = play_sound_blocking(&request) {
+            eprintln!("Sound playback error: {}", e);
         }
-
-        // Play the sound
-        let Some((_, ref handle)) = current_stream else {
-            continue;
-        };
-
-        // Create a new sink for this sound
-        let Ok(sink) = Sink::try_new(handle) else {
-            continue;
-        };
-
-        // Try to decode the audio data
-        let Ok(source) = Decoder::new(Cursor::new(request.data)) else {
-            continue;
-        };
-
-        // Set volume and play (non-blocking)
-        sink.set_volume(request.volume);
-        sink.append(source);
-
-        // Keep sink alive until it finishes playing
-        active_sinks.push(sink);
     }
 }
 
-/// Get an output stream for the specified device
-///
-/// If device_name is empty, uses the system default device.
-fn get_output_stream(device_name: &str) -> Option<(OutputStream, rodio::OutputStreamHandle)> {
+/// Play a sound synchronously (blocks until playback completes)
+fn play_sound_blocking(request: &SoundRequest) -> Result<(), String> {
+    // Decode the OGG/Vorbis data
+    let cursor = Cursor::new(request.data);
+    let mut reader =
+        OggStreamReader::new(cursor).map_err(|e| format!("Failed to decode OGG: {}", e))?;
+
+    let sample_rate = reader.ident_hdr.audio_sample_rate;
+    let channels = reader.ident_hdr.audio_channels as u16;
+
+    // Collect all samples (sounds are short, so this is fine)
+    let mut samples: Vec<f32> = Vec::new();
+    while let Some(packet) = reader
+        .read_dec_packet_itl()
+        .map_err(|e| format!("Decode error: {}", e))?
+    {
+        // Convert i16 samples to f32 and apply volume
+        for sample in packet {
+            samples.push((sample as f32 / 32768.0) * request.volume);
+        }
+    }
+
+    if samples.is_empty() {
+        return Ok(());
+    }
+
+    // Get the output device
+    let device = get_output_device(&request.device_name)?;
+
+    // Build stream config
+    let config = StreamConfig {
+        channels,
+        sample_rate,
+        buffer_size: cpal::BufferSize::Default,
+    };
+
+    // Create a channel to signal when playback is done
+    let (done_tx, done_rx) = mpsc::channel::<()>();
+
+    // Track playback position
+    let samples_len = samples.len();
+    let position = std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0));
+    let position_clone = position.clone();
+
+    // Build the output stream
+    let stream = device
+        .build_output_stream(
+            &config,
+            move |output: &mut [f32], _: &cpal::OutputCallbackInfo| {
+                let pos = position_clone.load(std::sync::atomic::Ordering::Relaxed);
+                for (i, sample) in output.iter_mut().enumerate() {
+                    let idx = pos + i;
+                    if idx < samples_len {
+                        *sample = samples[idx];
+                    } else {
+                        *sample = 0.0;
+                    }
+                }
+                let new_pos = pos + output.len();
+                position_clone.store(new_pos, std::sync::atomic::Ordering::Relaxed);
+                if new_pos >= samples_len {
+                    let _ = done_tx.send(());
+                }
+            },
+            |err| eprintln!("Audio stream error: {}", err),
+            None,
+        )
+        .map_err(|e| format!("Failed to build output stream: {}", e))?;
+
+    // Start playback
+    stream
+        .play()
+        .map_err(|e| format!("Failed to start playback: {}", e))?;
+
+    // Wait for playback to complete (with timeout)
+    let _ = done_rx.recv_timeout(std::time::Duration::from_secs(10));
+
+    // Stream is dropped here, stopping playback
+    Ok(())
+}
+
+/// Get an output device by name, or the default device if name is empty
+fn get_output_device(device_name: &str) -> Result<cpal::Device, String> {
+    let host = cpal::default_host();
+
     if device_name.is_empty() {
-        // Use system default
-        OutputStream::try_default().ok()
+        host.default_output_device()
+            .ok_or_else(|| "No default output device available".to_string())
     } else {
-        // Find the specific device
-        let host = rodio::cpal::default_host();
-        let devices = host.output_devices().ok()?;
+        let devices = host
+            .output_devices()
+            .map_err(|e| format!("Failed to enumerate devices: {}", e))?;
 
         for device in devices {
-            if let Ok(name) = device.name()
-                && name == device_name
+            if let Ok(desc) = device.description()
+                && desc.name() == device_name
             {
-                return OutputStream::try_from_device(&device).ok();
+                return Ok(device);
             }
         }
 
         // Device not found, fall back to default
-        OutputStream::try_default().ok()
+        host.default_output_device()
+            .ok_or_else(|| "No default output device available".to_string())
     }
 }
 

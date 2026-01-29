@@ -1049,3 +1049,4 @@ audio-stop-test = Stop Test
 audio-noise-suppression = Noise Suppression
 audio-echo-cancellation = Echo Cancellation
 audio-agc = Automatic Gain Control
+audio-transient-suppression = Keyboard Noise Reduction

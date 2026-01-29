@@ -60,6 +60,8 @@ pub struct AudioTabData<'a> {
     pub echo_cancellation: bool,
     /// Enable automatic gain control
     pub agc: bool,
+    /// Enable transient suppression (keyboard/click noise reduction)
+    pub transient_suppression: bool,
     /// Current theme for styling
     pub theme: Theme,
 }
@@ -135,6 +137,8 @@ pub struct SettingsViewData<'a> {
     pub echo_cancellation: bool,
     /// Enable automatic gain control
     pub agc: bool,
+    /// Enable transient suppression (keyboard/click noise reduction)
+    pub transient_suppression: bool,
 }
 
 // ============================================================================
@@ -212,6 +216,7 @@ pub fn settings_view<'a>(data: SettingsViewData<'a>) -> Element<'a, Message> {
         noise_suppression: data.noise_suppression,
         echo_cancellation: data.echo_cancellation,
         agc: data.agc,
+        transient_suppression: data.transient_suppression,
         theme,
     });
 
@@ -841,6 +846,15 @@ fn audio_tab_content(data: AudioTabData<'_>) -> Element<'_, Message> {
         .on_toggle(Message::AudioAgc)
         .text_size(TEXT_SIZE);
     items.push(agc_checkbox.into());
+
+    items.push(Space::new().height(SPACER_SIZE_SMALL).into());
+
+    // Transient suppression toggle (keyboard/click noise reduction)
+    let transient_suppression_checkbox = checkbox(data.transient_suppression)
+        .label(t("audio-transient-suppression"))
+        .on_toggle(Message::AudioTransientSuppression)
+        .text_size(TEXT_SIZE);
+    items.push(transient_suppression_checkbox.into());
 
     Column::with_children(items)
         .spacing(ELEMENT_SPACING)

@@ -1036,3 +1036,4 @@ audio-stop-test = Остановить тест
 audio-noise-suppression = Подавление шума
 audio-echo-cancellation = Подавление эха
 audio-agc = Автоматическая регулировка усиления
+audio-transient-suppression = Подавление шума клавиатуры

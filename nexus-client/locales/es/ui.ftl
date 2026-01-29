@@ -1031,3 +1031,4 @@ audio-stop-test = Detener prueba
 audio-noise-suppression = Supresión de ruido
 audio-echo-cancellation = Cancelación de eco
 audio-agc = Control automático de ganancia
+audio-transient-suppression = Reducción de ruido del teclado
