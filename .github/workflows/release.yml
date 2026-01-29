@@ -464,6 +464,7 @@ jobs:
             automake
             libtool
             pkg-config
+            mingw-w64-ucrt-x86_64-toolchain
 
 
 
