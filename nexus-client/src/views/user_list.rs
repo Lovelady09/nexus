@@ -395,12 +395,16 @@ pub fn user_list_panel<'a>(conn: &'a ServerConnection, theme: &Theme) -> Element
             // Add voice indicator at end if in voice
             if is_in_voice {
                 let voice_icon = if is_speaking {
-                    // Speaking - show mic icon with highlight
+                    // Speaking - show mic icon with highlight (green)
                     container(icon::mic().size(USER_LIST_SMALL_TEXT_SIZE))
                         .style(crate::style::speaking_indicator_style)
                 } else {
-                    // In voice but not speaking - show headphones
-                    container(icon::headphones().size(USER_LIST_SMALL_TEXT_SIZE))
+                    // In voice but not speaking - show headphones (muted color, same for all users)
+                    container(
+                        icon::headphones()
+                            .size(USER_LIST_SMALL_TEXT_SIZE)
+                            .style(muted_text_style),
+                    )
                 };
                 user_row = user_row.push(voice_icon);
             }
