@@ -47,6 +47,10 @@ jobs:
           sudo rm -f /etc/apt/sources.list.d/azure*.list
           sudo apt-get update && sudo apt-get install -y libasound2-dev
 
+      - name: Install macOS dependencies
+        if: runner.os == 'macOS'
+        run: brew install libtool autoconf automake
+
       - name: Install MSYS2 and build tools
         if: runner.os == 'Windows'
         uses: msys2/setup-msys2@v2
@@ -169,8 +173,8 @@ jobs:
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Install Opus
-        run: brew install opus
+      - name: Install build dependencies
+        run: brew install opus libtool autoconf automake
 
       - name: Cache cargo registry
         uses: actions/cache@v4
@@ -248,6 +252,9 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: x86_64-apple-darwin
+
+      - name: Install build dependencies
+        run: brew install libtool autoconf automake
 
       - name: Cache cargo registry
         uses: actions/cache@v4
