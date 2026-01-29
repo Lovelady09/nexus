@@ -108,8 +108,16 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-${{ steps.arch.outputs.arch }}-cargo-build-
 
-      - name: Run tests
+      - name: Run tests (Unix)
+        if: runner.os != 'Windows'
         run: cargo test --workspace --verbose
+
+      - name: Run tests (Windows)
+        if: runner.os == 'Windows'
+        shell: cmd
+        run: |
+          set PATH=C:\msys64\ucrt64\bin;C:\msys64\usr\bin;%PATH%
+          cargo test --workspace --verbose
 
   clippy:
     name: Clippy
@@ -483,7 +491,10 @@ jobs:
 
       - name: Build MSI installer
         working-directory: nexus-client
-        run: cargo bundle --target x86_64-pc-windows-msvc --format wxsmsi --release
+        shell: cmd
+        run: |
+          set PATH=C:\msys64\ucrt64\bin;C:\msys64\usr\bin;%PATH%
+          cargo bundle --target x86_64-pc-windows-msvc --format wxsmsi --release
 
   # Test Docker image build
   docker-build:
