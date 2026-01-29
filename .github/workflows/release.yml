@@ -491,9 +491,9 @@ jobs:
             windows-x64-cargo-index-
 
       - name: Build client
-        shell: msys2 {0}
+        shell: pwsh
         run: |
-          which libtoolize
+          where.exe libtoolize
           cargo build --release --package nexus-client --target x86_64-pc-windows-msvc
 
       - name: Get version from tag
@@ -518,9 +518,9 @@ jobs:
           sed -i 's/^license = "MIT"$/license-file = "..\/LICENSE"/' nexus-client/Cargo.toml
 
       - name: Create MSI installer
-        shell: msys2 {0}
+        shell: pwsh
         run: |
-          which libtoolize
+          where.exe libtoolize
           cargo bundle --target x86_64-pc-windows-msvc --format wxsmsi --release -p nexus-client
 
       - name: Collect client artifact

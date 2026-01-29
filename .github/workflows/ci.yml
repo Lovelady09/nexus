@@ -113,10 +113,9 @@ jobs:
 
       - name: Run tests (Windows)
         if: runner.os == 'Windows'
-        shell: msys2 {0}
+        shell: pwsh
         run: |
-          which libtoolize
-          echo "PATH=$PATH"
+          where.exe libtoolize
           cargo test --workspace --verbose
 
   clippy:
@@ -481,9 +480,9 @@ jobs:
           sed -i 's/^license = "MIT"$/license-file = "..\/LICENSE"/' nexus-client/Cargo.toml
 
       - name: Build MSI installer
-        shell: msys2 {0}
+        shell: pwsh
         run: |
-          which libtoolize
+          where.exe libtoolize
           cd nexus-client
           cargo bundle --target x86_64-pc-windows-msvc --format wxsmsi --release
 
