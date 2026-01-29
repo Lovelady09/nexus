@@ -447,35 +447,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install MSYS2 and build tools
-        uses: msys2/setup-msys2@v2
-        with:
-          msystem: UCRT64
-          update: true
-          cache: false
-          install: >-
-            base-devel
-            autoconf
-            automake
-            libtool
-            pkg-config
-            mingw-w64-ucrt-x86_64-toolchain
-            mingw-w64-ucrt-x86_64-cmake
-            mingw-w64-ucrt-x86_64-nasm
-
-      - name: Add MSYS2 to PATH
-        shell: msys2 {0}
-        run: |
-          echo "C:/msys64/ucrt64/bin" >> $GITHUB_PATH
-          echo "C:/msys64/usr/bin" >> $GITHUB_PATH
-
-      - name: Verify build tools
-        shell: msys2 {0}
-        run: |
-          echo "PATH=$PATH"
-          which libtoolize
-          which autoconf
-          which automake
+      - name: Install Windows build tools
+        run: choco install libtool cmake nasm -y
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
@@ -497,10 +470,7 @@ jobs:
             windows-x64-cargo-index-
 
       - name: Build client
-        shell: msys2 {0}
-        run: |
-          export PATH="/c/Users/runneradmin/.cargo/bin:$PATH"
-          cargo build --release --package nexus-client --target x86_64-pc-windows-msvc
+        run: cargo build --release --package nexus-client --target x86_64-pc-windows-msvc
 
       - name: Get version from tag
         id: version
@@ -524,10 +494,7 @@ jobs:
           sed -i 's/^license = "MIT"$/license-file = "..\/LICENSE"/' nexus-client/Cargo.toml
 
       - name: Create MSI installer
-        shell: msys2 {0}
-        run: |
-          export PATH="/c/Users/runneradmin/.cargo/bin:$PATH"
-          cargo bundle --target x86_64-pc-windows-msvc --format wxsmsi --release -p nexus-client
+        run: cargo bundle --target x86_64-pc-windows-msvc --format wxsmsi --release -p nexus-client
 
       - name: Collect client artifact
         shell: bash
