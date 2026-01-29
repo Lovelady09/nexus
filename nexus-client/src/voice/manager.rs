@@ -22,8 +22,8 @@ use super::jitter::JitterBufferPool;
 // Constants
 // =============================================================================
 
-/// Interval for processing audio frames (20ms = 50 frames/second)
-const AUDIO_PROCESS_INTERVAL_MS: u64 = 20;
+/// Interval for processing audio frames (10ms = 100 frames/second)
+const AUDIO_PROCESS_INTERVAL_MS: u64 = 10;
 
 // =============================================================================
 // Voice Events

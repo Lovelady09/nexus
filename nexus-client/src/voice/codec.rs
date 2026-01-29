@@ -15,7 +15,7 @@ use opus::{Application, Channels, Decoder, Encoder};
 // =============================================================================
 
 /// Maximum encoded frame size in bytes
-/// At 96kbps with 20ms frames: 96000 * 0.020 / 8 = 240 bytes typical
+/// At 96kbps with 10ms frames: 96000 * 0.010 / 8 = 120 bytes typical
 /// We allow extra headroom for packet overhead
 const MAX_ENCODED_FRAME_SIZE: usize = 512;
 

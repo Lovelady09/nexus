@@ -261,7 +261,7 @@ Higher quality uses more bandwidth but sounds better.
 - **Signaling:** TCP (same connection as chat)
 - **Audio:** UDP with DTLS encryption
 - **Codec:** Opus at 48kHz mono
-- **Frame size:** 20ms (50 frames/second)
+- **Frame size:** 10ms (100 frames/second)
 
 ### Bandwidth Usage
 

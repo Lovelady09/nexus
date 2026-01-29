@@ -11,14 +11,14 @@ use std::time::Instant;
 // Constants
 // =============================================================================
 
-/// Minimum buffer size in frames (20ms per frame)
-const MIN_BUFFER_FRAMES: usize = 2; // 40ms
+/// Minimum buffer size in frames (10ms per frame)
+const MIN_BUFFER_FRAMES: usize = 4; // 40ms
 
 /// Maximum buffer size in frames
-const MAX_BUFFER_FRAMES: usize = 10; // 200ms
+const MAX_BUFFER_FRAMES: usize = 20; // 200ms
 
 /// Initial buffer size in frames
-const INITIAL_BUFFER_FRAMES: usize = 2; // 40ms
+const INITIAL_BUFFER_FRAMES: usize = 4; // 40ms
 
 /// EMA smoothing factor (0.125 = 1/8, gives ~8 packet smoothing)
 const JITTER_EMA_ALPHA: f64 = 0.125;
@@ -364,15 +364,18 @@ mod tests {
     fn test_jitter_buffer_reorder() {
         let mut buffer = JitterBuffer::new();
 
-        // Push packets out of order: 0, 2, 1, 3
+        // Push packets out of order: 0, 2, 1, 3, 4, 5
         // Out-of-order packets don't affect jitter measurement, buffer stays at minimum
+        // Need at least MIN_BUFFER_FRAMES (4) packets before pop() returns data
         buffer.push(0, 0, make_samples());
         buffer.push(2, VOICE_SAMPLES_PER_FRAME * 2, make_samples());
         buffer.push(1, VOICE_SAMPLES_PER_FRAME, make_samples());
         buffer.push(3, VOICE_SAMPLES_PER_FRAME * 3, make_samples());
+        buffer.push(4, VOICE_SAMPLES_PER_FRAME * 4, make_samples());
+        buffer.push(5, VOICE_SAMPLES_PER_FRAME * 5, make_samples());
 
-        // Buffer has 4 packets, target should still be minimum (2)
-        assert_eq!(buffer.packets.len(), 4);
+        // Buffer has 6 packets, target should still be minimum (4)
+        assert_eq!(buffer.packets.len(), 6);
         assert_eq!(buffer.target_frames(), MIN_BUFFER_FRAMES);
 
         // Should be able to pop in order (packets were reordered internally)
@@ -407,16 +410,20 @@ mod tests {
     fn test_jitter_buffer_loss_detection() {
         let mut buffer = JitterBuffer::new();
 
-        // Push packets with a gap: 0, 1, 3 (missing 2)
+        // Push packets with a gap: 0, 1, 3, 4, 5, 6 (missing 2)
+        // Need at least MIN_BUFFER_FRAMES (4) packets before pop() returns data
         buffer.push(0, 0, make_samples());
         buffer.push(1, VOICE_SAMPLES_PER_FRAME, make_samples());
         buffer.push(3, VOICE_SAMPLES_PER_FRAME * 3, make_samples());
+        buffer.push(4, VOICE_SAMPLES_PER_FRAME * 4, make_samples());
+        buffer.push(5, VOICE_SAMPLES_PER_FRAME * 5, make_samples());
+        buffer.push(6, VOICE_SAMPLES_PER_FRAME * 6, make_samples());
 
         // Pop 0 and 1
         buffer.pop();
         buffer.pop();
 
-        // Now next_sequence is 2, which is missing but we have 3
+        // Now next_sequence is 2, which is missing but we have 3+
         assert!(buffer.has_loss());
     }
 
@@ -468,7 +475,7 @@ mod tests {
 
         // Simulate high jitter by adding delays between packets
         buffer.push(0, 0, make_samples());
-        thread::sleep(Duration::from_millis(50)); // 30ms late (expected 20ms)
+        thread::sleep(Duration::from_millis(50)); // 40ms late (expected 10ms)
         buffer.push(1, VOICE_SAMPLES_PER_FRAME, make_samples());
         thread::sleep(Duration::from_millis(60)); // 40ms late
         buffer.push(2, VOICE_SAMPLES_PER_FRAME * 2, make_samples());
@@ -493,7 +500,7 @@ mod tests {
         // Simulate extreme jitter
         for i in 0..20 {
             buffer.push(i, i * VOICE_SAMPLES_PER_FRAME, make_samples());
-            thread::sleep(Duration::from_millis(100)); // Way more than 20ms
+            thread::sleep(Duration::from_millis(100)); // Way more than 10ms
         }
 
         // Should be clamped to max

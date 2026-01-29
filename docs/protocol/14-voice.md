@@ -234,8 +234,8 @@ Server → Client packets include the sender's identity:
 | Codec | Opus |
 | Sample Rate | 48000 Hz |
 | Channels | 1 (mono) |
-| Frame Size | 960 samples (20ms) |
-| Frames/Second | 50 |
+| Frame Size | 480 samples (10ms) |
+| Frames/Second | 100 |
 
 ### Quality Levels
 

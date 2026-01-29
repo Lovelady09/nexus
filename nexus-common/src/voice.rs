@@ -10,8 +10,8 @@ use uuid::Uuid;
 
 /// Maximum payload size for voice data (Opus-encoded audio)
 ///
-/// At 96 kbps (very high quality) with 20ms frames:
-/// 96000 bits/sec * 0.020 sec / 8 = 240 bytes typical
+/// At 96 kbps (very high quality) with 10ms frames:
+/// 96000 bits/sec * 0.010 sec / 8 = 120 bytes typical
 /// We allow up to 1000 bytes for flexibility and future expansion.
 pub const MAX_VOICE_PAYLOAD: usize = 1000;
 
@@ -34,10 +34,10 @@ pub const VOICE_SESSION_TIMEOUT_SECS: u64 = 60;
 /// Sample rate for voice audio (48kHz, required by Opus)
 pub const VOICE_SAMPLE_RATE: u32 = 48000;
 
-/// Frame duration in milliseconds (20ms is standard for voice)
-pub const VOICE_FRAME_DURATION_MS: u32 = 20;
+/// Frame duration in milliseconds (10ms for low latency, matches WebRTC)
+pub const VOICE_FRAME_DURATION_MS: u32 = 10;
 
-/// Number of samples per frame at 48kHz with 20ms frames
+/// Number of samples per frame at 48kHz with 10ms frames
 pub const VOICE_SAMPLES_PER_FRAME: u32 = VOICE_SAMPLE_RATE * VOICE_FRAME_DURATION_MS / 1000;
 
 /// Number of audio channels (mono)
@@ -611,7 +611,7 @@ mod tests {
     #[test]
     fn test_constants() {
         // Verify frame calculations
-        assert_eq!(VOICE_SAMPLES_PER_FRAME, 960); // 48000 * 20 / 1000
+        assert_eq!(VOICE_SAMPLES_PER_FRAME, 480); // 48000 * 10 / 1000
 
         // Verify header size (type + token + seq + ts = 1 + 16 + 4 + 4)
         assert_eq!(VOICE_HEADER_SIZE, 25);
