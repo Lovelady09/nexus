@@ -212,13 +212,14 @@ pub fn current_timestamp() -> i64 {
 pub async fn remove_user_with_voice_cleanup(
     user_manager: &UserManager,
     voice_registry: &VoiceRegistry,
+    channel_manager: &ChannelManager,
     session_id: u32,
     user: &UserSession,
 ) -> Option<UserSession> {
     // Remove from voice session and notify remaining participants
     if let Some(info) = voice_registry.remove_by_session_id(session_id).await {
         // Notify the leaving user and broadcast to remaining participants
-        send_voice_leave_notifications(&info, Some(&user.tx), user_manager).await;
+        send_voice_leave_notifications(&info, Some(&user.tx), user_manager, channel_manager).await;
     }
 
     // Now remove from UserManager and broadcast UserDisconnected
@@ -234,6 +235,7 @@ pub async fn remove_user_with_voice_cleanup(
 pub async fn cleanup_voice_for_ip<S>(
     user_manager: &UserManager,
     voice_registry: &VoiceRegistry,
+    channel_manager: &ChannelManager,
     ip: &str,
     skip_ip: S,
 ) where
@@ -256,7 +258,7 @@ pub async fn cleanup_voice_for_ip<S>(
 
     // Clean up voice for each session
     for user in sessions {
-        cleanup_voice_for_session(user_manager, voice_registry, &user).await;
+        cleanup_voice_for_session(user_manager, voice_registry, channel_manager, &user).await;
     }
 }
 
@@ -269,6 +271,7 @@ pub async fn cleanup_voice_for_ip<S>(
 pub async fn cleanup_voice_for_range<S>(
     user_manager: &UserManager,
     voice_registry: &VoiceRegistry,
+    channel_manager: &ChannelManager,
     range: &IpNet,
     skip_ip: S,
 ) where
@@ -287,7 +290,7 @@ pub async fn cleanup_voice_for_range<S>(
 
     // Clean up voice for each session
     for user in sessions {
-        cleanup_voice_for_session(user_manager, voice_registry, &user).await;
+        cleanup_voice_for_session(user_manager, voice_registry, channel_manager, &user).await;
     }
 }
 
@@ -295,10 +298,11 @@ pub async fn cleanup_voice_for_range<S>(
 async fn cleanup_voice_for_session(
     user_manager: &UserManager,
     voice_registry: &VoiceRegistry,
+    channel_manager: &ChannelManager,
     user: &UserSession,
 ) {
     if let Some(info) = voice_registry.remove_by_session_id(user.session_id).await {
         // Notify the leaving user and broadcast to remaining participants
-        send_voice_leave_notifications(&info, Some(&user.tx), user_manager).await;
+        send_voice_leave_notifications(&info, Some(&user.tx), user_manager, channel_manager).await;
     }
 }

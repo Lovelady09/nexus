@@ -534,7 +534,7 @@ const CHAT_LEAVE_RESPONSE_SIZE: usize = json_type_base("ChatLeaveResponse")
     + json_string_field("channel", MAX_CHANNEL_LENGTH)
     + json_string_field("error", MAX_ERROR_LENGTH);
 
-/// ChatJoinResponse: {"type":"ChatJoinResponse","success":false,"error":"...2048...","channel":"...32...","topic":"...256...","topic_set_by":"...32...","secret":false,"members":["...32..."]}
+/// ChatJoinResponse: {"type":"ChatJoinResponse","success":false,"error":"...2048...","channel":"...32...","topic":"...256...","topic_set_by":"...32...","secret":false,"members":["...32..."],"voiced":["...32..."]}
 const CHAT_JOIN_RESPONSE_SIZE: usize = json_type_base("ChatJoinResponse")
     + json_bool_field("success")
     + json_string_field("error", MAX_ERROR_LENGTH)
@@ -542,7 +542,8 @@ const CHAT_JOIN_RESPONSE_SIZE: usize = json_type_base("ChatJoinResponse")
     + json_string_field("topic", MAX_CHAT_TOPIC_LENGTH)
     + json_string_field("topic_set_by", MAX_NICKNAME_LENGTH)
     + json_bool_field("secret")
-    + json_string_array_field("members", MAX_CHANNEL_MEMBERS, MAX_NICKNAME_LENGTH);
+    + json_string_array_field("members", MAX_CHANNEL_MEMBERS, MAX_NICKNAME_LENGTH)
+    + json_string_array_field("voiced", MAX_CHANNEL_MEMBERS, MAX_NICKNAME_LENGTH);
 
 // -----------------------------------------------------------------------------
 // Server messages - Simple responses (success + error pattern)
@@ -921,6 +922,7 @@ const CHANNEL_JOIN_INFO_SIZE: usize = json_first_string_field("channel", MAX_CHA
     + json_string_field("topic_set_by", MAX_NICKNAME_LENGTH)
     + json_bool_field("secret")
     + json_string_array_field("members", MAX_CHANNEL_MEMBERS, MAX_NICKNAME_LENGTH)
+    + json_string_array_field("voiced", MAX_CHANNEL_MEMBERS, MAX_NICKNAME_LENGTH)
     + 2; // {} braces
 
 /// LoginResponse: {"type":"LoginResponse","success":false,"error":"...2048...","session_id":u32,"is_admin":false,"permissions":["...32...",...],"server_info":{...},"locale":"...10...","channels":[{...},...]}
@@ -2215,6 +2217,7 @@ mod tests {
             topic_set_by: Some(str_of_len(MAX_NICKNAME_LENGTH)),
             secret: Some(false),
             members: Some(vec![str_of_len(MAX_NICKNAME_LENGTH); 50]),
+            voiced: Some(vec![str_of_len(MAX_NICKNAME_LENGTH); 50]),
         };
         let size = json_size(&msg);
         let limit = max_payload_for_type("ChatJoinResponse") as usize;
@@ -2234,6 +2237,7 @@ mod tests {
             topic_set_by: None,
             secret: None,
             members: None,
+            voiced: None,
         };
         let error_size = json_size(&error_msg);
         assert!(
@@ -2253,8 +2257,10 @@ mod tests {
             topic: Some(str_of_len(MAX_CHAT_TOPIC_LENGTH)),
             topic_set_by: Some(str_of_len(MAX_NICKNAME_LENGTH)),
             secret: Some(false),
-            // Members array - estimate ~100 members at max nickname length
-            members: Some(vec![str_of_len(MAX_NICKNAME_LENGTH); 100]),
+            // Members array - MAX_CHANNEL_MEMBERS at max nickname length
+            members: Some(vec![str_of_len(MAX_NICKNAME_LENGTH); MAX_CHANNEL_MEMBERS]),
+            // Voiced array - same size as members for worst case
+            voiced: Some(vec![str_of_len(MAX_NICKNAME_LENGTH); MAX_CHANNEL_MEMBERS]),
         };
         let size = json_size(&msg);
         let limit = max_payload_for_type("ChatJoinResponse") as usize;
@@ -2421,6 +2427,7 @@ mod tests {
             topic_set_by: Some(str_of_len(MAX_NICKNAME_LENGTH)),
             secret: false,
             members: (0..50).map(|_| str_of_len(MAX_NICKNAME_LENGTH)).collect(),
+            voiced: Some((0..50).map(|_| str_of_len(MAX_NICKNAME_LENGTH)).collect()),
         };
         let channels: Vec<ChannelJoinInfo> = (0..10).map(|_| channel_info.clone()).collect();
 

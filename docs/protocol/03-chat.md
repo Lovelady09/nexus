@@ -130,6 +130,7 @@ Response to join request with full channel data on success.
 | `topic_set_by` | string | If success | Who set the topic (null if none) |
 | `secret` | boolean | If success | Whether channel is secret |
 | `members` | array | If success | List of member nicknames |
+| `voiced` | array | If success | Nicknames in voice chat (only if requester has `voice_listen`) |
 
 **Success example:**
 
@@ -140,9 +141,12 @@ Response to join request with full channel data on success.
   "topic": "Welcome to the general channel!",
   "topic_set_by": "admin",
   "secret": false,
-  "members": ["alice", "bob", "charlie"]
+  "members": ["alice", "bob", "charlie"],
+  "voiced": ["alice", "bob"]
 }
 ```
+
+The `voiced` field is only included if the joining user has the `voice_listen` permission. It contains nicknames of users currently in voice chat for this channel, allowing clients to show voice indicators immediately. See [Voice Chat Protocol](14-voice.md) for details.
 
 **Error example (already member):**
 
@@ -540,11 +544,14 @@ Auto-joined channels are provided in the `LoginResponse`:
       "topic": "Welcome!",
       "topic_set_by": "admin",
       "secret": false,
-      "members": ["alice", "bob"]
+      "members": ["alice", "bob"],
+      "voiced": ["alice"]
     }
   ]
 }
 ```
+
+The `voiced` field contains nicknames currently in voice chat for the channel. It is only included if the user has the `voice_listen` permission. See [Voice Chat Protocol](14-voice.md) for details.
 
 If no auto-join channels are configured, `channels` is `null`.
 

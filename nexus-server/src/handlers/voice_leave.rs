@@ -51,7 +51,7 @@ where
     };
 
     // Broadcast VoiceUserLeft to remaining participants (not to self - this is explicit leave)
-    send_voice_leave_notifications(&info, None, ctx.user_manager).await;
+    send_voice_leave_notifications(&info, None, ctx.user_manager, ctx.channel_manager).await;
 
     // Send success response
     let response = ServerMessage::VoiceLeaveResponse {

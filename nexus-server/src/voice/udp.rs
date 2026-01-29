@@ -40,6 +40,7 @@ use nexus_common::voice::{
 /// Interval between stale client cleanup checks (seconds)
 const STALE_CLIENT_CHECK_INTERVAL_SECS: u64 = 30;
 
+use crate::channels::ChannelManager;
 use crate::db::Permission;
 use crate::ip_rule_cache::IpRuleCache;
 use crate::users::UserManager;
@@ -68,6 +69,8 @@ pub struct VoiceUdpServer {
     ip_rule_cache: Arc<StdRwLock<IpRuleCache>>,
     /// User manager for permission checks
     user_manager: UserManager,
+    /// Channel manager for voice leave broadcasts
+    channel_manager: ChannelManager,
     /// Debug mode flag
     debug: bool,
 }
@@ -87,6 +90,7 @@ impl VoiceUdpServer {
         registry: VoiceRegistry,
         ip_rule_cache: Arc<StdRwLock<IpRuleCache>>,
         user_manager: UserManager,
+        channel_manager: ChannelManager,
         debug: bool,
     ) -> Self {
         Self {
@@ -95,6 +99,7 @@ impl VoiceUdpServer {
             clients: Arc::new(RwLock::new(HashMap::new())),
             ip_rule_cache,
             user_manager,
+            channel_manager,
             debug,
         }
     }
@@ -422,6 +427,7 @@ impl VoiceUdpServer {
                         &info,
                         leaving_user_tx.as_ref(),
                         &self.user_manager,
+                        &self.channel_manager,
                     )
                     .await;
 

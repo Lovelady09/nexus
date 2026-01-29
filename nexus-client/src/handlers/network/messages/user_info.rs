@@ -449,7 +449,18 @@ impl NexusApp {
             // For shared accounts, nickname is session-specific and won't match
             // previous_username, so this correctly does nothing since nickname didn't change.)
             if conn.expanded_user.as_ref() == Some(&previous_username) {
-                conn.expanded_user = Some(new_username);
+                conn.expanded_user = Some(new_username.clone());
+            }
+
+            // Update channel_voiced if the old nickname was in any channel's voiced set
+            // (For regular accounts, nickname == username, so this renames correctly.
+            // For shared accounts, nickname doesn't change with username, so this is a no-op.)
+            let old_lower = previous_username.to_lowercase();
+            let new_lower = new_username.to_lowercase();
+            for voiced_set in conn.channel_voiced.values_mut() {
+                if voiced_set.remove(&old_lower) {
+                    voiced_set.insert(new_lower.clone());
+                }
             }
         }
 

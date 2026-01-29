@@ -571,6 +571,7 @@ where
                                         &info,
                                         leaving_user_tx.as_ref(),
                                         ctx.user_manager,
+                                        ctx.channel_manager,
                                     )
                                     .await;
                                 }
@@ -619,6 +620,7 @@ where
                             remove_user_with_voice_cleanup(
                                 ctx.user_manager,
                                 ctx.voice_registry,
+                                ctx.channel_manager,
                                 session_id,
                                 &user,
                             )
@@ -632,11 +634,23 @@ where
                     old_username.to_lowercase() != updated_account.username.to_lowercase();
                 let admin_status_changed = old_is_admin != updated_account.is_admin;
 
-                // If username changed, update UserManager
+                // If username changed, update UserManager and VoiceRegistry
+                // (for regular accounts, nickname == username)
                 if username_changed {
                     ctx.user_manager
                         .update_username(updated_account.id, updated_account.username.clone())
                         .await;
+
+                    // Update nickname in voice registry for all sessions of this user
+                    let session_ids = ctx
+                        .user_manager
+                        .get_session_ids_for_user(&updated_account.username)
+                        .await;
+                    for session_id in session_ids {
+                        ctx.voice_registry
+                            .update_nickname(session_id, updated_account.username.clone())
+                            .await;
+                    }
                 }
 
                 // If admin status changed, update UserManager

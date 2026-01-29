@@ -156,37 +156,52 @@ where
     participants.push(user.nickname.clone());
     participants.sort_by_key(|a| a.to_lowercase());
 
-    // Broadcast VoiceUserJoined to existing participants only if this is the first
-    // session of this nickname joining (prevents duplicate announcements)
+    // Broadcast VoiceUserJoined only if this is the first session of this nickname joining
+    // (prevents duplicate announcements for multi-session users)
     if !nickname_already_in_voice {
-        // For broadcasts, we need to send the appropriate target to each participant
-        // For channels: everyone gets the channel name
-        // For user messages: each participant gets the OTHER user's nickname
-        for participant_nickname in &participants {
-            // Skip self - we already know we joined
-            if participant_nickname.to_lowercase() == user.nickname.to_lowercase() {
-                continue;
+        if is_channel {
+            // For channels: broadcast to ALL channel members with voice_listen permission
+            // (not just voice participants) so everyone can see who's in voice
+            let channel_name = client_target.clone();
+            let members = ctx.channel_manager.get_members(&channel_name).await.unwrap_or_default();
+
+            for member_session_id in members {
+                // Skip self
+                if member_session_id == session_id {
+                    continue;
+                }
+
+                // Check if member has voice_listen permission
+                if let Some(member) = ctx.user_manager.get_user_by_session_id(member_session_id).await
+                    && member.has_permission(Permission::VoiceListen)
+                {
+                    let join_notification = ServerMessage::VoiceUserJoined {
+                        nickname: user.nickname.clone(),
+                        target: channel_name.clone(),
+                    };
+                    let _ = member.tx.send((join_notification, None));
+                }
             }
+        } else {
+            // For user messages: only notify the other participant
+            for participant_nickname in &participants {
+                // Skip self
+                if participant_nickname.to_lowercase() == user.nickname.to_lowercase() {
+                    continue;
+                }
 
-            // Determine what target string to send to this participant
-            let broadcast_target = if is_channel {
-                client_target.clone()
-            } else {
-                // Send the joiner's nickname to the other participant
-                user.nickname.clone()
-            };
+                let join_notification = ServerMessage::VoiceUserJoined {
+                    nickname: user.nickname.clone(),
+                    target: user.nickname.clone(), // Send joiner's nickname to other participant
+                };
 
-            let join_notification = ServerMessage::VoiceUserJoined {
-                nickname: user.nickname.clone(),
-                target: broadcast_target,
-            };
-
-            if let Some(participant_user) = ctx
-                .user_manager
-                .get_session_by_nickname(participant_nickname)
-                .await
-            {
-                let _ = participant_user.tx.send((join_notification, None));
+                if let Some(participant_user) = ctx
+                    .user_manager
+                    .get_session_by_nickname(participant_nickname)
+                    .await
+                {
+                    let _ = participant_user.tx.send((join_notification, None));
+                }
             }
         }
     }

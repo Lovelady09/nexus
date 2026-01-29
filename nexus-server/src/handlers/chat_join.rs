@@ -31,6 +31,7 @@ fn error_response(error_msg: String) -> ServerMessage {
         topic_set_by: None,
         secret: None,
         members: None,
+        voiced: None,
     }
 }
 
@@ -158,6 +159,18 @@ where
         }
     }
 
+    // Get voiced nicknames if user has voice_listen permission
+    let voiced = if user.has_permission(Permission::VoiceListen) {
+        let participants = ctx.voice_registry.get_participants(&channel).await;
+        if participants.is_empty() {
+            None
+        } else {
+            Some(participants)
+        }
+    } else {
+        None
+    };
+
     // Send success response with full channel data
     let response = ServerMessage::ChatJoinResponse {
         success: true,
@@ -167,6 +180,7 @@ where
         topic_set_by: result.topic_set_by,
         secret: Some(result.secret),
         members: Some(member_nicknames),
+        voiced,
     };
     ctx.send_message(&response).await
 }

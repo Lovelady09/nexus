@@ -338,6 +338,8 @@ where
         authenticated_account.is_admin || cached_permissions.contains(&Permission::ChatJoin);
     let has_chat_create_permission =
         authenticated_account.is_admin || cached_permissions.contains(&Permission::ChatCreate);
+    let has_voice_listen_permission =
+        authenticated_account.is_admin || cached_permissions.contains(&Permission::VoiceListen);
     let can_auto_join = has_chat_feature && has_chat_join_permission;
 
     // For regular accounts with existing sessions, inherit is_away/status from the latest session
@@ -465,12 +467,25 @@ where
             }
         }
 
+        // Get voiced nicknames if user has voice_listen permission
+        let voiced = if has_voice_listen_permission {
+            let participants = ctx.voice_registry.get_participants(&channel_name).await;
+            if participants.is_empty() {
+                None
+            } else {
+                Some(participants)
+            }
+        } else {
+            None
+        };
+
         joined_channels.push(ChannelJoinInfo {
             channel: channel_name,
             topic: result.topic,
             topic_set_by: result.topic_set_by,
             secret: result.secret,
             members: member_nicknames,
+            voiced,
         });
     }
 

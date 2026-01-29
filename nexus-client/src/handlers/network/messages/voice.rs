@@ -174,6 +174,7 @@ impl NexusApp {
     /// Handle VoiceUserJoined - notification when another user joins voice
     ///
     /// Adds the user to our local participants list if we're in the same voice session.
+    /// Also tracks voice users per channel for UI indicators (even when not in voice).
     /// Shows notification in the target tab (channel or user message) if join/leave events are enabled.
     pub fn handle_voice_user_joined(
         &mut self,
@@ -185,25 +186,34 @@ impl NexusApp {
             return Task::none();
         };
 
-        // Only update if we're in the same voice session
+        // Track voiced nicknames per channel (even when we're not in voice)
+        // Use lowercase for consistency with ChatJoinResponse population
+        if target.starts_with('#') {
+            conn.channel_voiced
+                .entry(target.to_lowercase())
+                .or_default()
+                .insert(nickname.to_lowercase());
+        }
+
+        // Update voice session participants if we're in the same session
         if let Some(ref mut session) = conn.voice_session
             && session.target.to_lowercase() == target.to_lowercase()
         {
             session.add_participant(nickname.clone());
+        }
 
-            // Show notification in target tab if events are enabled
-            if self.config.settings.show_join_leave_events {
-                let message = ChatMessage::system(t_args(
-                    "msg-voice-user-joined",
-                    &[("nickname", &nickname)],
-                ));
+        // Show notification in target tab if events are enabled
+        if self.config.settings.show_join_leave_events {
+            let message = ChatMessage::system(t_args(
+                "msg-voice-user-joined",
+                &[("nickname", &nickname)],
+            ));
 
-                // Route to channel or user message tab based on target
-                if target.starts_with('#') {
-                    return self.add_channel_message(connection_id, &target, message);
-                } else {
-                    return self.add_user_message(connection_id, &target, message);
-                }
+            // Route to channel or user message tab based on target
+            if target.starts_with('#') {
+                return self.add_channel_message(connection_id, &target, message);
+            } else {
+                return self.add_user_message(connection_id, &target, message);
             }
         }
 
@@ -214,6 +224,7 @@ impl NexusApp {
     ///
     /// If the leaving user is us (kicked due to permission revocation), clears our voice session.
     /// Otherwise, removes the user from our local participants list.
+    /// Also updates per-channel voice tracking for UI indicators.
     /// Shows notification in the target tab (channel or user message) if join/leave events are enabled.
     pub fn handle_voice_user_left(
         &mut self,
@@ -232,6 +243,14 @@ impl NexusApp {
             // We left voice - clean up fully
             self.cleanup_voice_session(connection_id);
 
+            // Also remove ourselves from channel voice tracking
+            if let Some(conn) = self.connections.get_mut(&connection_id)
+                && target.starts_with('#')
+                && let Some(voiced) = conn.channel_voiced.get_mut(&target.to_lowercase())
+            {
+                voiced.remove(&nickname.to_lowercase());
+            }
+
             // Show notification in target tab
             let message = ChatMessage::system(t("msg-voice-you-left"));
 
@@ -246,23 +265,30 @@ impl NexusApp {
             return Task::none();
         };
 
-        // Another user left - update if we're in the same voice session
+        // Remove from per-channel voiced tracking (use lowercase for consistency)
+        if target.starts_with('#')
+            && let Some(voiced) = conn.channel_voiced.get_mut(&target.to_lowercase())
+        {
+            voiced.remove(&nickname.to_lowercase());
+        }
+
+        // Update voice session participants if we're in the same session
         if let Some(ref mut session) = conn.voice_session
             && session.target.to_lowercase() == target.to_lowercase()
         {
             session.remove_participant(&nickname);
+        }
 
-            // Show notification in target tab if events are enabled
-            if self.config.settings.show_join_leave_events {
-                let message =
-                    ChatMessage::system(t_args("msg-voice-user-left", &[("nickname", &nickname)]));
+        // Show notification in target tab if events are enabled
+        if self.config.settings.show_join_leave_events {
+            let message =
+                ChatMessage::system(t_args("msg-voice-user-left", &[("nickname", &nickname)]));
 
-                // Route to channel or user message tab based on target
-                if target.starts_with('#') {
-                    return self.add_channel_message(connection_id, &target, message);
-                } else {
-                    return self.add_user_message(connection_id, &target, message);
-                }
+            // Route to channel or user message tab based on target
+            if target.starts_with('#') {
+                return self.add_channel_message(connection_id, &target, message);
+            } else {
+                return self.add_user_message(connection_id, &target, message);
             }
         }
 

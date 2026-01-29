@@ -276,7 +276,7 @@ where
     // Note: Trusted IPs are skipped - they won't be disconnected.
     if is_cidr {
         if let Some(net) = parse_ip_or_cidr(&banned_targets[0]) {
-            cleanup_voice_for_range(ctx.user_manager, ctx.voice_registry, &net, |ip| {
+            cleanup_voice_for_range(ctx.user_manager, ctx.voice_registry, ctx.channel_manager, &net, |ip| {
                 ctx.ip_rule_cache
                     .read()
                     .expect("ip rule cache lock poisoned")
@@ -286,7 +286,7 @@ where
         }
     } else {
         for ip in &banned_targets {
-            cleanup_voice_for_ip(ctx.user_manager, ctx.voice_registry, ip, |ip| {
+            cleanup_voice_for_ip(ctx.user_manager, ctx.voice_registry, ctx.channel_manager, ip, |ip| {
                 ctx.ip_rule_cache
                     .read()
                     .expect("ip rule cache lock poisoned")

@@ -249,7 +249,7 @@ where
             // Remove from voice session and notify remaining participants
             if let Some(info) = voice_registry.remove_by_session_id(id).await {
                 // Note: we don't notify the leaving user here since they're disconnecting
-                send_voice_leave_notifications(&info, None, &user_manager).await;
+                send_voice_leave_notifications(&info, None, &user_manager, &channel_manager).await;
             }
         }
 

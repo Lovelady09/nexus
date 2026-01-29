@@ -271,6 +271,23 @@ impl VoiceRegistry {
         }
     }
 
+    /// Update the nickname for all sessions belonging to a given session_id.
+    ///
+    /// Called when a user's username changes (for regular accounts, nickname == username).
+    /// Returns true if a session was updated.
+    pub async fn update_nickname(&self, session_id: u32, new_nickname: String) -> bool {
+        let mut sessions = self.sessions.write().await;
+        let id_to_token = self.session_id_to_token.read().await;
+
+        if let Some(token) = id_to_token.get(&session_id)
+            && let Some(session) = sessions.get_mut(token)
+        {
+            session.nickname = new_nickname;
+            return true;
+        }
+        false
+    }
+
     /// Find sessions that never established a UDP connection and are older than the timeout.
     ///
     /// Returns tokens of stale sessions that should be cleaned up.
@@ -660,5 +677,38 @@ mod tests {
                 .is_nickname_in_target("#general", "alice", None)
                 .await
         );
+    }
+
+    #[tokio::test]
+    async fn test_update_nickname() {
+        let registry = VoiceRegistry::new();
+
+        // Add a session for alice
+        registry
+            .add(create_test_session("alice", "#general", 1))
+            .await;
+
+        // Verify alice is in participants
+        let participants = registry.get_participants("#general").await;
+        assert!(participants.contains(&"alice".to_string()));
+        assert!(!participants.contains(&"alicia".to_string()));
+
+        // Update nickname (simulating username change)
+        let updated = registry.update_nickname(1, "alicia".to_string()).await;
+        assert!(updated);
+
+        // Verify alicia is now in participants, not alice
+        let participants = registry.get_participants("#general").await;
+        assert!(!participants.contains(&"alice".to_string()));
+        assert!(participants.contains(&"alicia".to_string()));
+    }
+
+    #[tokio::test]
+    async fn test_update_nickname_not_in_voice() {
+        let registry = VoiceRegistry::new();
+
+        // Try to update nickname for a session that's not in voice
+        let updated = registry.update_nickname(999, "bob".to_string()).await;
+        assert!(!updated);
     }
 }

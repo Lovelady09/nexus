@@ -156,6 +156,7 @@ where
         remove_user_with_voice_cleanup(
             ctx.user_manager,
             ctx.voice_registry,
+            ctx.channel_manager,
             target_session_id,
             &user,
         )

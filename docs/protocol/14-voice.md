@@ -100,7 +100,9 @@ Server broadcasts when a user joins a voice session.
 | `nickname` | `string` | User who joined |
 | `target` | `string` | Voice session target |
 
-Sent to all participants in the voice session.
+**For channels:** Sent to all channel members with `voice_listen` permission (not just voice participants). This allows users to see voice indicators even when not in voice themselves.
+
+**For user messages:** Sent only to the other participant in the conversation.
 
 ### VoiceUserLeft
 
@@ -118,11 +120,45 @@ Server broadcasts when a user leaves a voice session.
 | `nickname` | `string` | User who left |
 | `target` | `string` | Voice session target |
 
-Sent to remaining participants when a user leaves voice. The leaving user also receives this message so their client can clean up voice state. This happens when:
+**For channels:** Sent to all channel members with `voice_listen` permission (not just voice participants).
+
+**For user messages:** Sent only to the other participant in the conversation.
+
+The leaving user also receives this message so their client can clean up voice state. This happens when:
 
 - User explicitly leaves voice (`VoiceLeave`)
 - User leaves the channel they were in voice for (`ChatLeave`)
 - User's `voice_listen` permission is revoked
+
+## Voice State in Chat Messages
+
+When joining a channel (via `ChatJoin` or auto-join on login), the server includes voice participant information if the user has `voice_listen` permission:
+
+**ChatJoinResponse:**
+```json
+{
+  "success": true,
+  "channel": "#general",
+  "members": ["alice", "bob", "charlie"],
+  "voiced": ["alice", "bob"]
+}
+```
+
+**ChannelJoinInfo (in LoginResponse):**
+```json
+{
+  "channel": "#general",
+  "members": ["alice", "bob", "charlie"],
+  "voiced": ["alice"]
+}
+```
+
+The `voiced` field contains nicknames of users currently in voice for that channel. It is:
+- Only included on success
+- Only populated if the requester has `voice_listen` permission
+- `null` or omitted if no one is in voice
+
+This allows clients to show voice indicators immediately upon joining a channel, without waiting for `VoiceUserJoined` broadcasts.
 
 ## User Message Voice
 

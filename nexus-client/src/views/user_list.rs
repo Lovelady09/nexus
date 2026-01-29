@@ -46,6 +46,15 @@ fn icon_container(icon: iced::widget::Text<'_>) -> iced::widget::Container<'_, M
         .align_y(iced::alignment::Vertical::Center)
 }
 
+/// Container for mute/volume icons that aligns left to prevent icon shifting
+fn mute_icon_container(icon: iced::widget::Text<'_>) -> iced::widget::Container<'_, Message> {
+    container(icon.size(SIDEBAR_ACTION_ICON_SIZE))
+        .width(SIDEBAR_ACTION_ICON_SIZE)
+        .height(SIDEBAR_ACTION_ICON_SIZE)
+        .align_x(iced::alignment::Horizontal::Left)
+        .align_y(iced::alignment::Vertical::Center)
+}
+
 /// Create an enabled icon button with hover effect
 fn enabled_icon_button<'a>(
     icon: iced::widget::Container<'a, Message>,
@@ -243,8 +252,8 @@ fn create_user_toolbar<'a>(
     if !is_self && is_in_voice_with_us && has_voice_listen {
         let nickname_for_mute = nickname_owned.clone();
         if is_muted {
-            // User is muted - show unmute button
-            let unmute_icon = icon_container(icon::volume_off());
+            // User is muted - show unmute button (left-aligned to prevent cone shift)
+            let unmute_icon = mute_icon_container(icon::volume_off());
             let unmute_button = enabled_icon_button(
                 unmute_icon,
                 Message::VoiceUserUnmute(nickname_for_mute),
@@ -253,8 +262,8 @@ fn create_user_toolbar<'a>(
             );
             toolbar_row = toolbar_row.push(with_tooltip(unmute_button, t("tooltip-unmute")));
         } else {
-            // User is not muted - show mute button (volume_up icon indicates they can be heard)
-            let mute_icon = icon_container(icon::volume_up());
+            // User is not muted - show mute button (left-aligned to prevent cone shift)
+            let mute_icon = mute_icon_container(icon::volume_up());
             let mute_button = enabled_icon_button(
                 mute_icon,
                 Message::VoiceUserMute(nickname_for_mute),
@@ -373,13 +382,25 @@ pub fn user_list_panel<'a>(conn: &'a ServerConnection, theme: &Theme) -> Element
                 shaped_text(nickname).size(USER_LIST_TEXT_SIZE)
             };
 
-            // Check if user is in voice (only relevant if we have a voice session)
-            let is_in_voice = conn.voice_session.as_ref().is_some_and(|s| {
-                let nickname_lower = nickname.to_lowercase();
-                s.participants
+            // Check if user is in voice
+            // - If we're in voice: check our participants list (includes speaking status)
+            // - If viewing a channel: check channel_voiced (tracked for all users with voice_listen)
+            let nickname_lower = nickname.to_lowercase();
+            let is_in_voice = if let Some(ref session) = conn.voice_session {
+                // We're in voice - check our session participants
+                session
+                    .participants
                     .iter()
                     .any(|p| p.to_lowercase() == nickname_lower)
-            });
+            } else if let ChatTab::Channel(channel_name) = &conn.active_chat_tab {
+                // Not in voice, but viewing a channel - check channel_voiced
+                conn.channel_voiced
+                    .get(&channel_name.to_lowercase())
+                    .map(|users| users.contains(&nickname_lower))
+                    .unwrap_or(false)
+            } else {
+                false
+            };
 
             let is_speaking = conn
                 .voice_session

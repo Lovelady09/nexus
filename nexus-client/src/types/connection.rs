@@ -265,6 +265,9 @@ pub struct ServerConnection {
     pub disconnect_dialog: Option<DisconnectDialogState>,
     /// Active voice session (None if not in voice)
     pub voice_session: Option<VoiceState>,
+    /// Nicknames currently in voice per channel (lowercase channel name -> set of nicknames)
+    /// Tracked even when we're not in voice, so we can show voice indicators in user list
+    pub channel_voiced: HashMap<String, HashSet<String>>,
 }
 
 impl ServerConnection {
@@ -381,6 +384,7 @@ impl ServerConnection {
             pending_kick_message: None,
             disconnect_dialog: None,
             voice_session: None,
+            channel_voiced: HashMap::new(),
         }
     }
 }

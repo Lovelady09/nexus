@@ -28,6 +28,8 @@ pub struct ChatJoinResponseData {
     pub topic_set_by: Option<String>,
     pub secret: Option<bool>,
     pub members: Option<Vec<String>>,
+    /// Nicknames currently in voice chat (only if we have voice_listen permission)
+    pub voiced: Option<Vec<String>>,
 }
 
 impl NexusApp {
@@ -74,6 +76,12 @@ impl NexusApp {
             let channel_lower = channel_name.to_lowercase();
             conn.channels.insert(channel_lower.clone(), channel_state);
             conn.channel_tabs.push(channel_name.clone());
+
+            // Populate voiced nicknames if provided
+            if let Some(voiced) = data.voiced {
+                let voiced_set = voiced.into_iter().map(|n| n.to_lowercase()).collect();
+                conn.channel_voiced.insert(channel_lower.clone(), voiced_set);
+            }
 
             // Add to known_channels for tab completion (sorted, deduplicated)
             if !conn
@@ -379,6 +387,7 @@ impl NexusApp {
 
         // Remove channel data
         conn.channels.remove(&channel_lower);
+        conn.channel_voiced.remove(&channel_lower);
 
         // Remove from tabs list and unread set
         if let Some(idx) = tab_index {

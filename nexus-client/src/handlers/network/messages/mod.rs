@@ -112,6 +112,7 @@ impl NexusApp {
                 topic_set_by,
                 secret,
                 members,
+                voiced,
             } => self.handle_chat_join_response(
                 connection_id,
                 ChatJoinResponseData {
@@ -122,6 +123,7 @@ impl NexusApp {
                     topic_set_by,
                     secret,
                     members,
+                    voiced,
                 },
             ),
 

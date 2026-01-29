@@ -466,6 +466,9 @@ pub enum ServerMessage {
         /// Nicknames of current channel members (only on success)
         #[serde(skip_serializing_if = "Option::is_none")]
         members: Option<Vec<String>>,
+        /// Nicknames currently in voice chat (only on success, only if requester has voice_listen)
+        #[serde(skip_serializing_if = "Option::is_none")]
+        voiced: Option<Vec<String>>,
     },
     /// Response to ChatLeave request
     ChatLeaveResponse {
@@ -997,6 +1000,9 @@ pub struct ChannelJoinInfo {
     pub topic_set_by: Option<String>,
     pub secret: bool,
     pub members: Vec<String>,
+    /// Nicknames currently in voice chat (only if requester has voice_listen permission)
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub voiced: Option<Vec<String>>,
 }
 
 /// Channel info for channel lists

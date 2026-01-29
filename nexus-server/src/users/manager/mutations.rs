@@ -148,12 +148,19 @@ impl UserManager {
 
     /// Update username for a user by database user ID
     /// Returns the number of sessions updated
+    ///
+    /// For regular accounts, also updates nickname (since nickname == username).
+    /// For shared accounts, nickname is independent and unchanged.
     pub async fn update_username(&self, db_user_id: i64, new_username: String) -> usize {
         let mut users = self.users.write().await;
         let mut count = 0;
 
         for user in users.values_mut() {
             if user.db_user_id == db_user_id {
+                // For regular accounts, nickname == username, so update both
+                if !user.is_shared {
+                    user.nickname = new_username.clone();
+                }
                 user.username = new_username.clone();
                 count += 1;
             }

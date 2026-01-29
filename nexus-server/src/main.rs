@@ -203,6 +203,9 @@ async fn main() {
     // Create voice registry for tracking active voice sessions (ephemeral, in-memory only)
     let voice_registry = VoiceRegistry::new();
 
+    // Create channel manager for multi-channel chat (needed by voice server for broadcasts)
+    let channel_manager = ChannelManager::new(database.channels.clone(), user_manager.clone());
+
     // Create voice UDP server if listener was created successfully
     let voice_server = voice_listener.map(|listener| {
         Arc::new(VoiceUdpServer::new(
@@ -210,12 +213,10 @@ async fn main() {
             voice_registry.clone(),
             ip_rule_cache.clone(),
             user_manager.clone(),
+            channel_manager.clone(),
             args.debug,
         ))
     });
-
-    // Create channel manager for multi-channel chat
-    let channel_manager = ChannelManager::new(database.channels.clone(), user_manager.clone());
 
     // Initialize persistent channels from config and database
     let persistent_channels_config = database.config.get_persistent_channels().await;
