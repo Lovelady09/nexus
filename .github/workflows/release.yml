@@ -464,6 +464,11 @@ jobs:
             mingw-w64-ucrt-x86_64-cmake
             mingw-w64-ucrt-x86_64-nasm
 
+      - name: Add MSYS2 to GITHUB_ENV
+        shell: pwsh
+        run: |
+          echo "PATH=C:\msys64\ucrt64\bin;C:\msys64\usr\bin;$env:PATH" >> $env:GITHUB_ENV
+
 
 
       - name: Install Rust
@@ -488,7 +493,6 @@ jobs:
       - name: Build client
         shell: msys2 {0}
         run: |
-          export PATH="/c/Users/runneradmin/.cargo/bin:/c/msys64/ucrt64/bin:/c/msys64/usr/bin:$PATH"
           which libtoolize
           cargo build --release --package nexus-client --target x86_64-pc-windows-msvc
 
@@ -516,7 +520,6 @@ jobs:
       - name: Create MSI installer
         shell: msys2 {0}
         run: |
-          export PATH="/c/Users/runneradmin/.cargo/bin:/c/msys64/ucrt64/bin:/c/msys64/usr/bin:$PATH"
           which libtoolize
           cargo bundle --target x86_64-pc-windows-msvc --format wxsmsi --release -p nexus-client
 
