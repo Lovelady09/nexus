@@ -114,10 +114,9 @@ jobs:
 
       - name: Run tests (Windows)
         if: runner.os == 'Windows'
-        shell: cmd
-        run: |
-          set PATH=C:\msys64\ucrt64\bin;C:\msys64\usr\bin;%PATH%
-          cargo test --workspace --verbose
+        run: cargo test --workspace --verbose
+        env:
+          PATH: C:\msys64\ucrt64\bin;C:\msys64\usr\bin;${{ env.PATH }}
 
   clippy:
     name: Clippy
@@ -491,10 +490,9 @@ jobs:
 
       - name: Build MSI installer
         working-directory: nexus-client
-        shell: cmd
-        run: |
-          set PATH=C:\msys64\ucrt64\bin;C:\msys64\usr\bin;%PATH%
-          cargo bundle --target x86_64-pc-windows-msvc --format wxsmsi --release
+        run: cargo bundle --target x86_64-pc-windows-msvc --format wxsmsi --release
+        env:
+          PATH: C:\msys64\ucrt64\bin;C:\msys64\usr\bin;${{ env.PATH }}
 
   # Test Docker image build
   docker-build:

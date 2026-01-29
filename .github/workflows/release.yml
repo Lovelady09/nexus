@@ -502,10 +502,9 @@ jobs:
             windows-client-cargo-build-
 
       - name: Build client
-        shell: cmd
-        run: |
-          set PATH=C:\msys64\ucrt64\bin;C:\msys64\usr\bin;%PATH%
-          cargo build --release --package nexus-client --target x86_64-pc-windows-msvc
+        run: cargo build --release --package nexus-client --target x86_64-pc-windows-msvc
+        env:
+          PATH: C:\msys64\ucrt64\bin;C:\msys64\usr\bin;${{ env.PATH }}
 
       - name: Get version from tag
         id: version
@@ -529,10 +528,9 @@ jobs:
           sed -i 's/^license = "MIT"$/license-file = "..\/LICENSE"/' nexus-client/Cargo.toml
 
       - name: Create MSI installer
-        shell: cmd
-        run: |
-          set PATH=C:\msys64\ucrt64\bin;C:\msys64\usr\bin;%PATH%
-          cargo bundle --target x86_64-pc-windows-msvc --format wxsmsi --release -p nexus-client
+        run: cargo bundle --target x86_64-pc-windows-msvc --format wxsmsi --release -p nexus-client
+        env:
+          PATH: C:\msys64\ucrt64\bin;C:\msys64\usr\bin;${{ env.PATH }}
 
       - name: Collect client artifact
         shell: bash
