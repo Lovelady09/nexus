@@ -116,6 +116,8 @@ pub enum VoiceCommand {
     SetQuality(VoiceQuality),
     /// Update audio processor settings
     SetProcessorSettings(AudioProcessorSettings),
+    /// Clean up resources for a user who left voice
+    UserLeft(String),
     /// Stop voice session
     Stop,
 }
@@ -396,6 +398,11 @@ async fn run_voice_session(
                         muted_users.remove(&key);
                         mixer.unmute_user(&nickname);
                     }
+                    Some(VoiceCommand::UserLeft(nickname)) => {
+                        // Clean up decoder and jitter buffer for the user who left
+                        jitter_pool.remove(&nickname);
+                        decoder_pool.remove(&nickname);
+                    }
                     Some(VoiceCommand::SetDeafened(deafened)) => {
                         mixer.set_deafened(deafened);
                     }
@@ -521,18 +528,23 @@ impl VoiceSessionHandle {
             .send(VoiceCommand::SetProcessorSettings(settings));
     }
 
-    /// Stop the voice session and wait for cleanup
+    /// Clean up resources for a user who left voice
     ///
-    /// Sends the stop command and waits for the voice thread to finish.
-    /// This ensures clean shutdown of audio devices and DTLS connection.
+    /// Removes the user's decoder and jitter buffer to free memory.
+    pub fn user_left(&self, nickname: &str) {
+        let _ = self
+            .command_tx
+            .send(VoiceCommand::UserLeft(nickname.to_string()));
+    }
+
+    /// Stop the voice session
+    ///
+    /// Sends the stop command to the voice thread. The thread will clean up
+    /// audio devices and DTLS connection on its own. We don't wait for it
+    /// to avoid blocking the UI if audio drivers are unresponsive.
     pub fn stop(&mut self) {
         let _ = self.command_tx.send(VoiceCommand::Stop);
-
-        // Wait for the thread to finish (with a timeout to avoid blocking forever)
-        if let Some(handle) = self.handle.take() {
-            // Give the thread a reasonable time to clean up
-            let _ = handle.join();
-        }
+        self.handle.take(); // Release handle without blocking
     }
 }
 
@@ -573,6 +585,7 @@ mod tests {
         let _ = VoiceCommand::StopTransmitting;
         let _ = VoiceCommand::MuteUser("Alice".to_string());
         let _ = VoiceCommand::UnmuteUser("Alice".to_string());
+        let _ = VoiceCommand::UserLeft("Alice".to_string());
         let _ = VoiceCommand::Stop;
     }
 }

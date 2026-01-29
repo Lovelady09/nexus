@@ -974,6 +974,7 @@ err-voice-resolve = Kan serveradres niet oplossen: { $error }
 err-voice-connection-failed = Spraakchat-verbinding mislukt: { $error }
 err-voice-disconnected = Spraakchat verbroken: { $reason }
 err-voice-audio = Audiofout: { $error }
+err-voice-ptt-failed = Push-to-talk-toets kon niet worden geregistreerd: { $error }
 
 # Voice success messages
 msg-voice-joined = Spraakchat in { $target } gestart ({ $count } anderen)

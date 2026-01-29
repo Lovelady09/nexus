@@ -141,8 +141,15 @@ impl NexusApp {
             // Set mode from settings
             ptt.set_mode(self.config.settings.audio.ptt_mode);
 
-            // Register the hotkey (silently ignore failures - PTT just won't work)
-            let _ = ptt.register_hotkey(&self.config.settings.audio.ptt_key);
+            // Register the hotkey and show error if it fails
+            if let Err(e) = ptt.register_hotkey(&self.config.settings.audio.ptt_key) {
+                // PTT won't work, but voice chat still functions
+                ptt.set_in_voice(true);
+                return self.add_active_tab_message(
+                    connection_id,
+                    ChatMessage::error(t_args("err-voice-ptt-failed", &[("error", &e)])),
+                );
+            }
 
             // Enable PTT for voice
             ptt.set_in_voice(true);
@@ -282,6 +289,11 @@ impl NexusApp {
             && session.target.to_lowercase() == target.to_lowercase()
         {
             session.remove_participant(&nickname);
+
+            // Clean up decoder and jitter buffer for the user who left
+            if let Some(ref handle) = self.voice_session_handle {
+                handle.user_left(&nickname);
+            }
         }
 
         // Show notification in target tab if events are enabled

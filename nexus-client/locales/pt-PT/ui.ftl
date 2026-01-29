@@ -974,6 +974,7 @@ err-voice-resolve = Não foi possível resolver o endereço do servidor: { $erro
 err-voice-connection-failed = A ligação de voz falhou: { $error }
 err-voice-disconnected = Voz desligada: { $reason }
 err-voice-audio = Erro de áudio: { $error }
+err-voice-ptt-failed = Falha ao registar tecla de atalho para falar: { $error }
 
 # Voice success messages
 msg-voice-joined = Entrou no chat de voz em { $target } ({ $count } outros)

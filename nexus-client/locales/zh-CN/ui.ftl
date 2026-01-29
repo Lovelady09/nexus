@@ -954,6 +954,7 @@ err-voice-resolve = 无法解析服务器地址：{ $error }
 err-voice-connection-failed = 语音连接失败：{ $error }
 err-voice-disconnected = 语音已断开：{ $reason }
 err-voice-audio = 音频错误：{ $error }
+err-voice-ptt-failed = 按键说话热键注册失败：{ $error }
 
 # Voice success messages
 msg-voice-joined = 已加入 { $target } 的语音聊天（{ $count } 人在线）

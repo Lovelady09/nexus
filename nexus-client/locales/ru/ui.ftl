@@ -981,6 +981,7 @@ err-voice-resolve = Не удалось определить адрес серв
 err-voice-connection-failed = Ошибка подключения к голосовому чату: { $error }
 err-voice-disconnected = Голосовой чат отключён: { $reason }
 err-voice-audio = Ошибка аудио: { $error }
+err-voice-ptt-failed = Не удалось зарегистрировать клавишу Push-to-Talk: { $error }
 
 # Voice success messages
 msg-voice-joined = Присоединился к голосовому чату в { $target } ({ $count } других)

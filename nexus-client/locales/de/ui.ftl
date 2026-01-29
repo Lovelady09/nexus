@@ -977,6 +977,7 @@ err-voice-resolve = Serveradresse konnte nicht aufgelöst werden: { $error }
 err-voice-connection-failed = Sprachchat-Verbindung fehlgeschlagen: { $error }
 err-voice-disconnected = Sprachchat getrennt: { $reason }
 err-voice-audio = Audiofehler: { $error }
+err-voice-ptt-failed = Push-to-Talk-Taste konnte nicht registriert werden: { $error }
 
 # Voice success messages
 msg-voice-joined = Sprachchat in { $target } beigetreten ({ $count } andere)

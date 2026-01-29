@@ -2,8 +2,6 @@
 //!
 //! A VoiceSession represents a single user's participation in a voice channel
 //! or user message conversation.
-//!
-//! Note: Some fields and methods are for Phase 2 (UDP voice) and are currently unused.
 
 use std::net::{IpAddr, SocketAddr};
 
@@ -22,8 +20,7 @@ pub struct VoiceSession {
     pub nickname: String,
     /// Target as array: ["#channel"] for channels, ["alice", "bob"] for user messages (sorted)
     pub target: Vec<String>,
-    /// Unix timestamp when the session was created
-    #[allow(dead_code)] // Used in Phase 2 for timeout tracking
+    /// Unix timestamp when the session was created (used for stale session cleanup)
     pub joined_at: i64,
     /// Client's UDP address for sending voice packets (set when first UDP packet received)
     pub udp_addr: Option<SocketAddr>,
@@ -60,7 +57,7 @@ impl VoiceSession {
     }
 
     /// Check if this session is for a user message (two elements, neither starting with '#')
-    #[allow(dead_code)] // Used in Phase 2 for routing logic
+    #[allow(dead_code)] // API completeness, complement to is_channel()
     pub fn is_user_message(&self) -> bool {
         self.target.len() == 2
     }

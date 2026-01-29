@@ -953,6 +953,7 @@ err-voice-resolve = 서버 주소를 확인할 수 없습니다: { $error }
 err-voice-connection-failed = 음성 연결 실패: { $error }
 err-voice-disconnected = 음성 연결 끊김: { $reason }
 err-voice-audio = 오디오 오류: { $error }
+err-voice-ptt-failed = 음성 송신 단축키 등록 실패: { $error }
 
 # Voice success messages
 msg-voice-joined = { $target }의 음성 채팅에 참여했습니다 ({ $count }명 참여 중)

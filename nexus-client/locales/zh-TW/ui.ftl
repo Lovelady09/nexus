@@ -953,6 +953,7 @@ err-voice-resolve = 無法解析伺服器地址：{ $error }
 err-voice-connection-failed = 語音連線失敗：{ $error }
 err-voice-disconnected = 語音已斷線：{ $reason }
 err-voice-audio = 音訊錯誤：{ $error }
+err-voice-ptt-failed = 按鍵說話熱鍵註冊失敗：{ $error }
 
 # Voice success messages
 msg-voice-joined = 已加入 { $target } 的語音聊天（{ $count } 人）
