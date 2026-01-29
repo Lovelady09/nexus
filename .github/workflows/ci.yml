@@ -115,9 +115,10 @@ jobs:
 
       - name: Run tests (Windows)
         if: runner.os == 'Windows'
-        run: cargo test --workspace --verbose
-        env:
-          PATH: C:\msys64\ucrt64\bin;C:\msys64\usr\bin;${{ env.PATH }}
+        shell: cmd
+        run: |
+          set PATH=C:\msys64\ucrt64\bin;C:\msys64\usr\bin;%PATH%
+          cargo test --workspace --verbose
 
   clippy:
     name: Clippy
@@ -484,10 +485,11 @@ jobs:
           sed -i 's/^license = "MIT"$/license-file = "..\/LICENSE"/' nexus-client/Cargo.toml
 
       - name: Build MSI installer
-        working-directory: nexus-client
-        run: cargo bundle --target x86_64-pc-windows-msvc --format wxsmsi --release
-        env:
-          PATH: C:\msys64\ucrt64\bin;C:\msys64\usr\bin;${{ env.PATH }}
+        shell: cmd
+        run: |
+          set PATH=C:\msys64\ucrt64\bin;C:\msys64\usr\bin;%PATH%
+          cd nexus-client
+          cargo bundle --target x86_64-pc-windows-msvc --format wxsmsi --release
 
   # Test Docker image build
   docker-build:
