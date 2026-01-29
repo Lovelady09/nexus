@@ -158,6 +158,15 @@ pub struct ViewConfig<'a> {
     /// Current microphone input level (0.0 - 1.0)
     pub mic_level: f32,
 
+    /// Enable noise suppression
+    pub noise_suppression: bool,
+
+    /// Enable echo cancellation
+    pub echo_cancellation: bool,
+
+    /// Enable automatic gain control
+    pub agc: bool,
+
     /// Whether local user is currently transmitting (PTT active)
     pub is_local_speaking: bool,
 

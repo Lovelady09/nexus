@@ -14,7 +14,7 @@ use uuid::Uuid;
 use crate::NexusApp;
 use crate::i18n::{t, t_args};
 use crate::types::{ChatMessage, Message, VoiceState};
-use crate::voice::manager::VoiceSessionHandle;
+use crate::voice::manager::{VoiceSessionConfig, VoiceSessionHandle};
 use crate::voice::ptt::PttManager;
 use crate::voice::subscription::register_voice_receiver_sync;
 
@@ -106,13 +106,18 @@ impl NexusApp {
         };
 
         // Start voice session with audio settings
-        let (handle, event_rx) = VoiceSessionHandle::start(
-            socket_addr,
+        let (handle, event_rx) = VoiceSessionHandle::start(VoiceSessionConfig {
+            server_addr: socket_addr,
             token,
-            self.config.settings.audio.input_device.clone(),
-            self.config.settings.audio.output_device.clone(),
-            self.config.settings.audio.voice_quality,
-        );
+            input_device: self.config.settings.audio.input_device.clone(),
+            output_device: self.config.settings.audio.output_device.clone(),
+            quality: self.config.settings.audio.voice_quality,
+            processor_settings: crate::voice::processor::AudioProcessorSettings {
+                noise_suppression: self.config.settings.audio.noise_suppression,
+                echo_cancellation: self.config.settings.audio.echo_cancellation,
+                agc: self.config.settings.audio.agc,
+            },
+        });
 
         // Store the handle
         self.voice_session_handle = Some(handle);

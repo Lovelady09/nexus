@@ -996,3 +996,7 @@ audio-system-default = 系统默认
 audio-test-mic = 测试麦克风
 audio-testing = 测试中…
 audio-stop-test = 停止测试
+# Audio processing
+audio-noise-suppression = 噪音抑制
+audio-echo-cancellation = 回声消除
+audio-agc = 自动增益控制

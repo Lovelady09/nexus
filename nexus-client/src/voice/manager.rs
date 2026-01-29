@@ -17,6 +17,27 @@ use super::audio::{AudioCapture, AudioMixer};
 use super::codec::{DecoderPool, VoiceEncoder};
 use super::dtls::{VoiceDtlsCommand, VoiceDtlsEvent, run_voice_client};
 use super::jitter::JitterBufferPool;
+use super::processor::{AudioProcessor, AudioProcessorSettings};
+
+// =============================================================================
+// Voice Session Configuration
+// =============================================================================
+
+/// Configuration for starting a voice session
+pub struct VoiceSessionConfig {
+    /// Server address for DTLS connection
+    pub server_addr: SocketAddr,
+    /// Voice session token from VoiceJoinResponse
+    pub token: Uuid,
+    /// Input device name (empty for default)
+    pub input_device: String,
+    /// Output device name (empty for default)
+    pub output_device: String,
+    /// Voice quality preset (Opus bitrate)
+    pub quality: VoiceQuality,
+    /// Audio processing settings (noise suppression, AEC, AGC)
+    pub processor_settings: AudioProcessorSettings,
+}
 
 // =============================================================================
 // Constants
@@ -63,6 +84,8 @@ pub enum VoiceCommand {
     SetDeafened(bool),
     /// Update voice quality (bitrate) dynamically
     SetQuality(VoiceQuality),
+    /// Update audio processor settings
+    SetProcessorSettings(AudioProcessorSettings),
     /// Stop voice session
     Stop,
 }
@@ -81,19 +104,11 @@ pub enum VoiceCommand {
 /// - Jitter buffering
 ///
 /// # Arguments
-/// * `server_addr` - Server address for DTLS connection
-/// * `token` - Voice session token
-/// * `input_device` - Input device name (empty for default)
-/// * `output_device` - Output device name (empty for default)
-/// * `quality` - Voice quality preset
+/// * `config` - Voice session configuration
 /// * `event_tx` - Channel to send voice events
 /// * `command_rx` - Channel to receive voice commands
-pub async fn run_voice_session(
-    server_addr: SocketAddr,
-    token: Uuid,
-    input_device: String,
-    output_device: String,
-    quality: VoiceQuality,
+async fn run_voice_session(
+    config: VoiceSessionConfig,
     event_tx: mpsc::UnboundedSender<VoiceEvent>,
     mut command_rx: mpsc::UnboundedReceiver<VoiceCommand>,
 ) {
@@ -103,8 +118,8 @@ pub async fn run_voice_session(
 
     // Spawn DTLS client task
     let dtls_handle = tokio::spawn(run_voice_client(
-        server_addr,
-        token,
+        config.server_addr,
+        config.token,
         dtls_event_tx,
         dtls_command_rx,
     ));
@@ -144,7 +159,7 @@ pub async fn run_voice_session(
     }
 
     // Initialize audio components
-    let capture = match AudioCapture::new(&input_device) {
+    let capture = match AudioCapture::new(&config.input_device) {
         Ok(c) => c,
         Err(e) => {
             let _ = event_tx.send(VoiceEvent::AudioError(format!("Input device error: {}", e)));
@@ -154,7 +169,7 @@ pub async fn run_voice_session(
         }
     };
 
-    let mut mixer = match AudioMixer::new(&output_device) {
+    let mut mixer = match AudioMixer::new(&config.output_device) {
         Ok(m) => m,
         Err(e) => {
             let _ = event_tx.send(VoiceEvent::AudioError(format!(
@@ -179,7 +194,7 @@ pub async fn run_voice_session(
     }
 
     // Initialize codec
-    let mut encoder = match VoiceEncoder::new(quality) {
+    let mut encoder = match VoiceEncoder::new(config.quality) {
         Ok(e) => e,
         Err(e) => {
             let _ = event_tx.send(VoiceEvent::AudioError(format!("Encoder error: {}", e)));
@@ -191,6 +206,15 @@ pub async fn run_voice_session(
 
     let mut decoder_pool = DecoderPool::new();
     let mut jitter_pool = JitterBufferPool::new();
+
+    // Initialize audio processor for noise suppression, echo cancellation, and AGC
+    let mut processor = match AudioProcessor::new(config.processor_settings) {
+        Ok(p) => Some(p),
+        Err(e) => {
+            eprintln!("Failed to create audio processor: {e}");
+            None
+        }
+    };
 
     // State tracking
     let mut transmitting = false;
@@ -218,10 +242,15 @@ pub async fn run_voice_session(
 
                 // If transmitting, capture and send audio
                 if transmitting && capture.is_active()
-                    && let Some(samples) = capture.take_frame()
-                    && let Ok(encoded) = encoder.encode(&samples)
+                    && let Some(mut samples) = capture.take_frame()
                 {
-                    let _ = dtls_command_tx.send(VoiceDtlsCommand::SendVoice(encoded));
+                    // Apply audio processing (noise suppression, AGC) to capture
+                    if let Some(ref mut proc) = processor {
+                        let _ = proc.process_capture_frame(&mut samples);
+                    }
+                    if let Ok(encoded) = encoder.encode(&samples) {
+                        let _ = dtls_command_tx.send(VoiceDtlsCommand::SendVoice(encoded));
+                    }
                 }
 
                 // Process jitter buffers and play audio
@@ -234,12 +263,20 @@ pub async fn run_voice_session(
 
                     // Check for packet loss and use PLC
                     if buffer.has_loss() {
-                        if let Ok(samples) = decoder_pool.decode_lost(sender) {
+                        if let Ok(mut samples) = decoder_pool.decode_lost(sender) {
+                            // Apply audio processing to render path (for echo cancellation reference)
+                            if let Some(ref mut proc) = processor {
+                                let _ = proc.process_render_frame(&mut samples);
+                            }
                             mixer.queue_audio(sender, &samples);
                         }
                         // Pop to advance the jitter buffer
                         let _ = buffer.pop();
-                    } else if let Some(samples) = buffer.pop() {
+                    } else if let Some(mut samples) = buffer.pop() {
+                        // Apply audio processing to render path (for echo cancellation reference)
+                        if let Some(ref mut proc) = processor {
+                            let _ = proc.process_render_frame(&mut samples);
+                        }
                         mixer.queue_audio(sender, &samples);
                     }
                 }
@@ -321,6 +358,11 @@ pub async fn run_voice_session(
                             eprintln!("Failed to update voice quality: {}", e);
                         }
                     }
+                    Some(VoiceCommand::SetProcessorSettings(settings)) => {
+                        if let Some(ref mut proc) = processor {
+                            proc.update_settings(settings);
+                        }
+                    }
                     Some(VoiceCommand::Stop) | None => {
                         // Clean shutdown
                         if transmitting {
@@ -361,13 +403,7 @@ impl VoiceSessionHandle {
     ///
     /// Note: This spawns a dedicated OS thread because cpal's audio streams
     /// are not Send-safe and cannot be used across async task boundaries.
-    pub fn start(
-        server_addr: SocketAddr,
-        token: Uuid,
-        input_device: String,
-        output_device: String,
-        quality: VoiceQuality,
-    ) -> (Self, mpsc::UnboundedReceiver<VoiceEvent>) {
+    pub fn start(config: VoiceSessionConfig) -> (Self, mpsc::UnboundedReceiver<VoiceEvent>) {
         let (event_tx, event_rx) = mpsc::unbounded_channel();
         let (command_tx, command_rx) = mpsc::unbounded_channel();
 
@@ -380,15 +416,7 @@ impl VoiceSessionHandle {
                 .build()
                 .expect("Failed to create tokio runtime for voice thread");
 
-            rt.block_on(run_voice_session(
-                server_addr,
-                token,
-                input_device,
-                output_device,
-                quality,
-                event_tx,
-                command_rx,
-            ));
+            rt.block_on(run_voice_session(config, event_tx, command_rx));
         });
 
         (
@@ -435,6 +463,16 @@ impl VoiceSessionHandle {
     /// needing to leave and rejoin.
     pub fn set_quality(&self, quality: VoiceQuality) {
         let _ = self.command_tx.send(VoiceCommand::SetQuality(quality));
+    }
+
+    /// Update audio processor settings dynamically
+    ///
+    /// Can be called while in a voice session to toggle noise suppression,
+    /// echo cancellation, or AGC without needing to leave and rejoin.
+    pub fn set_processor_settings(&self, settings: AudioProcessorSettings) {
+        let _ = self
+            .command_tx
+            .send(VoiceCommand::SetProcessorSettings(settings));
     }
 
     /// Stop the voice session and wait for cleanup

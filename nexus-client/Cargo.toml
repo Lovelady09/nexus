@@ -57,7 +57,8 @@ base64 = "0.22"
 identicon-rs = "7.0"
 image = "0.25"
 ipnet = "2.11"
-uuid = { version = "1.19", features = ["v4", "serde"] }
+uuid = { version = "1.16", features = ["v4", "serde"] }
+webrtc-audio-processing = { version = "0.4", features = ["bundled"] }
 hex = "0.4"
 notify-rust = "4.11"
 rodio = { version = "0.20", default-features = false, features = ["vorbis"] }

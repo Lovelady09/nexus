@@ -9,6 +9,7 @@ Nexus BBS supports real-time voice communication using:
 - **Opus codec** — High-quality audio at low bandwidth
 - **DTLS encryption** — Secure UDP transport
 - **Push-to-talk** — Hold or toggle a key to transmit
+- **WebRTC audio processing** — Noise suppression, echo cancellation, and automatic gain control
 
 Voice chat works in both channels (group voice) and user messages (1-on-1 voice).
 
@@ -173,6 +174,9 @@ Configure voice in **Settings > Audio**:
 | **Voice Quality** | Audio quality/bandwidth tradeoff |
 | **PTT Key** | Key to press for push-to-talk |
 | **PTT Mode** | Hold or Toggle |
+| **Noise Suppression** | Reduce background noise from your microphone |
+| **Echo Cancellation** | Remove speaker audio from your microphone signal |
+| **Automatic Gain Control** | Automatically adjust microphone volume |
 
 ### Voice Quality Levels
 
@@ -187,12 +191,27 @@ Higher quality uses more bandwidth but sounds better.
 
 **Note:** Quality changes apply immediately—you don't need to leave and rejoin voice. If you're experiencing audio issues, try lowering the quality while in the call.
 
+### Audio Processing
+
+Nexus uses the same audio processing technology as Discord, Google Meet, and other professional voice applications (WebRTC AudioProcessing).
+
+| Feature | Default | Description |
+|---------|---------|-------------|
+| **Noise Suppression** | On | Filters out background noise (fans, keyboards, AC) |
+| **Echo Cancellation** | Off | Removes speaker audio picked up by your microphone |
+| **Automatic Gain Control** | On | Normalizes your volume so you're not too quiet or too loud |
+
+**Why is echo cancellation off by default?** Most users wear headphones, which don't cause echo. Echo cancellation adds processing overhead and is only needed when using speakers. Enable it if others hear themselves echoing back.
+
+All audio processing settings apply immediately—you don't need to leave and rejoin voice.
+
 ### Testing Your Microphone
 
 1. Open **Settings > Audio**
 2. Select your input device
-3. The level meter shows your microphone input in real-time
-4. Speak to verify the meter responds
+3. Click **Test Microphone**
+4. The level meter shows your microphone input in real-time
+5. Speak to verify the meter responds
 
 ## Troubleshooting
 
@@ -229,12 +248,19 @@ Higher quality uses more bandwidth but sounds better.
 - The speaker may have a poor connection
 
 **Echo or feedback:**
+- Enable **Echo Cancellation** in Settings > Audio
 - Use headphones instead of speakers
 - Move microphone away from speakers
 
 **Too quiet or too loud:**
+- Enable **Automatic Gain Control** in Settings > Audio (on by default)
 - Adjust your system microphone volume
 - Ask others to adjust their system volume
+
+**Background noise:**
+- Enable **Noise Suppression** in Settings > Audio (on by default)
+- Move away from noise sources (fans, AC, keyboards)
+- Use a directional microphone or headset
 
 ### PTT Key Not Working
 
@@ -261,7 +287,8 @@ Higher quality uses more bandwidth but sounds better.
 - **Signaling:** TCP (same connection as chat)
 - **Audio:** UDP with DTLS encryption
 - **Codec:** Opus at 48kHz mono
-- **Frame size:** 10ms (100 frames/second)
+- **Frame size:** 10ms (480 samples per frame)
+- **Audio processing:** WebRTC AudioProcessing (same as Discord, Chrome, Meet)
 
 ### Bandwidth Usage
 

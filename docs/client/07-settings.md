@@ -185,6 +185,20 @@ Controls the audio quality and bandwidth usage:
 
 Higher quality sounds better but uses more bandwidth.
 
+### Audio Processing
+
+Nexus uses WebRTC audio processing (the same technology as Discord, Google Meet, and Chrome) to improve voice quality:
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| **Noise Suppression** | On | Filters out background noise (fans, keyboards, AC) |
+| **Echo Cancellation** | Off | Removes speaker audio picked up by your microphone |
+| **Automatic Gain Control** | On | Normalizes your volume automatically |
+
+**Why is echo cancellation off by default?** Most users wear headphones, which don't cause echo. Echo cancellation adds processing overhead and is only needed when using speakers. Enable it if others hear themselves echoing back.
+
+All audio processing settings apply immediately—no need to leave and rejoin voice.
+
 ### PTT Key
 
 The push-to-talk key for voice transmission. Click the field and press a key to change it.
@@ -205,6 +219,15 @@ How the push-to-talk key behaves:
 |------|----------|
 | **Hold** | Press and hold to talk; release to stop |
 | **Toggle** | Press once to start; press again to stop |
+
+### Microphone Test
+
+Test your microphone before joining voice:
+
+1. Select your input device
+2. Click **Test Microphone**
+3. Speak and watch the level meter respond
+4. Click **Stop Test** when done
 
 ### Mute All
 

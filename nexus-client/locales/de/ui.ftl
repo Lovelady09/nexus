@@ -1019,3 +1019,7 @@ audio-system-default = Systemstandard
 audio-test-mic = Mikrofon testen
 audio-testing = Testen…
 audio-stop-test = Test beenden
+# Audio processing
+audio-noise-suppression = Rauschunterdrückung
+audio-echo-cancellation = Echounterdrückung
+audio-agc = Automatische Lautstärkeregelung

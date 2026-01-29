@@ -1023,3 +1023,7 @@ audio-system-default = Системное по умолчанию
 audio-test-mic = Тест микрофона
 audio-testing = Тестирование…
 audio-stop-test = Остановить тест
+# Audio processing
+audio-noise-suppression = Подавление шума
+audio-echo-cancellation = Подавление эха
+audio-agc = Автоматическая регулировка усиления

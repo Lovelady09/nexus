@@ -995,3 +995,7 @@ audio-system-default = システムデフォルト
 audio-test-mic = マイクをテスト
 audio-testing = テスト中…
 audio-stop-test = テストを停止
+# Audio processing
+audio-noise-suppression = ノイズ抑制
+audio-echo-cancellation = エコーキャンセル
+audio-agc = 自動ゲイン制御

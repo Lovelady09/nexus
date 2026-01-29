@@ -122,6 +122,12 @@ struct ServerContentContext<'a> {
     pub mic_testing: bool,
     /// Current microphone input level (0.0 - 1.0)
     pub mic_level: f32,
+    /// Enable noise suppression
+    pub noise_suppression: bool,
+    /// Enable echo cancellation
+    pub echo_cancellation: bool,
+    /// Enable automatic gain control
+    pub agc: bool,
     /// Whether local user is currently transmitting (PTT active)
     pub is_local_speaking: bool,
     /// Whether local user has deafened (muted all incoming voice audio)
@@ -307,6 +313,9 @@ pub fn main_layout<'a>(config: ViewConfig<'a>) -> Element<'a, Message> {
                 ptt_mode: config.ptt_mode,
                 mic_testing: config.mic_testing,
                 mic_level: config.mic_level,
+                noise_suppression: config.noise_suppression,
+                echo_cancellation: config.echo_cancellation,
+                agc: config.agc,
                 is_local_speaking: config.is_local_speaking,
                 is_deafened: config.is_deafened,
             })
@@ -356,6 +365,9 @@ pub fn main_layout<'a>(config: ViewConfig<'a>) -> Element<'a, Message> {
                         ptt_mode: config.ptt_mode,
                         mic_testing: config.mic_testing,
                         mic_level: config.mic_level,
+                        noise_suppression: config.noise_suppression,
+                        echo_cancellation: config.echo_cancellation,
+                        agc: config.agc,
                     })
                 ]
                 .width(Fill)
@@ -844,6 +856,9 @@ fn server_content_view<'a>(ctx: ServerContentContext<'a>) -> Element<'a, Message
                 ptt_mode: ctx.ptt_mode,
                 mic_testing: ctx.mic_testing,
                 mic_level: ctx.mic_level,
+                noise_suppression: ctx.noise_suppression,
+                echo_cancellation: ctx.echo_cancellation,
+                agc: ctx.agc,
             })
         ]
         .width(Fill)

@@ -995,3 +995,7 @@ audio-system-default = 시스템 기본값
 audio-test-mic = 마이크 테스트
 audio-testing = 테스트 중…
 audio-stop-test = 테스트 중지
+# Audio processing
+audio-noise-suppression = 노이즈 억제
+audio-echo-cancellation = 에코 제거
+audio-agc = 자동 이득 제어

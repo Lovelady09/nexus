@@ -1018,3 +1018,7 @@ audio-system-default = Predeterminado del sistema
 audio-test-mic = Probar micrófono
 audio-testing = Probando…
 audio-stop-test = Detener prueba
+# Audio processing
+audio-noise-suppression = Supresión de ruido
+audio-echo-cancellation = Cancelación de eco
+audio-agc = Control automático de ganancia

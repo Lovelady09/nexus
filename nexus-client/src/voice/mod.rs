@@ -15,5 +15,6 @@ pub mod dtls;
 pub mod jitter;
 pub mod manager;
 pub mod mic_test;
+pub mod processor;
 pub mod ptt;
 pub mod subscription;

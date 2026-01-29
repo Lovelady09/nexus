@@ -690,6 +690,20 @@ impl NexusApp {
         Task::none()
     }
 
+    /// Update active voice session with current processor settings
+    ///
+    /// Called when noise suppression, echo cancellation, or AGC settings change.
+    /// Applies the change to any active voice session immediately.
+    pub fn update_voice_processor_settings(&self) {
+        if let Some(ref handle) = self.voice_session_handle {
+            handle.set_processor_settings(crate::voice::processor::AudioProcessorSettings {
+                noise_suppression: self.config.settings.audio.noise_suppression,
+                echo_cancellation: self.config.settings.audio.echo_cancellation,
+                agc: self.config.settings.audio.agc,
+            });
+        }
+    }
+
     /// Handle PTT key capture mode toggle
     pub fn handle_audio_ptt_key_capture(&mut self) -> Task<Message> {
         if let Some(form) = &mut self.settings_form {

@@ -54,6 +54,12 @@ pub struct AudioTabData<'a> {
     pub mic_testing: bool,
     /// Current microphone input level (0.0 - 1.0)
     pub mic_level: f32,
+    /// Enable noise suppression
+    pub noise_suppression: bool,
+    /// Enable echo cancellation
+    pub echo_cancellation: bool,
+    /// Enable automatic gain control
+    pub agc: bool,
 }
 
 // ============================================================================
@@ -121,6 +127,12 @@ pub struct SettingsViewData<'a> {
     pub mic_testing: bool,
     /// Current microphone input level (0.0 - 1.0)
     pub mic_level: f32,
+    /// Enable noise suppression
+    pub noise_suppression: bool,
+    /// Enable echo cancellation
+    pub echo_cancellation: bool,
+    /// Enable automatic gain control
+    pub agc: bool,
 }
 
 // ============================================================================
@@ -194,6 +206,9 @@ pub fn settings_view<'a>(data: SettingsViewData<'a>) -> Element<'a, Message> {
         ptt_mode: data.ptt_mode,
         mic_testing: data.mic_testing,
         mic_level: data.mic_level,
+        noise_suppression: data.noise_suppression,
+        echo_cancellation: data.echo_cancellation,
+        agc: data.agc,
     });
 
     // Create tabs widget with compact styling
@@ -795,6 +810,33 @@ fn audio_tab_content(data: AudioTabData<'_>) -> Element<'_, Message> {
     .align_y(iced::Alignment::Center)
     .spacing(ELEMENT_SPACING);
     items.push(mic_test_row.into());
+
+    items.push(Space::new().height(SPACER_SIZE_MEDIUM).into());
+
+    // Noise suppression toggle
+    let noise_suppression_checkbox = checkbox(data.noise_suppression)
+        .label(t("audio-noise-suppression"))
+        .on_toggle(Message::AudioNoiseSuppression)
+        .text_size(TEXT_SIZE);
+    items.push(noise_suppression_checkbox.into());
+
+    items.push(Space::new().height(SPACER_SIZE_SMALL).into());
+
+    // Echo cancellation toggle
+    let echo_cancellation_checkbox = checkbox(data.echo_cancellation)
+        .label(t("audio-echo-cancellation"))
+        .on_toggle(Message::AudioEchoCancellation)
+        .text_size(TEXT_SIZE);
+    items.push(echo_cancellation_checkbox.into());
+
+    items.push(Space::new().height(SPACER_SIZE_SMALL).into());
+
+    // Automatic gain control toggle
+    let agc_checkbox = checkbox(data.agc)
+        .label(t("audio-agc"))
+        .on_toggle(Message::AudioAgc)
+        .text_size(TEXT_SIZE);
+    items.push(agc_checkbox.into());
 
     Column::with_children(items)
         .spacing(ELEMENT_SPACING)

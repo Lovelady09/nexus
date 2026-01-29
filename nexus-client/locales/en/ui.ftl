@@ -1035,3 +1035,8 @@ audio-system-default = System Default
 audio-test-mic = Test Microphone
 audio-testing = Testing…
 audio-stop-test = Stop Test
+
+# Audio processing
+audio-noise-suppression = Noise Suppression
+audio-echo-cancellation = Echo Cancellation
+audio-agc = Automatic Gain Control

@@ -920,6 +920,24 @@ impl NexusApp {
             Message::AudioTestMicStart => self.handle_audio_test_mic_start(),
             Message::AudioTestMicStop => self.handle_audio_test_mic_stop(),
             Message::AudioMicLevel(level) => self.handle_audio_mic_level(level),
+            Message::AudioNoiseSuppression(enabled) => {
+                self.config.settings.audio.noise_suppression = enabled;
+                let _ = self.config.save();
+                self.update_voice_processor_settings();
+                Task::none()
+            }
+            Message::AudioEchoCancellation(enabled) => {
+                self.config.settings.audio.echo_cancellation = enabled;
+                let _ = self.config.save();
+                self.update_voice_processor_settings();
+                Task::none()
+            }
+            Message::AudioAgc(enabled) => {
+                self.config.settings.audio.agc = enabled;
+                let _ = self.config.save();
+                self.update_voice_processor_settings();
+                Task::none()
+            }
 
             // URI scheme
             Message::HandleNexusUri(uri) => self.handle_nexus_uri(uri),
@@ -1169,6 +1187,9 @@ impl NexusApp {
             ptt_mode: self.config.settings.audio.ptt_mode,
             mic_testing,
             mic_level,
+            noise_suppression: self.config.settings.audio.noise_suppression,
+            echo_cancellation: self.config.settings.audio.echo_cancellation,
+            agc: self.config.settings.audio.agc,
             is_local_speaking: self.is_local_speaking,
             is_deafened: self.is_deafened,
         };

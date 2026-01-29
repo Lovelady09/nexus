@@ -1016,3 +1016,7 @@ audio-system-default = Systeemstandaard
 audio-test-mic = Microfoon testen
 audio-testing = Testen…
 audio-stop-test = Test stoppen
+# Audio processing
+audio-noise-suppression = Ruisonderdrukking
+audio-echo-cancellation = Echo-onderdrukking
+audio-agc = Automatische versterkingsregeling

@@ -116,6 +116,22 @@ pub struct AudioSettings {
     /// Push-to-talk mode (hold or toggle)
     #[serde(default)]
     pub ptt_mode: PttMode,
+
+    /// Enable noise suppression (default: true)
+    #[serde(default = "default_true")]
+    pub noise_suppression: bool,
+
+    /// Enable echo cancellation (default: false, for headphone users)
+    #[serde(default)]
+    pub echo_cancellation: bool,
+
+    /// Enable automatic gain control (default: true)
+    #[serde(default = "default_true")]
+    pub agc: bool,
+}
+
+fn default_true() -> bool {
+    true
 }
 
 impl Default for AudioSettings {
@@ -126,6 +142,9 @@ impl Default for AudioSettings {
             voice_quality: VoiceQuality::default(),
             ptt_key: default_ptt_key(),
             ptt_mode: PttMode::default(),
+            noise_suppression: true,
+            echo_cancellation: false,
+            agc: true,
         }
     }
 }
@@ -164,6 +183,9 @@ mod tests {
         assert_eq!(settings.voice_quality, VoiceQuality::High);
         assert_eq!(settings.ptt_key, DEFAULT_PTT_KEY);
         assert_eq!(settings.ptt_mode, PttMode::Hold);
+        assert!(settings.noise_suppression);
+        assert!(!settings.echo_cancellation);
+        assert!(settings.agc);
     }
 
     #[test]
@@ -174,6 +196,9 @@ mod tests {
             voice_quality: VoiceQuality::VeryHigh,
             ptt_key: "F1".to_string(),
             ptt_mode: PttMode::Toggle,
+            noise_suppression: false,
+            echo_cancellation: true,
+            agc: false,
         };
 
         let json = serde_json::to_string(&settings).expect("serialize");
@@ -184,6 +209,9 @@ mod tests {
         assert_eq!(settings.voice_quality, deserialized.voice_quality);
         assert_eq!(settings.ptt_key, deserialized.ptt_key);
         assert_eq!(settings.ptt_mode, deserialized.ptt_mode);
+        assert_eq!(settings.noise_suppression, deserialized.noise_suppression);
+        assert_eq!(settings.echo_cancellation, deserialized.echo_cancellation);
+        assert_eq!(settings.agc, deserialized.agc);
     }
 
     #[test]

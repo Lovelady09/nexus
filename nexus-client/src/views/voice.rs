@@ -62,8 +62,8 @@ pub fn build_voice_bar(
     // Target name (channel like "#general" or other user's nickname)
     let target_text = shaped_text(&session.target).size(VOICE_BAR_FONT_SIZE);
 
-    // Participant count (includes self, so add 1)
-    let count = session.participant_count() + 1;
+    // Participant count (server includes self in list)
+    let count = session.participant_count();
 
     // Build the bar content
     let mut bar_row = Row::new().spacing(VOICE_BAR_SPACING).align_y(iced::Center);
