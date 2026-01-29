@@ -13,7 +13,7 @@ use super::{
     HandlerContext, err_account_deleted, err_authentication, err_cannot_delete_admin,
     err_cannot_delete_guest, err_cannot_delete_last_admin, err_cannot_delete_self, err_database,
     err_not_logged_in, err_permission_denied, err_user_not_found, err_username_empty,
-    err_username_invalid, err_username_too_long,
+    err_username_invalid, err_username_too_long, remove_user_with_voice_cleanup,
 };
 use crate::db::Permission;
 use crate::db::sql::GUEST_USERNAME;
@@ -143,9 +143,15 @@ where
         };
         let _ = online_user.tx.send((disconnect_msg, None));
 
-        // Remove them from UserManager and broadcast disconnection
+        // Remove from voice (if in voice) and UserManager, broadcast disconnection
         let session_id = online_user.session_id;
-        ctx.user_manager.remove_user_and_broadcast(session_id).await;
+        remove_user_with_voice_cleanup(
+            ctx.user_manager,
+            ctx.voice_registry,
+            session_id,
+            &online_user,
+        )
+        .await;
     }
 
     // Delete user from database (atomic last-admin protection)

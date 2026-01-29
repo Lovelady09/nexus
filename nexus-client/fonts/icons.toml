@@ -34,6 +34,8 @@ logout = "fontawesome-logout"
 megaphone = "fontawesome-megaphone"
 message = "fontawesome-chat"
 mic = "fontawesome-mic"
+volume_off = "fontawesome-volume-off"
+volume_up = "fontawesome-volume-up"
 
 newspaper = "fontawesome-newspaper"
 plus = "fontawesome-plus"

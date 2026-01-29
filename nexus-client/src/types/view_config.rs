@@ -4,8 +4,10 @@ use std::collections::HashMap;
 
 use iced::Theme;
 use iced::widget::text_editor;
+use nexus_common::voice::VoiceQuality;
 use uuid::Uuid;
 
+use crate::config::audio::PttMode;
 use crate::config::events::EventSettings;
 use crate::config::settings::{ChatHistoryRetention, ProxySettings};
 use crate::transfers::TransferManager;
@@ -13,6 +15,7 @@ use crate::types::{
     ActivePanel, BookmarkEditState, ConnectionFormState, ServerBookmark, ServerConnection,
     SettingsFormState, UiState, UserManagementState,
 };
+use crate::voice::audio::AudioDevice;
 
 /// Configuration struct for view rendering
 ///
@@ -123,6 +126,43 @@ pub struct ViewConfig<'a> {
 
     /// Voice target for the current tab (channel or nickname)
     pub voice_target: Option<String>,
+
+    // ==================== Audio Settings ====================
+    /// Available output devices (borrowed from SettingsFormState cache)
+    pub output_devices: &'a [AudioDevice],
+
+    /// Selected output device
+    pub selected_output_device: AudioDevice,
+
+    /// Available input devices (borrowed from SettingsFormState cache)
+    pub input_devices: &'a [AudioDevice],
+
+    /// Selected input device
+    pub selected_input_device: AudioDevice,
+
+    /// Voice quality setting
+    pub voice_quality: VoiceQuality,
+
+    /// Push-to-talk key binding
+    pub ptt_key: &'a str,
+
+    /// Whether PTT key capture is active
+    pub ptt_capturing: bool,
+
+    /// Push-to-talk mode
+    pub ptt_mode: PttMode,
+
+    /// Whether microphone test is active
+    pub mic_testing: bool,
+
+    /// Current microphone input level (0.0 - 1.0)
+    pub mic_level: f32,
+
+    /// Whether local user is currently transmitting (PTT active)
+    pub is_local_speaking: bool,
+
+    /// Whether local user has deafened (muted all incoming voice audio)
+    pub is_deafened: bool,
 }
 
 /// Toolbar state configuration

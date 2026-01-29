@@ -364,6 +364,7 @@ err-dir-name-invalid = 文件夹名称包含无效字符
 tab-general = 常规
 tab-chat = 聊天
 tab-network = 网络
+tab-audio = 音频
 
 # =============================================================================
 # Chat Tab Labels
@@ -778,6 +779,7 @@ transfer-save-permissions-failed = 设置文件权限失败: { $error }
 
 # Settings tab
 settings-tab-events = 事件
+settings-tab-audio = 音频
 
 # Event type names
 event-broadcast = 广播
@@ -947,6 +949,11 @@ err-voice-already-active = 您已在另一个服务器的语音聊天中
 err-voice-no-permission = 您没有加入语音聊天的权限
 err-voice-not-in-channel = 您必须在频道中才能加入语音聊天
 err-voice-not-in-session = 您不在语音聊天中
+err-voice-resolve-address = 无法解析语音服务器地址
+err-voice-resolve = 无法解析服务器地址：{ $error }
+err-voice-connection-failed = 语音连接失败：{ $error }
+err-voice-disconnected = 语音已断开：{ $reason }
+err-voice-audio = 音频错误：{ $error }
 
 # Voice success messages
 msg-voice-joined = 已加入 { $target } 的语音聊天（{ $count } 人在线）
@@ -954,10 +961,38 @@ msg-voice-joined-empty = 已加入 { $target } 的语音聊天
 msg-voice-left = 已离开 { $target } 的语音聊天
 msg-voice-user-joined = { $nickname } 加入了语音聊天
 msg-voice-user-left = { $nickname } 离开了语音聊天
-msg-voice-you-left = 您已被移出语音聊天
+msg-voice-you-left = 您已离开语音聊天
 
 # Voice UI
 voice-join-tooltip = 加入语音聊天
 voice-leave-tooltip = 离开语音聊天
-voice-bar-participants = { $count } 人在语音中
-voice-indicator-tooltip = 在语音聊天中
+voice-mute-all-tooltip = 全部静音
+voice-unmute-all-tooltip = 取消静音
+voice-bar-participants = ({ $count })
+voice-indicator-tooltip = 语音聊天中
+tooltip-mute = 静音
+tooltip-unmute = 取消静音
+
+# Voice quality levels
+voice-quality-low = 低 (16 kbps)
+voice-quality-medium = 中 (32 kbps)
+voice-quality-high = 高 (64 kbps)
+voice-quality-very-high = 极高 (96 kbps)
+
+# PTT modes
+ptt-mode-hold = 按住说话
+ptt-mode-toggle = 切换
+
+# Audio settings
+audio-output-device = 输出设备
+audio-input-device = 输入设备
+audio-refresh-devices = 刷新设备
+audio-voice-quality = 语音质量
+audio-ptt-key = 按键说话键
+audio-ptt-mode = PTT 模式
+audio-ptt-key-hint = 按任意键…
+audio-input-level = 输入电平
+audio-system-default = 系统默认
+audio-test-mic = 测试麦克风
+audio-testing = 测试中…
+audio-stop-test = 停止测试

@@ -3,13 +3,31 @@
 //! The registry tracks all active voice sessions on the server and provides
 //! methods for adding, removing, and querying sessions.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
+use std::net::IpAddr;
 use std::sync::Arc;
 
 use tokio::sync::RwLock;
 use uuid::Uuid;
 
 use super::session::VoiceSession;
+
+/// Information needed to send VoiceUserLeft notifications after removing a session.
+///
+/// This struct encapsulates all the computed values needed for notifications,
+/// avoiding duplicated logic across different disconnect paths.
+pub struct VoiceLeaveInfo {
+    /// The removed voice session
+    pub session: VoiceSession,
+    /// Target string to send to the leaving user (channel name or other user's nickname)
+    pub self_target: String,
+    /// Whether to broadcast to remaining participants (true if this was the last session for this nickname)
+    pub should_broadcast: bool,
+    /// Remaining participant nicknames to notify (empty if should_broadcast is false)
+    pub remaining_participants: Vec<String>,
+    /// Target string for broadcast messages (channel name or leaving user's nickname)
+    pub broadcast_target: String,
+}
 
 /// Manages all active voice sessions on the server
 ///
@@ -21,6 +39,8 @@ pub struct VoiceRegistry {
     sessions: Arc<RwLock<HashMap<Uuid, VoiceSession>>>,
     /// Map of session_id -> voice token (for quick lookup by TCP session)
     session_id_to_token: Arc<RwLock<HashMap<u32, Uuid>>>,
+    /// Set of IPs with active voice sessions (for O(1) UDP validation)
+    active_ips: Arc<RwLock<HashSet<IpAddr>>>,
 }
 
 impl VoiceRegistry {
@@ -29,6 +49,7 @@ impl VoiceRegistry {
         Self {
             sessions: Arc::new(RwLock::new(HashMap::new())),
             session_id_to_token: Arc::new(RwLock::new(HashMap::new())),
+            active_ips: Arc::new(RwLock::new(HashSet::new())),
         }
     }
 
@@ -38,55 +59,125 @@ impl VoiceRegistry {
     pub async fn add(&self, session: VoiceSession) -> Uuid {
         let token = session.token;
         let session_id = session.session_id;
+        let ip = session.ip;
 
         let mut sessions = self.sessions.write().await;
         let mut id_to_token = self.session_id_to_token.write().await;
+        let mut active_ips = self.active_ips.write().await;
 
         sessions.insert(token, session);
         id_to_token.insert(session_id, token);
+        active_ips.insert(ip);
 
         token
     }
 
-    /// Remove a voice session by its token
+    /// Remove a voice session by its token and compute notification info.
     ///
-    /// Returns the removed session if it existed.
-    #[allow(dead_code)] // Used in Phase 2 for UDP timeout cleanup
-    pub async fn remove_by_token(&self, token: Uuid) -> Option<VoiceSession> {
-        let mut sessions = self.sessions.write().await;
-        let mut id_to_token = self.session_id_to_token.write().await;
+    /// Returns `VoiceLeaveInfo` with all the data needed to send notifications,
+    /// or `None` if no session was found.
+    pub async fn remove_by_token(&self, token: Uuid) -> Option<VoiceLeaveInfo> {
+        let session = {
+            let mut sessions = self.sessions.write().await;
+            let mut id_to_token = self.session_id_to_token.write().await;
+            let mut active_ips = self.active_ips.write().await;
 
-        if let Some(session) = sessions.remove(&token) {
-            id_to_token.remove(&session.session_id);
-            Some(session)
-        } else {
-            None
-        }
+            if let Some(session) = sessions.remove(&token) {
+                id_to_token.remove(&session.session_id);
+                if !sessions.values().any(|s| s.ip == session.ip) {
+                    active_ips.remove(&session.ip);
+                }
+                session
+            } else {
+                return None;
+            }
+        };
+
+        Some(self.compute_leave_info(session).await)
     }
 
-    /// Remove a voice session by TCP session ID
+    /// Remove a voice session by TCP session ID and compute notification info.
     ///
-    /// Returns the removed session if it existed.
-    pub async fn remove_by_session_id(&self, session_id: u32) -> Option<VoiceSession> {
-        let mut sessions = self.sessions.write().await;
-        let mut id_to_token = self.session_id_to_token.write().await;
+    /// Returns `VoiceLeaveInfo` with all the data needed to send notifications,
+    /// or `None` if no session was found.
+    pub async fn remove_by_session_id(&self, session_id: u32) -> Option<VoiceLeaveInfo> {
+        let session = {
+            let mut sessions = self.sessions.write().await;
+            let mut id_to_token = self.session_id_to_token.write().await;
+            let mut active_ips = self.active_ips.write().await;
 
-        if let Some(token) = id_to_token.remove(&session_id) {
-            sessions.remove(&token)
+            if let Some(token) = id_to_token.remove(&session_id)
+                && let Some(session) = sessions.remove(&token)
+            {
+                if !sessions.values().any(|s| s.ip == session.ip) {
+                    active_ips.remove(&session.ip);
+                }
+                session
+            } else {
+                return None;
+            }
+        };
+
+        Some(self.compute_leave_info(session).await)
+    }
+
+    /// Compute all the notification info for a voice leave event.
+    ///
+    /// This centralizes the logic for determining targets and whether to broadcast,
+    /// avoiding duplication across different disconnect paths.
+    async fn compute_leave_info(&self, session: VoiceSession) -> VoiceLeaveInfo {
+        let target_key = session.target_key();
+        let is_channel = session.is_channel();
+
+        // Check if this nickname still has other sessions in voice for this target
+        let nickname_still_in_voice = self
+            .is_nickname_in_target(&target_key, &session.nickname, None)
+            .await;
+
+        // Compute target string for the leaving user's notification
+        let self_target = if is_channel {
+            session.target.first().cloned().unwrap_or_default()
         } else {
-            None
+            // For user messages, send the other user's nickname
+            session
+                .target
+                .iter()
+                .find(|n| n.to_lowercase() != session.nickname.to_lowercase())
+                .cloned()
+                .unwrap_or_default()
+        };
+
+        // Compute broadcast info
+        let (should_broadcast, remaining_participants, broadcast_target) =
+            if nickname_still_in_voice {
+                (false, Vec::new(), String::new())
+            } else {
+                let participants = self.get_participants(&target_key).await;
+                let target = if is_channel {
+                    session.target.first().cloned().unwrap_or_default()
+                } else {
+                    // For user messages, send the leaving user's nickname to remaining participants
+                    session.nickname.clone()
+                };
+                (true, participants, target)
+            };
+
+        VoiceLeaveInfo {
+            session,
+            self_target,
+            should_broadcast,
+            remaining_participants,
+            broadcast_target,
         }
     }
 
     /// Get a voice session by its token
-    #[allow(dead_code)] // Used in Phase 2 for UDP packet validation
     pub async fn get_by_token(&self, token: Uuid) -> Option<VoiceSession> {
         let sessions = self.sessions.read().await;
         sessions.get(&token).cloned()
     }
 
     /// Get a voice session by TCP session ID
-    #[allow(dead_code)] // Used in Phase 2 for session lookups
     pub async fn get_by_session_id(&self, session_id: u32) -> Option<VoiceSession> {
         let id_to_token = self.session_id_to_token.read().await;
         let sessions = self.sessions.read().await;
@@ -106,9 +197,11 @@ impl VoiceRegistry {
     ///
     /// Used to validate DTLS connections - only IPs that have joined voice
     /// via TCP signaling should be allowed to connect via UDP.
-    pub async fn has_session_for_ip(&self, ip: std::net::IpAddr) -> bool {
-        let sessions = self.sessions.read().await;
-        sessions.values().any(|s| s.ip == ip)
+    ///
+    /// This is O(1) using the cached IP set.
+    pub async fn has_session_for_ip(&self, ip: IpAddr) -> bool {
+        let active_ips = self.active_ips.read().await;
+        active_ips.contains(&ip)
     }
 
     /// Check if a nickname is already present in voice for a target
@@ -154,7 +247,6 @@ impl VoiceRegistry {
     /// Get all voice sessions for a target (channel or user message)
     ///
     /// Returns cloned sessions for broadcasting voice events.
-    #[allow(dead_code)] // Used in Phase 2 for UDP packet relay
     pub async fn get_sessions_for_target(&self, target_key: &str) -> Vec<VoiceSession> {
         let sessions = self.sessions.read().await;
         let target_lower = target_key.to_lowercase();
@@ -166,17 +258,9 @@ impl VoiceRegistry {
             .collect()
     }
 
-    /// Get the voice token for a session ID
-    #[allow(dead_code)] // Used in Phase 2 for token lookups
-    pub async fn get_token_for_session(&self, session_id: u32) -> Option<Uuid> {
-        let id_to_token = self.session_id_to_token.read().await;
-        id_to_token.get(&session_id).copied()
-    }
-
     /// Update the UDP address for a session (identified by token)
     ///
     /// Called when the first UDP packet is received from a client.
-    #[allow(dead_code)] // Used in Phase 2 when UDP packets arrive
     pub async fn set_udp_addr(&self, token: Uuid, addr: std::net::SocketAddr) -> bool {
         let mut sessions = self.sessions.write().await;
         if let Some(session) = sessions.get_mut(&token) {
@@ -186,18 +270,20 @@ impl VoiceRegistry {
             false
         }
     }
-
-    /// Get the count of active voice sessions
-    #[allow(dead_code)] // Used for monitoring/debugging
-    pub async fn session_count(&self) -> usize {
-        let sessions = self.sessions.read().await;
-        sessions.len()
-    }
 }
 
 impl Default for VoiceRegistry {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+// Test-only methods
+#[cfg(test)]
+impl VoiceRegistry {
+    /// Get the number of active voice sessions (test-only)
+    pub async fn session_count(&self) -> usize {
+        self.sessions.read().await.len()
     }
 }
 
@@ -217,13 +303,7 @@ mod tests {
             vec![nickname.to_string(), target.to_string()]
         };
         let ip: std::net::IpAddr = "192.168.1.1".parse().unwrap();
-        VoiceSession::new(
-            nickname.to_string(),
-            nickname.to_string(),
-            target_vec,
-            session_id,
-            ip,
-        )
+        VoiceSession::new(nickname.to_string(), target_vec, session_id, ip)
     }
 
     #[tokio::test]
@@ -265,7 +345,7 @@ mod tests {
 
         let removed = registry.remove_by_token(token).await;
         assert!(removed.is_some());
-        assert_eq!(removed.unwrap().nickname, "alice");
+        assert_eq!(removed.unwrap().session.nickname, "alice");
 
         // Session should be gone
         assert!(!registry.has_session(1).await);
@@ -404,13 +484,11 @@ mod tests {
         let ip: std::net::IpAddr = "192.168.1.1".parse().unwrap();
         let alice_session = VoiceSession::new(
             "alice".to_string(),
-            "alice".to_string(),
             vec!["alice".to_string(), "bob".to_string()],
             1,
             ip,
         );
         let bob_session = VoiceSession::new(
-            "bob".to_string(),
             "bob".to_string(),
             vec!["alice".to_string(), "bob".to_string()],
             2,

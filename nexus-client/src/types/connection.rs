@@ -15,7 +15,7 @@ use nexus_common::protocol::ChannelJoinInfo;
 use super::{
     ActivePanel, ChannelState, ChatMessage, ChatTab, ConnectionMonitorState, DisconnectDialogState,
     FilesManagementState, NewsManagementState, PasswordChangeState, ResponseRouting, ScrollState,
-    ServerInfoEditState, ServerInfoTab, UserInfo, UserManagementState, VoiceSession,
+    ServerInfoEditState, ServerInfoTab, UserInfo, UserManagementState, VoiceState,
 };
 use crate::image::CachedImage;
 
@@ -264,7 +264,7 @@ pub struct ServerConnection {
     /// Disconnect dialog state (Some when dialog is open)
     pub disconnect_dialog: Option<DisconnectDialogState>,
     /// Active voice session (None if not in voice)
-    pub voice_session: Option<VoiceSession>,
+    pub voice_session: Option<VoiceState>,
 }
 
 impl ServerConnection {

@@ -561,6 +561,7 @@ fn build_tab_bar(conn: &ServerConnection) -> (iced::widget::Row<'static, Message
 /// A voice button appears in the input row when the user has voice permissions
 /// and is on a channel or user message tab. When in a voice session, a voice bar
 /// appears above the input showing the target and participant count.
+#[allow(clippy::too_many_arguments)]
 pub fn chat_view<'a>(
     conn: &'a ServerConnection,
     message_input: &'a str,
@@ -568,6 +569,8 @@ pub fn chat_view<'a>(
     chat_font_size: u8,
     timestamp_settings: TimestampSettings,
     voice_target: Option<String>,
+    is_local_speaking: bool,
+    is_deafened: bool,
 ) -> Element<'a, Message> {
     let font_size = chat_font_size as f32;
 
@@ -601,7 +604,7 @@ pub fn chat_view<'a>(
     // Build the bottom section (voice bar + input row)
     let bottom_section = if let Some(ref session) = conn.voice_session {
         // Show voice bar above input when in a voice session
-        let voice_bar = build_voice_bar(session);
+        let voice_bar = build_voice_bar(session, is_local_speaking, is_deafened);
         column![voice_bar, input_row]
             .spacing(SMALL_SPACING)
             .width(Fill)

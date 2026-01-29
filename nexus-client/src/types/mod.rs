@@ -33,4 +33,4 @@ pub use ui::{
     ActivePanel, FingerprintMismatch, FingerprintMismatchDetails, InputId, ScrollableId, UiState,
 };
 pub use view_config::{ToolbarState, ViewConfig};
-pub use voice::VoiceSession;
+pub use voice::VoiceState;

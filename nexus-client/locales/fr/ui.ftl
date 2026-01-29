@@ -365,6 +365,7 @@ err-dir-name-invalid = Le nom du dossier contient des caractères invalides
 tab-general = Général
 tab-chat = Discussion
 tab-network = Réseau
+tab-audio = Audio
 
 # =============================================================================
 # Chat Tab Labels
@@ -798,6 +799,7 @@ transfer-save-permissions-failed = Échec de la définition des permissions du f
 
 # Settings tab
 settings-tab-events = Événements
+settings-tab-audio = Audio
 
 # Event type names
 event-broadcast = Diffusion
@@ -967,6 +969,11 @@ err-voice-already-active = Vous êtes déjà dans une session vocale sur un autr
 err-voice-no-permission = Vous n'avez pas la permission de rejoindre le chat vocal
 err-voice-not-in-channel = Vous devez être dans le canal pour rejoindre le chat vocal
 err-voice-not-in-session = Vous n'êtes pas dans une session vocale
+err-voice-resolve-address = Échec de la résolution de l'adresse du serveur pour la voix
+err-voice-resolve = Échec de la résolution de l'adresse du serveur : { $error }
+err-voice-connection-failed = La connexion vocale a échoué : { $error }
+err-voice-disconnected = Voix déconnectée : { $reason }
+err-voice-audio = Erreur audio : { $error }
 
 # Voice success messages
 msg-voice-joined = Rejoint le chat vocal dans { $target } ({ $count } autres)
@@ -974,10 +981,38 @@ msg-voice-joined-empty = Rejoint le chat vocal dans { $target }
 msg-voice-left = Quitté le chat vocal dans { $target }
 msg-voice-user-joined = { $nickname } a rejoint le chat vocal
 msg-voice-user-left = { $nickname } a quitté le chat vocal
-msg-voice-you-left = Vous avez été retiré du chat vocal
+msg-voice-you-left = Vous avez quitté le chat vocal
 
 # Voice UI
 voice-join-tooltip = Rejoindre le chat vocal
 voice-leave-tooltip = Quitter le chat vocal
-voice-bar-participants = { $count } en vocal
+voice-mute-all-tooltip = Tout couper
+voice-unmute-all-tooltip = Réactiver le son
+voice-bar-participants = ({ $count })
 voice-indicator-tooltip = En chat vocal
+tooltip-mute = Couper le son
+tooltip-unmute = Rétablir le son
+
+# Voice quality levels
+voice-quality-low = Basse (16 kbps)
+voice-quality-medium = Moyenne (32 kbps)
+voice-quality-high = Haute (64 kbps)
+voice-quality-very-high = Très haute (96 kbps)
+
+# PTT modes
+ptt-mode-hold = Maintenir pour parler
+ptt-mode-toggle = Basculer
+
+# Audio settings
+audio-output-device = Périphérique de sortie
+audio-input-device = Périphérique d'entrée
+audio-refresh-devices = Actualiser les périphériques
+audio-voice-quality = Qualité vocale
+audio-ptt-key = Touche Push-to-Talk
+audio-ptt-mode = Mode PTT
+audio-ptt-key-hint = Appuyez sur une touche…
+audio-input-level = Niveau d'entrée
+audio-system-default = Par défaut du système
+audio-test-mic = Tester le microphone
+audio-testing = Test en cours…
+audio-stop-test = Arrêter le test

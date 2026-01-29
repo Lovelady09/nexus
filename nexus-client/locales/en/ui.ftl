@@ -370,6 +370,7 @@ err-dir-name-invalid = Directory name contains invalid characters
 tab-general = General
 tab-chat = Chat
 tab-network = Network
+tab-audio = Audio
 
 # =============================================================================
 # Chat Tab Labels
@@ -787,6 +788,7 @@ transfer-save-permissions-failed = Failed to set file permissions: { $error }
 
 # Settings tab
 settings-tab-events = Events
+settings-tab-audio = Audio
 
 # Event type names
 event-broadcast = Broadcast
@@ -986,6 +988,11 @@ err-voice-already-active = You are already in a voice session on another server
 err-voice-no-permission = You don't have permission to join voice chat
 err-voice-not-in-channel = You must be in the channel to join voice
 err-voice-not-in-session = You are not in a voice session
+err-voice-resolve-address = Failed to resolve server address for voice
+err-voice-resolve = Failed to resolve server address: { $error }
+err-voice-connection-failed = Voice connection failed: { $error }
+err-voice-disconnected = Voice disconnected: { $reason }
+err-voice-audio = Audio error: { $error }
 
 # Voice success messages
 msg-voice-joined = Joined voice in { $target } ({ $count } others)
@@ -993,10 +1000,38 @@ msg-voice-joined-empty = Joined voice in { $target }
 msg-voice-left = Left voice in { $target }
 msg-voice-user-joined = { $nickname } joined voice
 msg-voice-user-left = { $nickname } left voice
-msg-voice-you-left = You have been removed from voice
+msg-voice-you-left = You have left voice chat
 
 # Voice UI
 voice-join-tooltip = Join voice chat
 voice-leave-tooltip = Leave voice chat
-voice-bar-participants = { $count } in voice
+voice-mute-all-tooltip = Mute All
+voice-unmute-all-tooltip = Unmute All
+voice-bar-participants = ({ $count })
 voice-indicator-tooltip = In voice chat
+tooltip-mute = Mute
+tooltip-unmute = Unmute
+
+# Voice quality levels
+voice-quality-low = Low (16 kbps)
+voice-quality-medium = Medium (32 kbps)
+voice-quality-high = High (64 kbps)
+voice-quality-very-high = Very High (96 kbps)
+
+# PTT modes
+ptt-mode-hold = Hold to talk
+ptt-mode-toggle = Toggle
+
+# Audio settings
+audio-output-device = Output Device
+audio-input-device = Input Device
+audio-refresh-devices = Refresh Devices
+audio-voice-quality = Voice Quality
+audio-ptt-key = Push-to-Talk Key
+audio-ptt-mode = PTT Mode
+audio-ptt-key-hint = Press any key…
+audio-input-level = Input Level
+audio-system-default = System Default
+audio-test-mic = Test Microphone
+audio-testing = Testing…
+audio-stop-test = Stop Test

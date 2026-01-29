@@ -364,6 +364,7 @@ err-dir-name-invalid = Il nome della cartella contiene caratteri non validi
 tab-general = Generale
 tab-chat = Chat
 tab-network = Rete
+tab-audio = Audio
 
 # =============================================================================
 # Chat Tab Labels
@@ -800,6 +801,7 @@ transfer-save-permissions-failed = Impossibile impostare i permessi del file: { 
 
 # Settings tab
 settings-tab-events = Eventi
+settings-tab-audio = Audio
 
 # Event type names
 event-broadcast = Trasmissione
@@ -969,6 +971,11 @@ err-voice-already-active = Sei già in una sessione vocale su un altro server
 err-voice-no-permission = Non hai il permesso di entrare nella chat vocale
 err-voice-not-in-channel = Devi essere nel canale per entrare nella chat vocale
 err-voice-not-in-session = Non sei in una sessione vocale
+err-voice-resolve-address = Impossibile risolvere l'indirizzo del server per la voce
+err-voice-resolve = Impossibile risolvere l'indirizzo del server: { $error }
+err-voice-connection-failed = Connessione vocale fallita: { $error }
+err-voice-disconnected = Voce disconnessa: { $reason }
+err-voice-audio = Errore audio: { $error }
 
 # Voice success messages
 msg-voice-joined = Entrato nella chat vocale in { $target } ({ $count } altri)
@@ -976,10 +983,38 @@ msg-voice-joined-empty = Entrato nella chat vocale in { $target }
 msg-voice-left = Uscito dalla chat vocale in { $target }
 msg-voice-user-joined = { $nickname } è entrato nella chat vocale
 msg-voice-user-left = { $nickname } è uscito dalla chat vocale
-msg-voice-you-left = Sei stato rimosso dalla chat vocale
+msg-voice-you-left = Hai lasciato la chat vocale
 
 # Voice UI
 voice-join-tooltip = Entra nella chat vocale
 voice-leave-tooltip = Esci dalla chat vocale
-voice-bar-participants = { $count } in voce
-voice-indicator-tooltip = Nella chat vocale
+voice-mute-all-tooltip = Disattiva tutto
+voice-unmute-all-tooltip = Riattiva audio
+voice-bar-participants = ({ $count })
+voice-indicator-tooltip = In chat vocale
+tooltip-mute = Disattiva audio
+tooltip-unmute = Attiva audio
+
+# Voice quality levels
+voice-quality-low = Bassa (16 kbps)
+voice-quality-medium = Media (32 kbps)
+voice-quality-high = Alta (64 kbps)
+voice-quality-very-high = Molto alta (96 kbps)
+
+# PTT modes
+ptt-mode-hold = Tieni premuto per parlare
+ptt-mode-toggle = Attiva/Disattiva
+
+# Audio settings
+audio-output-device = Dispositivo di uscita
+audio-input-device = Dispositivo di ingresso
+audio-refresh-devices = Aggiorna dispositivi
+audio-voice-quality = Qualità vocale
+audio-ptt-key = Tasto Push-to-Talk
+audio-ptt-mode = Modalità PTT
+audio-ptt-key-hint = Premi un tasto qualsiasi…
+audio-input-level = Livello di ingresso
+audio-system-default = Predefinito di sistema
+audio-test-mic = Testa microfono
+audio-testing = Test in corso…
+audio-stop-test = Ferma test

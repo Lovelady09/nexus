@@ -14,6 +14,91 @@ use crate::types::{
 impl NexusApp {
     /// Handle keyboard and window events (Tab, Enter, Escape, F5, file drag-and-drop)
     pub fn handle_keyboard_event(&mut self, event: Event) -> Task<Message> {
+        // Handle PTT key capture when in settings and capture mode is active
+        if let Some(form) = &self.settings_form
+            && form.ptt_capturing
+        {
+            if let Event::Keyboard(keyboard::Event::KeyPressed { key, .. }) = &event {
+                // Convert Iced key to our PTT key string format
+                let key_string = match key {
+                    // Named keys
+                    keyboard::Key::Named(named) => match named {
+                        key::Named::Space => Some("Space".to_string()),
+                        key::Named::Enter => Some("Enter".to_string()),
+                        key::Named::Tab => Some("Tab".to_string()),
+                        key::Named::Escape => {
+                            // Escape cancels capture mode without changing the key
+                            if let Some(form) = &mut self.settings_form {
+                                form.ptt_capturing = false;
+                            }
+                            return Task::none();
+                        }
+                        key::Named::Backspace => Some("Backspace".to_string()),
+                        key::Named::Delete => Some("Delete".to_string()),
+                        key::Named::Insert => Some("Insert".to_string()),
+                        key::Named::Home => Some("Home".to_string()),
+                        key::Named::End => Some("End".to_string()),
+                        key::Named::PageUp => Some("PageUp".to_string()),
+                        key::Named::PageDown => Some("PageDown".to_string()),
+                        key::Named::ArrowUp => Some("ArrowUp".to_string()),
+                        key::Named::ArrowDown => Some("ArrowDown".to_string()),
+                        key::Named::ArrowLeft => Some("ArrowLeft".to_string()),
+                        key::Named::ArrowRight => Some("ArrowRight".to_string()),
+                        key::Named::F1 => Some("F1".to_string()),
+                        key::Named::F2 => Some("F2".to_string()),
+                        key::Named::F3 => Some("F3".to_string()),
+                        key::Named::F4 => Some("F4".to_string()),
+                        key::Named::F5 => Some("F5".to_string()),
+                        key::Named::F6 => Some("F6".to_string()),
+                        key::Named::F7 => Some("F7".to_string()),
+                        key::Named::F8 => Some("F8".to_string()),
+                        key::Named::F9 => Some("F9".to_string()),
+                        key::Named::F10 => Some("F10".to_string()),
+                        key::Named::F11 => Some("F11".to_string()),
+                        key::Named::F12 => Some("F12".to_string()),
+                        _ => None,
+                    },
+                    // Character keys
+                    keyboard::Key::Character(c) => {
+                        let s = c.as_str();
+                        match s {
+                            // Special characters
+                            "`" => Some("`".to_string()),
+                            "-" => Some("-".to_string()),
+                            "=" => Some("=".to_string()),
+                            "[" => Some("[".to_string()),
+                            "]" => Some("]".to_string()),
+                            "\\" => Some("\\".to_string()),
+                            ";" => Some(";".to_string()),
+                            "'" => Some("'".to_string()),
+                            "," => Some(",".to_string()),
+                            "." => Some(".".to_string()),
+                            "/" => Some("/".to_string()),
+                            // Single character (letter or digit)
+                            _ if s.len() == 1 => {
+                                let ch = s.chars().next().unwrap();
+                                if ch.is_ascii_alphanumeric() {
+                                    Some(ch.to_ascii_uppercase().to_string())
+                                } else {
+                                    Some(s.to_string())
+                                }
+                            }
+                            _ => None,
+                        }
+                    }
+                    keyboard::Key::Unidentified => None,
+                };
+
+                if let Some(key_str) = key_string {
+                    return self.update(Message::AudioPttKeyCaptured(key_str));
+                }
+            }
+            // While capturing, consume all key events to prevent other actions
+            if matches!(event, Event::Keyboard(keyboard::Event::KeyPressed { .. })) {
+                return Task::none();
+            }
+        }
+
         // Handle window events (focus, file drag-and-drop)
         if let Event::Window(window_event) = &event {
             match window_event {

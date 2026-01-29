@@ -3,6 +3,8 @@
 //! This module defines the packet format used for voice data over DTLS/UDP.
 //! Voice packets are sent at ~50 packets/second with Opus-encoded audio.
 
+use std::fmt;
+
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -82,6 +84,22 @@ impl VoiceQuality {
             VoiceQuality::High => "voice-quality-high",
             VoiceQuality::VeryHigh => "voice-quality-very-high",
         }
+    }
+
+    /// Get a display string for this quality level
+    fn display_string(self) -> &'static str {
+        match self {
+            VoiceQuality::Low => "Low (16 kbps)",
+            VoiceQuality::Medium => "Medium (32 kbps)",
+            VoiceQuality::High => "High (64 kbps)",
+            VoiceQuality::VeryHigh => "Very High (96 kbps)",
+        }
+    }
+}
+
+impl fmt::Display for VoiceQuality {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.display_string())
     }
 }
 

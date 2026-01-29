@@ -4,12 +4,18 @@
 //! - Console tab: All online users
 //! - Channel tab: Only channel members
 //! - User message tab: You + the other user (or just you if they're offline)
+//!
+//! Voice indicators:
+//! - Headphones icon: User is in voice (same session as current user)
+//! - Speaker icon with highlight: User is currently speaking
+//! - Mute button: Client-side mute (stops hearing that user)
 
 use iced::widget::{Column, Row, Space, button, column, container, row, scrollable, tooltip};
 use iced::{Center, Color, Element, Fill, Theme};
 
 use super::constants::{
     PERMISSION_BAN_CREATE, PERMISSION_USER_INFO, PERMISSION_USER_KICK, PERMISSION_USER_MESSAGE,
+    PERMISSION_VOICE_LISTEN,
 };
 use crate::avatar::{avatar_cache_key, generate_identicon};
 use crate::i18n::t;
@@ -181,6 +187,19 @@ fn create_user_toolbar<'a>(
     let has_disconnect_permission =
         conn.has_permission(PERMISSION_USER_KICK) || conn.has_permission(PERMISSION_BAN_CREATE);
 
+    // Check if user is in voice with us (for mute button)
+    let is_in_voice_with_us = conn.voice_session.as_ref().is_some_and(|s| {
+        let nickname_lower = nickname.to_lowercase();
+        s.participants
+            .iter()
+            .any(|p| p.to_lowercase() == nickname_lower)
+    });
+    let is_muted = conn
+        .voice_session
+        .as_ref()
+        .is_some_and(|s| s.is_muted(nickname));
+    let has_voice_listen = conn.has_permission(PERMISSION_VOICE_LISTEN);
+
     // Build toolbar row
     let mut toolbar_row = row![].spacing(NO_SPACING).width(Fill);
 
@@ -218,6 +237,32 @@ fn create_user_toolbar<'a>(
             disabled_icon_button(message_icon)
         };
         toolbar_row = toolbar_row.push(with_tooltip(message_button, t("tooltip-message")));
+    }
+
+    // Mute/Unmute button (only show if not self, user is in voice with us, and we have voice_listen)
+    if !is_self && is_in_voice_with_us && has_voice_listen {
+        let nickname_for_mute = nickname_owned.clone();
+        if is_muted {
+            // User is muted - show unmute button
+            let unmute_icon = icon_container(icon::volume_off());
+            let unmute_button = enabled_icon_button(
+                unmute_icon,
+                Message::VoiceUserUnmute(nickname_for_mute),
+                primary_color,
+                danger_color, // Show in danger color when muted
+            );
+            toolbar_row = toolbar_row.push(with_tooltip(unmute_button, t("tooltip-unmute")));
+        } else {
+            // User is not muted - show mute button (volume_up icon indicates they can be heard)
+            let mute_icon = icon_container(icon::volume_up());
+            let mute_button = enabled_icon_button(
+                mute_icon,
+                Message::VoiceUserMute(nickname_for_mute),
+                primary_color,
+                icon_color,
+            );
+            toolbar_row = toolbar_row.push(with_tooltip(mute_button, t("tooltip-mute")));
+        }
     }
 
     // Disconnect button (if not self, has kick or ban permission, and target is not admin)
@@ -328,9 +373,38 @@ pub fn user_list_panel<'a>(conn: &'a ServerConnection, theme: &Theme) -> Element
                 shaped_text(nickname).size(USER_LIST_TEXT_SIZE)
             };
 
-            let user_row = row![avatar_element, nickname_text,]
-                .spacing(USER_LIST_AVATAR_SPACING)
-                .align_y(Center);
+            // Check if user is in voice (only relevant if we have a voice session)
+            let is_in_voice = conn.voice_session.as_ref().is_some_and(|s| {
+                let nickname_lower = nickname.to_lowercase();
+                s.participants
+                    .iter()
+                    .any(|p| p.to_lowercase() == nickname_lower)
+            });
+
+            let is_speaking = conn
+                .voice_session
+                .as_ref()
+                .is_some_and(|s| s.is_speaking(nickname));
+
+            // Build user row with avatar, optional voice icon, and nickname
+            let mut user_row = Row::new().spacing(USER_LIST_AVATAR_SPACING).align_y(Center);
+
+            user_row = user_row.push(avatar_element);
+
+            // Add voice indicator if in voice
+            if is_in_voice {
+                let voice_icon = if is_speaking {
+                    // Speaking - show mic icon with highlight
+                    container(icon::mic().size(USER_LIST_SMALL_TEXT_SIZE))
+                        .style(crate::style::speaking_indicator_style)
+                } else {
+                    // In voice but not speaking - show headphones
+                    container(icon::headphones().size(USER_LIST_SMALL_TEXT_SIZE))
+                };
+                user_row = user_row.push(voice_icon);
+            }
+
+            user_row = user_row.push(nickname_text);
 
             let user_button = button(container(user_row).width(Fill))
                 .on_press(Message::UserListItemClicked(nickname_clone))

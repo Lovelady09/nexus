@@ -365,6 +365,7 @@ err-dir-name-invalid = Mapnaam bevat ongeldige tekens
 tab-general = Algemeen
 tab-chat = Chat
 tab-network = Netwerk
+tab-audio = Audio
 
 # =============================================================================
 # Chat Tab Labels
@@ -798,6 +799,7 @@ transfer-save-permissions-failed = Kan bestandsrechten niet instellen: { $error 
 
 # Settings tab
 settings-tab-events = Gebeurtenissen
+settings-tab-audio = Audio
 
 # Event type names
 event-broadcast = Uitzending
@@ -967,6 +969,11 @@ err-voice-already-active = Je bent al in een spraakchat op een andere server
 err-voice-no-permission = Je hebt geen toestemming om deel te nemen aan spraakchat
 err-voice-not-in-channel = Je moet in het kanaal zijn om deel te nemen aan spraakchat
 err-voice-not-in-session = Je bent niet in een spraakchat
+err-voice-resolve-address = Kan serveradres voor spraakchat niet oplossen
+err-voice-resolve = Kan serveradres niet oplossen: { $error }
+err-voice-connection-failed = Spraakchat-verbinding mislukt: { $error }
+err-voice-disconnected = Spraakchat verbroken: { $reason }
+err-voice-audio = Audiofout: { $error }
 
 # Voice success messages
 msg-voice-joined = Spraakchat in { $target } gestart ({ $count } anderen)
@@ -974,10 +981,38 @@ msg-voice-joined-empty = Spraakchat in { $target } gestart
 msg-voice-left = Spraakchat in { $target } verlaten
 msg-voice-user-joined = { $nickname } is toegetreden tot spraakchat
 msg-voice-user-left = { $nickname } heeft spraakchat verlaten
-msg-voice-you-left = Je bent verwijderd uit spraakchat
+msg-voice-you-left = Je hebt spraakchat verlaten
 
 # Voice UI
 voice-join-tooltip = Spraakchat starten
 voice-leave-tooltip = Spraakchat verlaten
-voice-bar-participants = { $count } in spraakchat
+voice-mute-all-tooltip = Alles dempen
+voice-unmute-all-tooltip = Dempen opheffen
+voice-bar-participants = ({ $count })
 voice-indicator-tooltip = In spraakchat
+tooltip-mute = Dempen
+tooltip-unmute = Dempen opheffen
+
+# Voice quality levels
+voice-quality-low = Laag (16 kbps)
+voice-quality-medium = Gemiddeld (32 kbps)
+voice-quality-high = Hoog (64 kbps)
+voice-quality-very-high = Zeer hoog (96 kbps)
+
+# PTT modes
+ptt-mode-hold = Ingedrukt houden om te praten
+ptt-mode-toggle = Schakelen
+
+# Audio settings
+audio-output-device = Uitvoerapparaat
+audio-input-device = Invoerapparaat
+audio-refresh-devices = Apparaten vernieuwen
+audio-voice-quality = Spraakkwaliteit
+audio-ptt-key = Push-to-Talk-toets
+audio-ptt-mode = PTT-modus
+audio-ptt-key-hint = Druk op een toets…
+audio-input-level = Ingangsniveau
+audio-system-default = Systeemstandaard
+audio-test-mic = Microfoon testen
+audio-testing = Testen…
+audio-stop-test = Test stoppen

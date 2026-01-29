@@ -61,14 +61,15 @@ Ports below 1024 require root/admin privileges on most systems.
 
 ### Port Summary
 
-| Port | Default | Purpose |
-|------|---------|---------|
-| BBS | 7500 | Main protocol (TCP) |
-| Transfer | 7501 | File transfers (TCP) |
-| WebSocket BBS | 7502 | Main protocol (WebSocket over TLS) |
-| WebSocket Transfer | 7503 | File transfers (WebSocket over TLS) |
+| Port | Default | Protocol | Purpose |
+|------|---------|----------|---------|
+| BBS | 7500 | TCP | Main protocol |
+| Voice | 7500 | UDP | Voice chat audio (DTLS encrypted) |
+| Transfer | 7501 | TCP | File transfers |
+| WebSocket BBS | 7502 | TCP | Main protocol (WebSocket over TLS) |
+| WebSocket Transfer | 7503 | TCP | File transfers (WebSocket over TLS) |
 
-WebSocket ports are only active when `--websocket` is enabled.
+WebSocket ports are only active when `--websocket` is enabled. Voice chat uses the same port number as BBS but over UDP; the operating system routes packets based on protocol.
 
 ## Database
 

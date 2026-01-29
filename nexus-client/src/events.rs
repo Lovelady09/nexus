@@ -187,7 +187,11 @@ pub fn emit_event(app: &NexusApp, event_type: EventType, context: EventContext) 
         && config.play_sound
         && (config.always_play_sound || !suppressed);
     if should_play {
-        crate::sound::play_sound(&config.sound, app.config.settings.sound_volume);
+        crate::sound::play_sound_on_device(
+            &config.sound,
+            app.config.settings.sound_volume,
+            &app.config.settings.audio.output_device,
+        );
     }
 }
 

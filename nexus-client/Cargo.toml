@@ -1,6 +1,6 @@
 [package]
 name = "nexus-client"
-version = "0.5.2"
+version = "0.5.3"
 edition = "2024"
 license = "MIT"
 authors = ["Josh Ellithorpe <quest@mac.com>"]
@@ -62,6 +62,13 @@ hex = "0.4"
 notify-rust = "4.11"
 rodio = { version = "0.20", default-features = false, features = ["vorbis"] }
 interprocess = { version = "2.2", features = ["tokio"] }
+cpal = "0.15"
+opus = "0.3"
+global-hotkey = "0.6"
+dtls = { version = "0.13", features = ["pem"] }
+webrtc-util = "0.12"
+async-trait = "0.1"
+crossbeam-channel = "0.5.15"
 
 [dev-dependencies]
 tempfile = "3.20"

@@ -130,14 +130,15 @@ The **first user to connect and log in** automatically becomes an administrator.
 
 ## Default Ports
 
-| Port | Purpose |
-|------|---------|
-| 7500 | Main BBS connection (chat, commands, browsing) |
-| 7501 | File transfers (downloads, uploads) |
-| 7502 | WebSocket BBS connection (requires `--websocket`) |
-| 7503 | WebSocket file transfers (requires `--websocket`) |
+| Port | Protocol | Purpose |
+|------|----------|---------|
+| 7500 | TCP | Main BBS connection (chat, commands, browsing) |
+| 7500 | UDP | Voice chat audio (DTLS encrypted) |
+| 7501 | TCP | File transfers (downloads, uploads) |
+| 7502 | TCP | WebSocket BBS connection (requires `--websocket`) |
+| 7503 | TCP | WebSocket file transfers (requires `--websocket`) |
 
-All ports use TLS encryption. WebSocket ports are only active when `--websocket` is enabled.
+All TCP ports use TLS encryption. UDP voice uses DTLS encryption with the same certificate. WebSocket ports are only active when `--websocket` is enabled.
 
 ## Data Locations
 
@@ -193,6 +194,7 @@ Press `Ctrl+C` to gracefully shut down the server. If UPnP was enabled, port map
 If you're running behind a firewall, open these ports:
 
 - **TCP 7500** — Main BBS port
+- **UDP 7500** — Voice chat port
 - **TCP 7501** — File transfer port
 - **TCP 7502** — WebSocket BBS port (if `--websocket` enabled)
 - **TCP 7503** — WebSocket transfer port (if `--websocket` enabled)

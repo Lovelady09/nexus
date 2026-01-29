@@ -4,6 +4,7 @@
 //! - `Settings` - User preferences (theme, font size, notifications)
 //! - `bookmarks` - Server bookmarks for quick connect
 
+pub mod audio;
 mod bookmarks;
 pub mod events;
 mod persistence;

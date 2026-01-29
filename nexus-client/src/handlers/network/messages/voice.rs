@@ -6,12 +6,17 @@
 //! - VoiceUserJoined - Notification when another user joins voice
 //! - VoiceUserLeft - Notification when another user leaves voice
 
+use std::net::ToSocketAddrs;
+
 use iced::Task;
 use uuid::Uuid;
 
 use crate::NexusApp;
 use crate::i18n::{t, t_args};
-use crate::types::{ChatMessage, Message, VoiceSession};
+use crate::types::{ChatMessage, Message, VoiceState};
+use crate::voice::manager::VoiceSessionHandle;
+use crate::voice::ptt::PttManager;
+use crate::voice::subscription::register_voice_receiver_sync;
 
 impl NexusApp {
     /// Handle response to VoiceJoin request
@@ -71,10 +76,70 @@ impl NexusApp {
 
         // Create the voice session
         let participants = participants.unwrap_or_default();
-        conn.voice_session = Some(VoiceSession::new(target, token, participants));
+        conn.voice_session = Some(VoiceState::new(target.clone(), participants));
 
         // Track that this connection has the active voice session
         self.active_voice_connection = Some(connection_id);
+
+        // Start the voice DTLS client
+        // Resolve server address to SocketAddr
+        let server_addr = format!(
+            "{}:{}",
+            conn.connection_info.address, conn.connection_info.port
+        );
+        let socket_addr = match server_addr.to_socket_addrs() {
+            Ok(mut addrs) => match addrs.next() {
+                Some(addr) => addr,
+                None => {
+                    return self.add_active_tab_message(
+                        connection_id,
+                        ChatMessage::error(t("err-voice-resolve-address")),
+                    );
+                }
+            },
+            Err(e) => {
+                return self.add_active_tab_message(
+                    connection_id,
+                    ChatMessage::error(t_args("err-voice-resolve", &[("error", &e.to_string())])),
+                );
+            }
+        };
+
+        // Start voice session with audio settings
+        let (handle, event_rx) = VoiceSessionHandle::start(
+            socket_addr,
+            token,
+            self.config.settings.audio.input_device.clone(),
+            self.config.settings.audio.output_device.clone(),
+            self.config.settings.audio.voice_quality,
+        );
+
+        // Store the handle
+        self.voice_session_handle = Some(handle);
+
+        // Register the event receiver in the global registry for the subscription
+        // Must be synchronous to avoid race with subscription starting
+        register_voice_receiver_sync(connection_id, event_rx);
+
+        // Initialize PTT manager if not already created
+        // If PTT manager fails to initialize, voice still works but PTT won't function
+        if self.ptt_manager.is_none()
+            && let Ok(ptt) = PttManager::new()
+        {
+            self.ptt_manager = Some(ptt);
+        }
+
+        // Register PTT hotkey and enable it for voice
+        if let Some(ref mut ptt) = self.ptt_manager {
+            // Set mode from settings
+            ptt.set_mode(self.config.settings.audio.ptt_mode);
+
+            // Register the hotkey (silently ignore failures - PTT just won't work)
+            let _ = ptt.register_hotkey(&self.config.settings.audio.ptt_key);
+
+            // Enable PTT for voice
+            ptt.set_in_voice(true);
+        }
 
         // Voice bar appearing provides visual feedback - no console message needed
         Task::none()
@@ -92,14 +157,7 @@ impl NexusApp {
     ) -> Task<Message> {
         // Clear local voice state regardless of success
         // (if server says we're not in voice, we should clear our state too)
-        if let Some(conn) = self.connections.get_mut(&connection_id) {
-            conn.voice_session = None;
-        }
-
-        // Clear active voice connection if it was this one
-        if self.active_voice_connection == Some(connection_id) {
-            self.active_voice_connection = None;
-        }
+        self.cleanup_voice_session(connection_id);
 
         if !success {
             let error_msg = error.unwrap_or_else(|| t("err-unknown"));
@@ -163,21 +221,16 @@ impl NexusApp {
         nickname: String,
         target: String,
     ) -> Task<Message> {
-        let Some(conn) = self.connections.get_mut(&connection_id) else {
-            return Task::none();
-        };
-
         // Check if we're the one who left (kicked due to permission revocation)
-        let is_self = conn.nickname.to_lowercase() == nickname.to_lowercase();
+        let is_self = self
+            .connections
+            .get(&connection_id)
+            .map(|conn| conn.nickname.to_lowercase() == nickname.to_lowercase())
+            .unwrap_or(false);
 
         if is_self {
-            // We were kicked from voice - clear our session
-            conn.voice_session = None;
-
-            // Clear active voice connection if it was this one
-            if self.active_voice_connection == Some(connection_id) {
-                self.active_voice_connection = None;
-            }
+            // We left voice - clean up fully
+            self.cleanup_voice_session(connection_id);
 
             // Show notification in target tab
             let message = ChatMessage::system(t("msg-voice-you-left"));
@@ -188,6 +241,10 @@ impl NexusApp {
                 return self.add_user_message(connection_id, &target, message);
             }
         }
+
+        let Some(conn) = self.connections.get_mut(&connection_id) else {
+            return Task::none();
+        };
 
         // Another user left - update if we're in the same voice session
         if let Some(ref mut session) = conn.voice_session

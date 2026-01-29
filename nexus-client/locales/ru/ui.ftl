@@ -364,6 +364,7 @@ err-dir-name-invalid = Имя папки содержит недопустимы
 tab-general = Общие
 tab-chat = Чат
 tab-network = Сеть
+tab-audio = Аудио
 
 # =============================================================================
 # Chat Tab Labels
@@ -805,6 +806,7 @@ transfer-save-permissions-failed = Не удалось установить пр
 
 # Settings tab
 settings-tab-events = События
+settings-tab-audio = Аудио
 
 # Event type names
 event-broadcast = Трансляция
@@ -974,6 +976,11 @@ err-voice-already-active = Вы уже находитесь в голосово�
 err-voice-no-permission = У вас нет разрешения на подключение к голосовому чату
 err-voice-not-in-channel = Вы должны быть в канале, чтобы присоединиться к голосовому чату
 err-voice-not-in-session = Вы не находитесь в голосовом чате
+err-voice-resolve-address = Не удалось определить адрес сервера для голосового чата
+err-voice-resolve = Не удалось определить адрес сервера: { $error }
+err-voice-connection-failed = Ошибка подключения к голосовому чату: { $error }
+err-voice-disconnected = Голосовой чат отключён: { $reason }
+err-voice-audio = Ошибка аудио: { $error }
 
 # Voice success messages
 msg-voice-joined = Присоединился к голосовому чату в { $target } ({ $count } других)
@@ -981,10 +988,38 @@ msg-voice-joined-empty = Присоединился к голосовому ча
 msg-voice-left = Покинул голосовой чат в { $target }
 msg-voice-user-joined = { $nickname } присоединился к голосовому чату
 msg-voice-user-left = { $nickname } покинул голосовой чат
-msg-voice-you-left = Вы были удалены из голосового чата
+msg-voice-you-left = Вы покинули голосовой чат
 
 # Voice UI
 voice-join-tooltip = Присоединиться к голосовому чату
 voice-leave-tooltip = Покинуть голосовой чат
-voice-bar-participants = { $count } в голосовом чате
+voice-mute-all-tooltip = Отключить всех
+voice-unmute-all-tooltip = Включить звук
+voice-bar-participants = ({ $count })
 voice-indicator-tooltip = В голосовом чате
+tooltip-mute = Отключить звук
+tooltip-unmute = Включить звук
+
+# Voice quality levels
+voice-quality-low = Низкое (16 кбит/с)
+voice-quality-medium = Среднее (32 кбит/с)
+voice-quality-high = Высокое (64 кбит/с)
+voice-quality-very-high = Очень высокое (96 кбит/с)
+
+# PTT modes
+ptt-mode-hold = Удерживать для разговора
+ptt-mode-toggle = Переключение
+
+# Audio settings
+audio-output-device = Устройство вывода
+audio-input-device = Устройство ввода
+audio-refresh-devices = Обновить устройства
+audio-voice-quality = Качество голоса
+audio-ptt-key = Клавиша Push-to-Talk
+audio-ptt-mode = Режим PTT
+audio-ptt-key-hint = Нажмите любую клавишу…
+audio-input-level = Уровень входа
+audio-system-default = Системное по умолчанию
+audio-test-mic = Тест микрофона
+audio-testing = Тестирование…
+audio-stop-test = Остановить тест

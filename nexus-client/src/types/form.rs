@@ -1256,6 +1256,9 @@ pub enum SettingsTab {
     Files,
     /// Event notification settings
     Events,
+    /// Audio settings for voice chat
+    #[allow(dead_code)]
+    Audio,
 }
 
 /// Settings panel form state
@@ -1276,6 +1279,16 @@ pub struct SettingsFormState {
     pub default_avatar: CachedImage,
     /// Currently selected event type in Events tab
     pub selected_event_type: EventType,
+    /// Whether PTT key capture mode is active
+    pub ptt_capturing: bool,
+    /// Whether microphone test is active
+    pub mic_testing: bool,
+    /// Current microphone input level (0.0 - 1.0)
+    pub mic_level: f32,
+    /// Cached output audio devices (populated once when settings opens)
+    pub output_devices: Vec<crate::voice::audio::AudioDevice>,
+    /// Cached input audio devices (populated once when settings opens)
+    pub input_devices: Vec<crate::voice::audio::AudioDevice>,
 }
 
 // Manual Debug implementation because CachedImage doesn't implement Debug
@@ -1290,6 +1303,11 @@ impl std::fmt::Debug for SettingsFormState {
             )
             .field("default_avatar", &"<cached>")
             .field("selected_event_type", &self.selected_event_type)
+            .field("ptt_capturing", &self.ptt_capturing)
+            .field("mic_testing", &self.mic_testing)
+            .field("mic_level", &self.mic_level)
+            .field("output_devices", &self.output_devices.len())
+            .field("input_devices", &self.input_devices.len())
             .finish()
     }
 }
@@ -1444,6 +1462,10 @@ impl SettingsFormState {
         // Generate default avatar for settings preview
         let default_avatar = generate_identicon("default");
 
+        // Cache audio device lists once when settings opens (avoids ALSA spam on every frame)
+        let output_devices = crate::voice::audio::list_output_devices();
+        let input_devices = crate::voice::audio::list_input_devices();
+
         Self {
             active_tab: last_tab,
             original_config: config.clone(),
@@ -1451,6 +1473,11 @@ impl SettingsFormState {
             cached_avatar,
             default_avatar,
             selected_event_type: last_event_type,
+            ptt_capturing: false,
+            mic_testing: false,
+            mic_level: 0.0,
+            output_devices,
+            input_devices,
         }
     }
 }

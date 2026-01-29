@@ -14,7 +14,8 @@ docker pull ghcr.io/zquestz/nexusd:latest
 
 # Run the container
 docker run -d \
-  -p 7500:7500 \
+  -p 7500:7500/tcp \
+  -p 7500:7500/udp \
   -p 7501:7501 \
   -v nexus-data:/home/nexus/.local/share/nexusd \
   --name nexusd \
@@ -22,7 +23,8 @@ docker run -d \
 
 # With WebSocket support enabled
 docker run -d \
-  -p 7500:7500 \
+  -p 7500:7500/tcp \
+  -p 7500:7500/udp \
   -p 7501:7501 \
   -p 7502:7502 \
   -p 7503:7503 \
@@ -43,7 +45,8 @@ services:
     container_name: nexusd
     restart: unless-stopped
     ports:
-      - "7500:7500"
+      - "7500:7500/tcp"
+      - "7500:7500/udp"
       - "7501:7501"
     volumes:
       - nexus-data:/home/nexus/.local/share/nexusd
@@ -113,7 +116,8 @@ docker build -t nexus-server .
 
 # Run the container
 docker run -d \
-  -p 7500:7500 \
+  -p 7500:7500/tcp \
+  -p 7500:7500/udp \
   -p 7501:7501 \
   -v nexus-data:/home/nexus/.local/share/nexusd \
   --name nexusd \
@@ -143,7 +147,8 @@ environment:
 
 ```yaml
 ports:
-  - "7500:7500"
+  - "7500:7500/tcp"
+  - "7500:7500/udp"
   - "7501:7501"
   - "7502:7502"
   - "7503:7503"
@@ -195,11 +200,12 @@ volumes:
 
 ```yaml
 ports:
-  - "7500:7500"   # Main BBS
-  - "7501:7501"   # File transfers
+  - "7500:7500/tcp"   # Main BBS
+  - "7500:7500/udp"   # Voice chat
+  - "7501:7501"       # File transfers
   # Uncomment for WebSocket support (requires NEXUS_WEBSOCKET=true)
-  # - "7502:7502"   # WebSocket BBS
-  # - "7503:7503"   # WebSocket transfers
+  # - "7502:7502"     # WebSocket BBS
+  # - "7503:7503"     # WebSocket transfers
 ```
 
 ### Custom Ports
@@ -208,8 +214,9 @@ To use different external ports:
 
 ```yaml
 ports:
-  - "8500:7500"   # External 8500 → Internal 7500
-  - "8501:7501"   # External 8501 → Internal 7501
+  - "8500:7500/tcp"   # External 8500 → Internal 7500 (BBS)
+  - "8500:7500/udp"   # External 8500 → Internal 7500 (Voice)
+  - "8501:7501"       # External 8501 → Internal 7501
 ```
 
 ### Specific Interface
@@ -218,7 +225,8 @@ Bind to a specific host interface:
 
 ```yaml
 ports:
-  - "192.168.1.100:7500:7500"
+  - "192.168.1.100:7500:7500/tcp"
+  - "192.168.1.100:7500:7500/udp"
   - "192.168.1.100:7501:7501"
 ```
 

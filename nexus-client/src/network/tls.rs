@@ -190,7 +190,7 @@ fn normalize_address(address: &str) -> &str {
 /// - IPv4 loopback (127.x.x.x)
 /// - IPv6 loopback (::1)
 fn is_loopback_address(address: &str) -> bool {
-    if address.eq_ignore_ascii_case("localhost") {
+    if address.to_lowercase() == "localhost" {
         return true;
     }
 

@@ -99,9 +99,8 @@ impl NexusApp {
                             .connections
                             .get(&connection_id)
                             .map(|c| {
-                                c.connection_info
-                                    .username
-                                    .eq_ignore_ascii_case(&item.author)
+                                c.connection_info.username.to_lowercase()
+                                    == item.author.to_lowercase()
                             })
                             .unwrap_or(false);
 

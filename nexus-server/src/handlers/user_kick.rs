@@ -11,6 +11,7 @@ use super::{
     HandlerContext, err_authentication, err_cannot_kick_admin, err_cannot_kick_self, err_database,
     err_kicked_by, err_kicked_by_with_reason, err_nickname_empty, err_nickname_invalid,
     err_nickname_not_online, err_nickname_too_long, err_not_logged_in, err_permission_denied,
+    remove_user_with_voice_cleanup,
 };
 use crate::db::Permission;
 
@@ -150,11 +151,15 @@ where
         };
         let _ = user.tx.send((kick_msg, None));
 
-        // Remove user from UserManager and broadcast disconnection
+        // Remove from voice (if in voice) and UserManager, broadcast disconnection
         let target_session_id = user.session_id;
-        ctx.user_manager
-            .remove_user_and_broadcast(target_session_id)
-            .await;
+        remove_user_with_voice_cleanup(
+            ctx.user_manager,
+            ctx.voice_registry,
+            target_session_id,
+            &user,
+        )
+        .await;
     }
 
     // Send success response to requester

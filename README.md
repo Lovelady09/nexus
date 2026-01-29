@@ -1,7 +1,7 @@
 # Nexus BBS
 
 [![CI](https://github.com/zquestz/nexus/workflows/CI/badge.svg)](https://github.com/zquestz/nexus/actions)
-[![Version](https://img.shields.io/badge/version-0.5.1-blue.svg)](https://github.com/zquestz/nexus)
+[![Version](https://img.shields.io/badge/version-0.5.3-blue.svg)](https://github.com/zquestz/nexus)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Rust](https://img.shields.io/badge/rust-2024-orange.svg)](https://www.rust-lang.org/)
 
@@ -12,6 +12,7 @@ A modern BBS inspired by Hotline, KDX, Carracho, and Wired. Built for the [Yggdr
 ## Features
 
 - **Chat** — Real-time messaging with channels, user messages, broadcasts, and persistent message history
+- **Voice** — Push-to-talk voice chat for channels and user messages with Opus codec and DTLS encryption
 - **Files** — Multi-tab browser with search, downloads, uploads, pause/resume, and queue management
 - **News** — Bulletin board with Markdown and image support
 - **Users** — 39 granular permissions, shared accounts, guest access, custom avatars

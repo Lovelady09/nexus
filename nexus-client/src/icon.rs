@@ -1,6 +1,6 @@
 // Generated automatically by iced_fontello at build time.
 // Do not edit manually. Source: ../fonts/icons.toml
-// bd4e424b7628fbc81c961b6ab19884069705709a68999b739a27f9595146f82c
+// fdc09a5ea3af54e7769933bacb3b6c2c9f04ddc04e9d80dd7ee5e87fb640e099
 use iced::Font;
 use iced::widget::{Text, text};
 
@@ -204,6 +204,14 @@ pub fn user_plus<'a>() -> Text<'a> {
 
 pub fn users<'a>() -> Text<'a> {
     icon("\u{1F465}")
+}
+
+pub fn volume_off<'a>() -> Text<'a> {
+    icon("\u{1F507}")
+}
+
+pub fn volume_up<'a>() -> Text<'a> {
+    icon("\u{1F50A}")
 }
 
 fn icon(codepoint: &str) -> Text<'_> {

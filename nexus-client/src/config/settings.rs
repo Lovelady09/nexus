@@ -2,6 +2,7 @@
 
 use crate::style::{WINDOW_HEIGHT, WINDOW_WIDTH};
 
+use super::audio::AudioSettings;
 use super::events::{EventSettings, EventType};
 use super::theme::ThemePreference;
 
@@ -289,6 +290,10 @@ pub struct Settings {
     /// Chat history retention policy for user message conversations
     #[serde(default)]
     pub chat_history_retention: ChatHistoryRetention,
+
+    /// Audio settings for voice chat
+    #[serde(default)]
+    pub audio: AudioSettings,
 }
 
 /// Default value for max_scrollback setting
@@ -325,6 +330,7 @@ impl Default for Settings {
             selected_event_type: EventType::default(),
             max_scrollback: default_max_scrollback(),
             chat_history_retention: ChatHistoryRetention::default(),
+            audio: AudioSettings::default(),
         }
     }
 }
@@ -354,6 +360,7 @@ impl std::fmt::Debug for Settings {
             .field("proxy", &self.proxy)
             .field("max_scrollback", &self.max_scrollback)
             .field("chat_history_retention", &self.chat_history_retention)
+            .field("audio", &self.audio)
             .finish()
     }
 }

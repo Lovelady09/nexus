@@ -52,9 +52,9 @@ pub use widgets::{
     content_background_style, context_menu_container_style, danger_icon_button_style,
     disabled_icon_button_style, drop_overlay_style, error_text_style, icon_button_with_hover_style,
     list_item_button_style, menu_button_danger_style, menu_button_style, modal_overlay_style,
-    muted_text_style, panel_title, separator_style, sidebar_panel_style, toolbar_background_style,
-    toolbar_button_style, tooltip_container_style, transparent_icon_button_style,
-    upload_folder_style, user_list_item_button_style, user_toolbar_separator_style,
-    voice_bar_style,
+    muted_text_style, panel_title, separator_style, sidebar_panel_style, speaking_indicator_style,
+    toolbar_background_style, toolbar_button_style, tooltip_container_style,
+    transparent_icon_button_style, upload_folder_style, user_list_item_button_style,
+    user_toolbar_separator_style, voice_bar_style, voice_deafen_button_style,
 };
 pub use window::*;

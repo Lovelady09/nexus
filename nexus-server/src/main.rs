@@ -43,6 +43,13 @@ use voice::{VoiceRegistry, VoiceUdpServer, create_voice_listener};
 
 #[tokio::main]
 async fn main() {
+    // Install rustls crypto provider before any TLS/DTLS operations
+    // This is required because both tokio-rustls and dtls use rustls 0.23
+    // which needs an explicit crypto provider selection
+    tokio_rustls::rustls::crypto::ring::default_provider()
+        .install_default()
+        .expect("Failed to install rustls crypto provider");
+
     let args = Args::parse();
 
     // Print banner first

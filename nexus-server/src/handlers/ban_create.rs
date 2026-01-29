@@ -11,10 +11,10 @@ use nexus_common::validators::{self, BanReasonError, DurationError, TargetError}
 
 use super::duration::{format_duration_remaining, parse_duration};
 use super::{
-    HandlerContext, err_authentication, err_ban_admin_by_ip, err_ban_admin_by_nickname,
-    err_ban_invalid_duration, err_ban_invalid_target, err_ban_self, err_database,
-    err_not_logged_in, err_permission_denied, err_reason_invalid, err_reason_too_long,
-    err_target_too_long,
+    HandlerContext, cleanup_voice_for_ip, cleanup_voice_for_range, err_authentication,
+    err_ban_admin_by_ip, err_ban_admin_by_nickname, err_ban_invalid_duration,
+    err_ban_invalid_target, err_ban_self, err_database, err_not_logged_in, err_permission_denied,
+    err_reason_invalid, err_reason_too_long, err_target_too_long,
 };
 use crate::db::Permission;
 use crate::ip_rule_cache::parse_ip_or_cidr;
@@ -268,6 +268,31 @@ where
             .expect("ip rule cache lock poisoned");
         for target_str in &banned_targets {
             cache.add_ban(target_str, expires_at);
+        }
+    }
+
+    // Clean up voice sessions before disconnecting users
+    // This ensures users are properly removed from voice and other participants are notified.
+    // Note: Trusted IPs are skipped - they won't be disconnected.
+    if is_cidr {
+        if let Some(net) = parse_ip_or_cidr(&banned_targets[0]) {
+            cleanup_voice_for_range(ctx.user_manager, ctx.voice_registry, &net, |ip| {
+                ctx.ip_rule_cache
+                    .read()
+                    .expect("ip rule cache lock poisoned")
+                    .is_trusted_read_only(*ip)
+            })
+            .await;
+        }
+    } else {
+        for ip in &banned_targets {
+            cleanup_voice_for_ip(ctx.user_manager, ctx.voice_registry, ip, |ip| {
+                ctx.ip_rule_cache
+                    .read()
+                    .expect("ip rule cache lock poisoned")
+                    .is_trusted_read_only(*ip)
+            })
+            .await;
         }
     }
 

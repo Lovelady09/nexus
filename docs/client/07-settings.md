@@ -13,6 +13,7 @@ Settings are organized into tabs:
 - **Files** — Download location, transfer limits
 - **Network** — Proxy configuration
 - **Events** — Desktop notifications and sounds
+- **Audio** — Voice chat devices and push-to-talk settings
 
 ## General Tab
 
@@ -151,6 +152,64 @@ Route connections through a SOCKS5 proxy (e.g., Tor).
 - Loopback addresses (127.0.0.1, localhost)
 - Yggdrasil addresses (0200::/7)
 
+## Audio Tab
+
+Configure voice chat settings. See [Voice Chat](10-voice-chat.md) for usage details.
+
+### Output Device
+
+Select the audio output device for:
+- Voice chat audio from other users
+- Notification sounds
+
+Choose **System Default** to use your operating system's default output device.
+
+### Input Device
+
+Select the microphone for voice chat transmission.
+
+Choose **System Default** to use your operating system's default input device.
+
+**Tip:** Use the level meter to verify your microphone is working. Speak and watch for the meter to respond.
+
+### Voice Quality
+
+Controls the audio quality and bandwidth usage:
+
+| Level | Bitrate | Description |
+|-------|---------|-------------|
+| Low | 16 kbps | For poor connections |
+| Medium | 32 kbps | Balanced quality/bandwidth |
+| High | 64 kbps | Good quality (default) |
+| Very High | 96 kbps | Best quality, highest bandwidth |
+
+Higher quality sounds better but uses more bandwidth.
+
+### PTT Key
+
+The push-to-talk key for voice transmission. Click the field and press a key to change it.
+
+Default: **Backtick** (`` ` ``)
+
+Supported keys:
+- Letters (A-Z)
+- Numbers (0-9)
+- Function keys (F1-F12)
+- Special keys (Space, Tab, Backtick, etc.)
+
+### PTT Mode
+
+How the push-to-talk key behaves:
+
+| Mode | Behavior |
+|------|----------|
+| **Hold** | Press and hold to talk; release to stop |
+| **Toggle** | Press once to start; press again to stop |
+
+### Mute All
+
+When in a voice session, a **Mute All** button appears in the voice bar (speaker icon on the right). Click it to mute all incoming voice audio without leaving the session. Click again to unmute. This is useful when you need to temporarily stop hearing others while staying connected.
+
 ## Events Tab
 
 Configure desktop notifications and sounds for different events.
@@ -274,3 +333,4 @@ Check that you have write permission to the config directory:
 
 - [Troubleshooting](08-troubleshooting.md) — Common issues and solutions
 - [Connections](02-connections.md) — Connection and bookmark settings
+- [Voice Chat](10-voice-chat.md) — Push-to-talk voice communication

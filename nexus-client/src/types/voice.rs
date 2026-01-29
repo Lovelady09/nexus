@@ -1,34 +1,38 @@
-//! Voice session types for tracking active voice state
+//! Voice state types for tracking active voice UI state
 
-use uuid::Uuid;
+use std::collections::HashSet;
 
-/// Active voice session state
+/// Active voice state for UI display
 ///
-/// Tracks the current voice session for a connection, including the target
-/// (channel or user message), authentication token, and list of participants.
+/// Tracks the local view of a voice session for a connection, including the target
+/// (channel or user message), participants, speaking indicators, and mute state.
+/// This is distinct from the server's VoiceSession which tracks authentication and routing.
 #[derive(Debug, Clone)]
-pub struct VoiceSession {
+pub struct VoiceState {
     /// Target channel (e.g., "#general") or other user's nickname for user message voice
     pub target: String,
-    /// Voice token for UDP authentication
-    #[allow(dead_code)] // Used in Phase 2 for UDP authentication
-    pub token: Uuid,
     /// Nicknames of users currently in this voice session
     pub participants: Vec<String>,
+    /// Nicknames of users currently speaking (lowercase for case-insensitive lookup)
+    pub speaking_users: HashSet<String>,
+    /// Nicknames of users muted by the local user (lowercase for case-insensitive lookup)
+    /// This is client-side only - stops playing audio from these users
+    pub muted_users: HashSet<String>,
 }
 
-impl VoiceSession {
-    /// Create a new voice session
-    pub fn new(target: String, token: Uuid, participants: Vec<String>) -> Self {
+impl VoiceState {
+    /// Create a new voice state
+    pub fn new(target: String, participants: Vec<String>) -> Self {
         Self {
             target,
-            token,
             participants,
+            speaking_users: HashSet::new(),
+            muted_users: HashSet::new(),
         }
     }
 
     /// Check if the target is a channel (starts with #)
-    #[allow(dead_code)] // Used in Phase 2 for UI logic
+    #[allow(dead_code)] // Available for UI logic
     pub fn is_channel(&self) -> bool {
         self.target.starts_with('#')
     }
@@ -49,5 +53,40 @@ impl VoiceSession {
     /// Get the number of participants
     pub fn participant_count(&self) -> usize {
         self.participants.len()
+    }
+
+    /// Mark a user as speaking
+    pub fn set_speaking(&mut self, nickname: &str) {
+        self.speaking_users.insert(nickname.to_lowercase());
+    }
+
+    /// Mark a user as not speaking
+    pub fn set_not_speaking(&mut self, nickname: &str) {
+        self.speaking_users.remove(&nickname.to_lowercase());
+    }
+
+    /// Check if a user is currently speaking
+    pub fn is_speaking(&self, nickname: &str) -> bool {
+        self.speaking_users.contains(&nickname.to_lowercase())
+    }
+
+    /// Get the number of users currently speaking
+    pub fn speaking_count(&self) -> usize {
+        self.speaking_users.len()
+    }
+
+    /// Mute a user (client-side, stops playing their audio)
+    pub fn mute_user(&mut self, nickname: &str) {
+        self.muted_users.insert(nickname.to_lowercase());
+    }
+
+    /// Unmute a user
+    pub fn unmute_user(&mut self, nickname: &str) {
+        self.muted_users.remove(&nickname.to_lowercase());
+    }
+
+    /// Check if a user is muted
+    pub fn is_muted(&self, nickname: &str) -> bool {
+        self.muted_users.contains(&nickname.to_lowercase())
     }
 }

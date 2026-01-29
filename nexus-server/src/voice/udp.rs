@@ -37,14 +37,16 @@ use nexus_common::voice::{
     VoicePacket,
 };
 
+/// Interval between stale client cleanup checks (seconds)
+const STALE_CLIENT_CHECK_INTERVAL_SECS: u64 = 30;
+
 use crate::db::Permission;
 use crate::ip_rule_cache::IpRuleCache;
 use crate::users::UserManager;
 
-use super::VoiceRegistry;
+use super::{VoiceRegistry, send_voice_leave_notifications};
 
 /// DTLS connection state for a voice client
-#[allow(dead_code)] // Fields used in handle_connection and cleanup_loop
 struct DtlsClient {
     /// The DTLS connection
     conn: Arc<dyn Conn + Send + Sync>,
@@ -56,6 +58,10 @@ struct DtlsClient {
     last_packet: Instant,
     /// Nickname of the user (cached for relay, set after token validation)
     nickname: Option<String>,
+    /// Target key for voice session (cached to avoid registry lookups)
+    target_key: Option<String>,
+    /// Session ID for permission checks (cached to avoid registry lookups)
+    session_id: Option<u32>,
 }
 
 /// Manages UDP/DTLS voice connections
@@ -74,7 +80,6 @@ pub struct VoiceUdpServer {
     debug: bool,
 }
 
-#[allow(dead_code)] // Will be wired up in main.rs
 impl VoiceUdpServer {
     /// Create a new voice UDP server with a pre-created DTLS listener
     ///
@@ -165,6 +170,8 @@ impl VoiceUdpServer {
                         addr: remote_addr,
                         last_packet: Instant::now(),
                         nickname: None,
+                        target_key: None,
+                        session_id: None,
                     }));
 
                     // Store client
@@ -265,41 +272,54 @@ impl VoiceUdpServer {
             client_guard.last_packet = Instant::now();
         }
 
-        // Get or validate token
-        let (token, nickname) = {
+        // Get or validate token and cached session info
+        let (token, nickname, target_key, session_id) = {
             let client_guard = client.read().await;
-            (client_guard.token, client_guard.nickname.clone())
+            (
+                client_guard.token,
+                client_guard.nickname.clone(),
+                client_guard.target_key.clone(),
+                client_guard.session_id,
+            )
         };
 
-        let (validated_token, sender_nickname) = if let (Some(t), Some(n)) = (token, nickname) {
-            // Already validated
-            (t, n)
-        } else {
-            // First packet or need to validate
-            let Some(session) = self.registry.get_by_token(packet.token).await else {
-                if self.debug {
-                    let addr = client.read().await.addr;
-                    eprintln!("Voice DTLS: Unknown token from {}", addr);
-                }
-                return;
-            };
-
-            // Update client state with validated info
+        let (validated_token, sender_nickname, cached_target_key, cached_session_id) =
+            if let (Some(t), Some(n), Some(tk), Some(sid)) =
+                (token, nickname, target_key, session_id)
             {
-                let mut client_guard = client.write().await;
-                client_guard.token = Some(packet.token);
-                client_guard.nickname = Some(session.nickname.clone());
+                // Already validated
+                (t, n, tk, sid)
+            } else {
+                // First packet or need to validate
+                let Some(session) = self.registry.get_by_token(packet.token).await else {
+                    if self.debug {
+                        let addr = client.read().await.addr;
+                        eprintln!("Voice DTLS: Unknown token from {}", addr);
+                    }
+                    return;
+                };
 
-                // Update UDP address in registry
-                if session.udp_addr.is_none() {
-                    self.registry
-                        .set_udp_addr(packet.token, client_guard.addr)
-                        .await;
+                let tk = session.target_key();
+                let sid = session.session_id;
+
+                // Update client state with validated info
+                {
+                    let mut client_guard = client.write().await;
+                    client_guard.token = Some(packet.token);
+                    client_guard.nickname = Some(session.nickname.clone());
+                    client_guard.target_key = Some(tk.clone());
+                    client_guard.session_id = Some(sid);
+
+                    // Update UDP address in registry
+                    if session.udp_addr.is_none() {
+                        self.registry
+                            .set_udp_addr(packet.token, client_guard.addr)
+                            .await;
+                    }
                 }
-            }
 
-            (packet.token, session.nickname)
-        };
+                (packet.token, session.nickname, tk, sid)
+            };
 
         // Verify token matches (in case client tries to switch tokens)
         if packet.token != validated_token {
@@ -322,31 +342,28 @@ impl VoiceUdpServer {
             VoiceMessageType::VoiceData
             | VoiceMessageType::SpeakingStarted
             | VoiceMessageType::SpeakingStopped => {
-                // Get target key from session
-                if let Some(session) = self.registry.get_by_token(packet.token).await {
-                    // Check voice_talk permission before relaying (optimized to avoid cloning UserSession)
-                    match self
-                        .user_manager
-                        .has_permission(session.session_id, Permission::VoiceTalk)
-                        .await
-                    {
-                        Some(true) => {
-                            // User has permission, relay the packet
-                            self.relay_packet(&packet, &sender_nickname, &session.target_key())
-                                .await;
+                // Check voice_talk permission before relaying (uses cached session_id)
+                match self
+                    .user_manager
+                    .has_permission(cached_session_id, Permission::VoiceTalk)
+                    .await
+                {
+                    Some(true) => {
+                        // User has permission, relay the packet (uses cached target_key)
+                        self.relay_packet(&packet, &sender_nickname, &cached_target_key)
+                            .await;
+                    }
+                    Some(false) => {
+                        // User lacks permission, drop packet silently
+                        if self.debug {
+                            eprintln!(
+                                "Voice DTLS: {} lacks voice_talk permission, dropping packet",
+                                sender_nickname
+                            );
                         }
-                        Some(false) => {
-                            // User lacks permission, drop packet silently
-                            if self.debug {
-                                eprintln!(
-                                    "Voice DTLS: {} lacks voice_talk permission, dropping packet",
-                                    sender_nickname
-                                );
-                            }
-                        }
-                        None => {
-                            // User disconnected, drop packet
-                        }
+                    }
+                    None => {
+                        // User disconnected, drop packet
                     }
                 }
             }
@@ -394,7 +411,7 @@ impl VoiceUdpServer {
 
     /// Cleanup loop for removing stale client entries
     async fn cleanup_loop(&self) {
-        let check_interval = Duration::from_secs(30);
+        let check_interval = Duration::from_secs(STALE_CLIENT_CHECK_INTERVAL_SECS);
         let timeout = Duration::from_secs(VOICE_SESSION_TIMEOUT_SECS);
 
         loop {
@@ -403,37 +420,57 @@ impl VoiceUdpServer {
             let now = Instant::now();
             let mut clients = self.clients.write().await;
 
-            // Collect addresses of timed-out clients
+            // Collect addresses and tokens of timed-out clients
             let mut timed_out = Vec::new();
             for (addr, client) in clients.iter() {
                 let client_guard = client.read().await;
                 if now.duration_since(client_guard.last_packet) > timeout {
-                    timed_out.push(*addr);
+                    timed_out.push((*addr, client_guard.token, client_guard.nickname.clone()));
                 }
             }
 
             // Remove timed-out clients
-            for addr in timed_out {
+            for (addr, token, nickname) in timed_out {
                 if let Some(client) = clients.remove(&addr) {
                     let client_guard = client.read().await;
                     if self.debug {
                         eprintln!(
                             "Voice DTLS: Cleanup timed out client: {:?} ({})",
-                            client_guard.nickname, addr
+                            nickname, addr
                         );
                     }
                     // Close connection
                     let _ = client_guard.conn.close().await;
                 }
+
+                // Remove VoiceSession from registry and broadcast VoiceUserLeft
+                if let Some(token) = token
+                    && let Some(info) = self.registry.remove_by_token(token).await
+                {
+                    // Get the leaving user's tx if still connected
+                    let leaving_user_tx = self
+                        .user_manager
+                        .get_user_by_session_id(info.session.session_id)
+                        .await
+                        .map(|u| u.tx.clone());
+
+                    // Send notifications using the consolidated helper
+                    send_voice_leave_notifications(
+                        &info,
+                        leaving_user_tx.as_ref(),
+                        &self.user_manager,
+                    )
+                    .await;
+
+                    if self.debug {
+                        eprintln!(
+                            "Voice DTLS: Removed timed out voice session for {}",
+                            info.session.nickname
+                        );
+                    }
+                }
             }
         }
-    }
-
-    /// Get the number of active DTLS clients
-    #[allow(dead_code)]
-    pub async fn client_count(&self) -> usize {
-        let clients = self.clients.read().await;
-        clients.len()
     }
 }
 
@@ -473,8 +510,16 @@ fn load_dtls_config(cert_path: &Path, key_path: &Path) -> Result<DtlsConfig, Str
     let key_pem = fs::read_to_string(key_path)
         .map_err(|e| format!("Failed to read private key file: {}", e))?;
 
-    // Combine into single PEM string (Certificate::from_pem expects both in one string)
-    let combined_pem = format!("{}\n{}", cert_pem, key_pem);
+    // WORKAROUND: The dtls crate (0.13.0) has a bug in its PEM parser - it expects the tag
+    // "PRIVATE_KEY" (with underscore) but standard PKCS#8 PEM files use "PRIVATE KEY" (with space).
+    // See: https://github.com/webrtc-rs/webrtc/tree/master/dtls
+    // Convert the tag to work around this bug.
+    let key_pem = key_pem
+        .replace("-----BEGIN PRIVATE KEY-----", "-----BEGIN PRIVATE_KEY-----")
+        .replace("-----END PRIVATE KEY-----", "-----END PRIVATE_KEY-----");
+
+    // Combine into single PEM string (Certificate::from_pem expects key first, then cert)
+    let combined_pem = format!("{}\n{}", key_pem, cert_pem);
 
     // Parse certificate with private key
     let certificate = Certificate::from_pem(&combined_pem)

@@ -133,6 +133,9 @@ impl NexusApp {
 
     /// Handle network error or connection closure
     pub fn handle_network_error(&mut self, connection_id: usize, error: String) -> Task<Message> {
+        // Clean up voice session first (before removing connection)
+        self.cleanup_voice_session(connection_id);
+
         // Get server name and pending kick message before removing connection
         let (server_name, pending_kick) = self
             .connections
@@ -192,11 +195,6 @@ impl NexusApp {
 
             // Clean up history key mapping (but keep the manager - it may be shared)
             self.connection_history_keys.remove(&connection_id);
-
-            // Clear active voice connection if this connection had the voice session
-            if self.active_voice_connection == Some(connection_id) {
-                self.active_voice_connection = None;
-            }
 
             // If this was the active connection, clear it
             if self.active_connection == Some(connection_id) {

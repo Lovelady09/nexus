@@ -4,14 +4,17 @@ use crate::config::settings::ChatHistoryRetention;
 
 use iced::widget::button as btn;
 use iced::widget::{
-    Column, Id, Space, button, checkbox, container, pick_list, row, scrollable, slider, text_input,
+    Column, Id, Space, button, checkbox, container, pick_list, progress_bar, row, scrollable,
+    slider, text_input,
 };
 use iced::{Center, Element, Fill, Theme};
 use iced_aw::NumberInput;
 use iced_aw::TabLabel;
 use iced_aw::Tabs;
+use nexus_common::voice::VoiceQuality;
 
 use super::chat::TimestampSettings;
+use crate::config::audio::{LocalizedVoiceQuality, PttMode};
 use crate::config::events::{EventSettings, EventType, NotificationContent, SoundChoice};
 use crate::config::settings::{
     CHAT_FONT_SIZES, ProxySettings, SOUND_VOLUME_MAX, SOUND_VOLUME_MIN, default_download_path,
@@ -27,6 +30,31 @@ use crate::style::{
     shaped_text, shaped_text_wrapped,
 };
 use crate::types::{InputId, Message, SettingsFormState, SettingsTab};
+use crate::voice::audio::AudioDevice;
+
+/// Data needed to render the audio settings tab
+pub struct AudioTabData<'a> {
+    /// Available output devices (borrowed from SettingsFormState cache)
+    pub output_devices: &'a [AudioDevice],
+    /// Selected output device
+    pub selected_output_device: AudioDevice,
+    /// Available input devices (borrowed from SettingsFormState cache)
+    pub input_devices: &'a [AudioDevice],
+    /// Selected input device
+    pub selected_input_device: AudioDevice,
+    /// Voice quality setting
+    pub voice_quality: VoiceQuality,
+    /// Push-to-talk key binding
+    pub ptt_key: &'a str,
+    /// Whether PTT key capture is active
+    pub ptt_capturing: bool,
+    /// Push-to-talk mode
+    pub ptt_mode: PttMode,
+    /// Whether microphone test is active
+    pub mic_testing: bool,
+    /// Current microphone input level (0.0 - 1.0)
+    pub mic_level: f32,
+}
 
 // ============================================================================
 // Settings View Data
@@ -72,6 +100,27 @@ pub struct SettingsViewData<'a> {
     pub sound_enabled: bool,
     /// Master volume for sounds (0.0 - 1.0)
     pub sound_volume: f32,
+    // ==================== Audio Settings ====================
+    /// Available output devices (borrowed from SettingsFormState cache)
+    pub output_devices: &'a [AudioDevice],
+    /// Selected output device
+    pub selected_output_device: AudioDevice,
+    /// Available input devices (borrowed from SettingsFormState cache)
+    pub input_devices: &'a [AudioDevice],
+    /// Selected input device
+    pub selected_input_device: AudioDevice,
+    /// Voice quality setting
+    pub voice_quality: VoiceQuality,
+    /// Push-to-talk key binding
+    pub ptt_key: &'a str,
+    /// Whether PTT key capture is active
+    pub ptt_capturing: bool,
+    /// Push-to-talk mode
+    pub ptt_mode: PttMode,
+    /// Whether microphone test is active
+    pub mic_testing: bool,
+    /// Current microphone input level (0.0 - 1.0)
+    pub mic_level: f32,
 }
 
 // ============================================================================
@@ -134,6 +183,19 @@ pub fn settings_view<'a>(data: SettingsViewData<'a>) -> Element<'a, Message> {
         data.sound_volume,
     );
 
+    let audio_content = audio_tab_content(AudioTabData {
+        output_devices: data.output_devices,
+        selected_output_device: data.selected_output_device.clone(),
+        input_devices: data.input_devices,
+        selected_input_device: data.selected_input_device.clone(),
+        voice_quality: data.voice_quality,
+        ptt_key: data.ptt_key,
+        ptt_capturing: data.ptt_capturing,
+        ptt_mode: data.ptt_mode,
+        mic_testing: data.mic_testing,
+        mic_level: data.mic_level,
+    });
+
     // Create tabs widget with compact styling
     let tabs = Tabs::new(Message::SettingsTabSelected)
         .push(
@@ -160,6 +222,11 @@ pub fn settings_view<'a>(data: SettingsViewData<'a>) -> Element<'a, Message> {
             SettingsTab::Events,
             TabLabel::Text(t("settings-tab-events")),
             events_content,
+        )
+        .push(
+            SettingsTab::Audio,
+            TabLabel::Text(t("tab-audio")),
+            audio_content,
         )
         .set_active_tab(&active_tab)
         .tab_bar_position(iced_aw::TabBarPosition::Top)
@@ -586,6 +653,155 @@ fn network_tab_content(proxy: &ProxySettings) -> Element<'_, Message> {
 // ============================================================================
 
 /// Build the events tab content
+fn audio_tab_content(data: AudioTabData<'_>) -> Element<'_, Message> {
+    let mut items: Vec<Element<'_, Message>> = Vec::new();
+
+    // Space between tab bar and first content
+    items.push(Space::new().height(SPACER_SIZE_MEDIUM).into());
+
+    // Output device picker
+    let output_label = shaped_text(t("audio-output-device")).size(TEXT_SIZE);
+    let output_picker = pick_list(
+        data.output_devices,
+        Some(data.selected_output_device),
+        Message::AudioOutputDeviceSelected,
+    )
+    .text_size(TEXT_SIZE);
+
+    let output_row = row![
+        output_label,
+        Space::new().width(ELEMENT_SPACING),
+        output_picker,
+    ]
+    .align_y(iced::Alignment::Center);
+    items.push(output_row.into());
+
+    items.push(Space::new().height(SPACER_SIZE_SMALL).into());
+
+    // Input device picker
+    let input_label = shaped_text(t("audio-input-device")).size(TEXT_SIZE);
+    let input_picker = pick_list(
+        data.input_devices,
+        Some(data.selected_input_device),
+        Message::AudioInputDeviceSelected,
+    )
+    .text_size(TEXT_SIZE);
+
+    let input_row = row![
+        input_label,
+        Space::new().width(ELEMENT_SPACING),
+        input_picker,
+    ]
+    .align_y(iced::Alignment::Center);
+    items.push(input_row.into());
+
+    items.push(Space::new().height(SPACER_SIZE_SMALL).into());
+
+    // Refresh devices button
+    let refresh_button = button(shaped_text(t("audio-refresh-devices")).size(TEXT_SIZE))
+        .on_press(Message::AudioRefreshDevices)
+        .padding(BUTTON_PADDING);
+    items.push(refresh_button.into());
+
+    items.push(Space::new().height(SPACER_SIZE_MEDIUM).into());
+
+    // Voice quality picker
+    let quality_label = shaped_text(t("audio-voice-quality")).size(TEXT_SIZE);
+    let quality_options = LocalizedVoiceQuality::all();
+    let quality_picker = pick_list(
+        quality_options,
+        Some(LocalizedVoiceQuality::from(data.voice_quality)),
+        |lq| Message::AudioQualitySelected(lq.into()),
+    )
+    .text_size(TEXT_SIZE);
+
+    let quality_row = row![
+        quality_label,
+        Space::new().width(ELEMENT_SPACING),
+        quality_picker,
+    ]
+    .align_y(iced::Alignment::Center);
+    items.push(quality_row.into());
+
+    items.push(Space::new().height(SPACER_SIZE_MEDIUM).into());
+
+    // PTT key capture
+    let ptt_key_label = shaped_text(t("audio-ptt-key")).size(TEXT_SIZE);
+    let ptt_key_display = if data.ptt_capturing {
+        t("audio-ptt-key-hint")
+    } else {
+        data.ptt_key.to_string()
+    };
+    let ptt_key_button = button(shaped_text(ptt_key_display).size(TEXT_SIZE))
+        .on_press(Message::AudioPttKeyCapture)
+        .padding(INPUT_PADDING)
+        .style(btn::secondary);
+
+    let ptt_key_row = row![
+        ptt_key_label,
+        Space::new().width(ELEMENT_SPACING),
+        ptt_key_button,
+    ]
+    .align_y(iced::Alignment::Center);
+    items.push(ptt_key_row.into());
+
+    items.push(Space::new().height(SPACER_SIZE_SMALL).into());
+
+    // PTT mode picker
+    let ptt_mode_label = shaped_text(t("audio-ptt-mode")).size(TEXT_SIZE);
+    let ptt_modes: Vec<PttMode> = PttMode::ALL.to_vec();
+    let ptt_mode_picker = pick_list(
+        ptt_modes,
+        Some(data.ptt_mode),
+        Message::AudioPttModeSelected,
+    )
+    .text_size(TEXT_SIZE);
+
+    let ptt_mode_row = row![
+        ptt_mode_label,
+        Space::new().width(ELEMENT_SPACING),
+        ptt_mode_picker,
+    ]
+    .align_y(iced::Alignment::Center);
+    items.push(ptt_mode_row.into());
+
+    items.push(Space::new().height(SPACER_SIZE_MEDIUM).into());
+
+    // Microphone test section
+    let mic_test_label = shaped_text(t("audio-input-level")).size(TEXT_SIZE);
+
+    // Progress bar for mic level
+    let mic_progress = progress_bar(0.0..=1.0, data.mic_level).girth(16);
+
+    let mic_test_button = if data.mic_testing {
+        button(shaped_text(t("audio-stop-test")).size(TEXT_SIZE))
+            .on_press(Message::AudioTestMicStop)
+            .padding(INPUT_PADDING)
+            .style(btn::secondary)
+    } else {
+        button(shaped_text(t("audio-test-mic")).size(TEXT_SIZE))
+            .on_press(Message::AudioTestMicStart)
+            .padding(INPUT_PADDING)
+            .style(btn::secondary)
+    };
+
+    let mic_test_row = row![
+        mic_test_label,
+        Space::new().width(ELEMENT_SPACING),
+        mic_progress,
+        Space::new().width(ELEMENT_SPACING),
+        mic_test_button,
+    ]
+    .align_y(iced::Alignment::Center)
+    .spacing(ELEMENT_SPACING);
+    items.push(mic_test_row.into());
+
+    Column::with_children(items)
+        .spacing(ELEMENT_SPACING)
+        .width(Fill)
+        .into()
+}
+
 fn events_tab_content<'a>(
     event_settings: &'a EventSettings,
     selected_event_type: EventType,

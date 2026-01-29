@@ -364,6 +364,7 @@ err-dir-name-invalid = フォルダ名に無効な文字が含まれています
 tab-general = 一般
 tab-chat = チャット
 tab-network = ネットワーク
+tab-audio = オーディオ
 
 # =============================================================================
 # Chat Tab Labels
@@ -777,6 +778,7 @@ transfer-save-permissions-failed = ファイルの権限の設定に失敗しま
 
 # Settings tab
 settings-tab-events = イベント
+settings-tab-audio = オーディオ
 
 # Event type names
 event-broadcast = ブロードキャスト
@@ -946,6 +948,11 @@ err-voice-already-active = 別のサーバーでボイスチャットに参加�
 err-voice-no-permission = ボイスチャットに参加する権限がありません
 err-voice-not-in-channel = ボイスチャットに参加するにはチャンネルに入室してください
 err-voice-not-in-session = ボイスチャットに参加していません
+err-voice-resolve-address = ボイス用のサーバーアドレスを解決できませんでした
+err-voice-resolve = サーバーアドレスを解決できませんでした: { $error }
+err-voice-connection-failed = ボイス接続に失敗しました: { $error }
+err-voice-disconnected = ボイスチャットが切断されました: { $reason }
+err-voice-audio = オーディオエラー: { $error }
 
 # Voice success messages
 msg-voice-joined = { $target } のボイスチャットに参加しました（他 { $count } 人）
@@ -953,10 +960,38 @@ msg-voice-joined-empty = { $target } のボイスチャットに参加しまし�
 msg-voice-left = { $target } のボイスチャットから退出しました
 msg-voice-user-joined = { $nickname } がボイスチャットに参加しました
 msg-voice-user-left = { $nickname } がボイスチャットから退出しました
-msg-voice-you-left = ボイスチャットから削除されました
+msg-voice-you-left = ボイスチャットを退出しました
 
 # Voice UI
 voice-join-tooltip = ボイスチャットに参加
 voice-leave-tooltip = ボイスチャットから退出
-voice-bar-participants = { $count } 人参加中
+voice-mute-all-tooltip = 全員ミュート
+voice-unmute-all-tooltip = ミュート解除
+voice-bar-participants = ({ $count })
 voice-indicator-tooltip = ボイスチャット中
+tooltip-mute = ミュート
+tooltip-unmute = ミュート解除
+
+# Voice quality levels
+voice-quality-low = 低 (16 kbps)
+voice-quality-medium = 中 (32 kbps)
+voice-quality-high = 高 (64 kbps)
+voice-quality-very-high = 最高 (96 kbps)
+
+# PTT modes
+ptt-mode-hold = 押している間話す
+ptt-mode-toggle = 切り替え
+
+# Audio settings
+audio-output-device = 出力デバイス
+audio-input-device = 入力デバイス
+audio-refresh-devices = デバイスを更新
+audio-voice-quality = 音声品質
+audio-ptt-key = プッシュトゥトークキー
+audio-ptt-mode = PTTモード
+audio-ptt-key-hint = 任意のキーを押してください…
+audio-input-level = 入力レベル
+audio-system-default = システムデフォルト
+audio-test-mic = マイクをテスト
+audio-testing = テスト中…
+audio-stop-test = テストを停止

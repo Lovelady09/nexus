@@ -364,6 +364,7 @@ err-dir-name-invalid = 폴더 이름에 잘못된 문자가 포함되어 있습�
 tab-general = 일반
 tab-chat = 채팅
 tab-network = 네트워크
+tab-audio = 오디오
 
 # =============================================================================
 # Chat Tab Labels
@@ -777,6 +778,7 @@ transfer-save-permissions-failed = 파일 권한 설정 실패: { $error }
 
 # Settings tab
 settings-tab-events = 이벤트
+settings-tab-audio = 오디오
 
 # Event type names
 event-broadcast = 브로드캐스트
@@ -946,6 +948,11 @@ err-voice-already-active = 이미 다른 서버에서 음성 채팅 중입니다
 err-voice-no-permission = 음성 채팅에 참여할 권한이 없습니다
 err-voice-not-in-channel = 음성 채팅에 참여하려면 채널에 있어야 합니다
 err-voice-not-in-session = 음성 채팅 세션에 있지 않습니다
+err-voice-resolve-address = 음성용 서버 주소를 확인할 수 없습니다
+err-voice-resolve = 서버 주소를 확인할 수 없습니다: { $error }
+err-voice-connection-failed = 음성 연결 실패: { $error }
+err-voice-disconnected = 음성 연결 끊김: { $reason }
+err-voice-audio = 오디오 오류: { $error }
 
 # Voice success messages
 msg-voice-joined = { $target }의 음성 채팅에 참여했습니다 ({ $count }명 참여 중)
@@ -953,10 +960,38 @@ msg-voice-joined-empty = { $target }의 음성 채팅에 참여했습니다
 msg-voice-left = { $target }의 음성 채팅에서 나갔습니다
 msg-voice-user-joined = { $nickname }님이 음성 채팅에 참여했습니다
 msg-voice-user-left = { $nickname }님이 음성 채팅에서 나갔습니다
-msg-voice-you-left = 음성 채팅에서 퇴장되었습니다
+msg-voice-you-left = 음성 채팅을 나갔습니다
 
 # Voice UI
 voice-join-tooltip = 음성 채팅 참여
 voice-leave-tooltip = 음성 채팅 나가기
-voice-bar-participants = { $count }명 참여 중
+voice-mute-all-tooltip = 전체 음소거
+voice-unmute-all-tooltip = 음소거 해제
+voice-bar-participants = ({ $count })
 voice-indicator-tooltip = 음성 채팅 중
+tooltip-mute = 음소거
+tooltip-unmute = 음소거 해제
+
+# Voice quality levels
+voice-quality-low = 낮음 (16 kbps)
+voice-quality-medium = 보통 (32 kbps)
+voice-quality-high = 높음 (64 kbps)
+voice-quality-very-high = 매우 높음 (96 kbps)
+
+# PTT modes
+ptt-mode-hold = 누르고 있는 동안 말하기
+ptt-mode-toggle = 전환
+
+# Audio settings
+audio-output-device = 출력 장치
+audio-input-device = 입력 장치
+audio-refresh-devices = 장치 새로 고침
+audio-voice-quality = 음성 품질
+audio-ptt-key = 푸시 투 토크 키
+audio-ptt-mode = PTT 모드
+audio-ptt-key-hint = 아무 키나 누르세요…
+audio-input-level = 입력 레벨
+audio-system-default = 시스템 기본값
+audio-test-mic = 마이크 테스트
+audio-testing = 테스트 중…
+audio-stop-test = 테스트 중지

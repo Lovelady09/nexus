@@ -112,6 +112,10 @@ use nexus_common::framing::{FrameWriter, MessageId};
 use nexus_common::io::send_server_message_with_id;
 use nexus_common::protocol::ServerMessage;
 
+use std::net::IpAddr;
+
+use ipnet::IpNet;
+
 use crate::channels::ChannelManager;
 use crate::connection_tracker::ConnectionTracker;
 use crate::db::Database;
@@ -119,7 +123,8 @@ use crate::files::FileIndex;
 use crate::ip_rule_cache::IpRuleCache;
 use crate::transfers::TransferRegistry;
 use crate::users::UserManager;
-use crate::voice::VoiceRegistry;
+use crate::users::user::UserSession;
+use crate::voice::{VoiceRegistry, send_voice_leave_notifications};
 
 /// Context passed to all handlers with shared resources
 pub struct HandlerContext<'a, W> {
@@ -195,4 +200,105 @@ pub fn current_timestamp() -> i64 {
         .duration_since(std::time::UNIX_EPOCH)
         .expect("System time should be after UNIX_EPOCH")
         .as_secs() as i64
+}
+
+/// Remove a user from voice (if in voice) and then from UserManager, broadcasting appropriate messages.
+///
+/// This helper ensures voice cleanup happens before user removal, which is needed when
+/// disconnecting users via handlers (kick, delete, disable) that don't go through the
+/// normal connection cleanup path in `connection.rs`.
+///
+/// Returns the removed UserSession if the user was found.
+pub async fn remove_user_with_voice_cleanup(
+    user_manager: &UserManager,
+    voice_registry: &VoiceRegistry,
+    session_id: u32,
+    user: &UserSession,
+) -> Option<UserSession> {
+    // Remove from voice session and notify remaining participants
+    if let Some(info) = voice_registry.remove_by_session_id(session_id).await {
+        // Notify the leaving user and broadcast to remaining participants
+        send_voice_leave_notifications(&info, Some(&user.tx), user_manager).await;
+    }
+
+    // Now remove from UserManager and broadcast UserDisconnected
+    user_manager.remove_user_and_broadcast(session_id).await
+}
+
+/// Clean up voice sessions for all users matching a specific IP address.
+///
+/// This should be called before disconnecting users via ban to ensure they are
+/// properly removed from voice and other participants are notified.
+///
+/// The `skip_ip` predicate can skip certain IPs (e.g., trusted IPs that won't be banned).
+pub async fn cleanup_voice_for_ip<S>(
+    user_manager: &UserManager,
+    voice_registry: &VoiceRegistry,
+    ip: &str,
+    skip_ip: S,
+) where
+    S: Fn(&IpAddr) -> bool,
+{
+    // Check if this IP should be skipped (e.g., trusted)
+    if let Ok(parsed_ip) = ip.parse::<IpAddr>()
+        && skip_ip(&parsed_ip)
+    {
+        return;
+    }
+
+    // Get all sessions from this IP
+    let sessions: Vec<UserSession> = user_manager
+        .get_all_users()
+        .await
+        .into_iter()
+        .filter(|u| u.address.ip().to_string() == ip)
+        .collect();
+
+    // Clean up voice for each session
+    for user in sessions {
+        cleanup_voice_for_session(user_manager, voice_registry, &user).await;
+    }
+}
+
+/// Clean up voice sessions for all users whose IP falls within a CIDR range.
+///
+/// This should be called before disconnecting users via ban to ensure they are
+/// properly removed from voice and other participants are notified.
+///
+/// The `skip_ip` predicate can skip certain IPs (e.g., trusted IPs that won't be banned).
+pub async fn cleanup_voice_for_range<S>(
+    user_manager: &UserManager,
+    voice_registry: &VoiceRegistry,
+    range: &IpNet,
+    skip_ip: S,
+) where
+    S: Fn(&IpAddr) -> bool,
+{
+    // Get all sessions in the range (excluding skipped IPs)
+    let sessions: Vec<UserSession> = user_manager
+        .get_all_users()
+        .await
+        .into_iter()
+        .filter(|u| {
+            let ip = u.address.ip();
+            range.contains(&ip) && !skip_ip(&ip)
+        })
+        .collect();
+
+    // Clean up voice for each session
+    for user in sessions {
+        cleanup_voice_for_session(user_manager, voice_registry, &user).await;
+    }
+}
+
+/// Clean up voice for a single user session (helper for the above functions).
+async fn cleanup_voice_for_session(
+    user_manager: &UserManager,
+    voice_registry: &VoiceRegistry,
+    user: &UserSession,
+) {
+    if let Some(info) = voice_registry.remove_by_session_id(user.session_id).await {
+        // Notify the leaving user and broadcast to remaining participants
+        send_voice_leave_notifications(&info, Some(&user.tx), user_manager).await;
+    }
 }

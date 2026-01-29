@@ -1,8 +1,4 @@
 //! Handler for VoiceLeave command - leave current voice session
-//!
-//! The voice session stores the target as Vec<String> internally and provides
-//! target_key() for registry lookups. When broadcasting to clients, we convert
-//! back to simple string format.
 
 use std::io;
 
@@ -11,6 +7,7 @@ use tokio::io::AsyncWrite;
 use nexus_common::protocol::ServerMessage;
 
 use super::{HandlerContext, err_authentication, err_not_logged_in, err_voice_not_joined};
+use crate::voice::send_voice_leave_notifications;
 
 /// Handle VoiceLeave command - leave current voice session
 ///
@@ -31,21 +28,21 @@ where
             .await;
     };
 
-    // Get user from session (needed for nickname in broadcast)
-    let user = match ctx.user_manager.get_user_by_session_id(session_id).await {
-        Some(u) => u,
-        None => {
-            return ctx
-                .send_error_and_disconnect(&err_authentication(ctx.locale), Some("VoiceLeave"))
-                .await;
-        }
-    };
+    // Verify session still exists (user might have disconnected)
+    if ctx
+        .user_manager
+        .get_user_by_session_id(session_id)
+        .await
+        .is_none()
+    {
+        return ctx
+            .send_error_and_disconnect(&err_authentication(ctx.locale), Some("VoiceLeave"))
+            .await;
+    }
 
-    // Remove the voice session
-    let removed_session = ctx.voice_registry.remove_by_session_id(session_id).await;
-
-    // Check if user was actually in a voice session
-    let Some(voice_session) = removed_session else {
+    // Remove the voice session and get notification info
+    let Some(info) = ctx.voice_registry.remove_by_session_id(session_id).await else {
+        // User was not in a voice session
         let response = ServerMessage::VoiceLeaveResponse {
             success: false,
             error: Some(err_voice_not_joined(ctx.locale)),
@@ -53,46 +50,8 @@ where
         return ctx.send_message(&response).await;
     };
 
-    // Check if this nickname still has other sessions in voice for this target
-    // Only broadcast VoiceUserLeft on last leave of a nickname
-    let target_key = voice_session.target_key();
-    let nickname_still_in_voice = ctx
-        .voice_registry
-        .is_nickname_in_target(&target_key, &user.nickname, None)
-        .await;
-
-    // Broadcast VoiceUserLeft to remaining participants only if this is the last
-    // session of this nickname leaving (prevents premature "left" announcements)
-    if !nickname_still_in_voice {
-        // Get remaining sessions for target and notify them
-        let remaining_participants = ctx.voice_registry.get_participants(&target_key).await;
-
-        let is_channel = voice_session.is_channel();
-
-        for participant_nickname in &remaining_participants {
-            // Determine what target string to send to this participant
-            let broadcast_target = if is_channel {
-                // Channel: send channel name
-                voice_session.target.first().cloned().unwrap_or_default()
-            } else {
-                // User message: send the leaving user's nickname
-                user.nickname.clone()
-            };
-
-            let leave_notification = ServerMessage::VoiceUserLeft {
-                nickname: user.nickname.clone(),
-                target: broadcast_target,
-            };
-
-            if let Some(participant_user) = ctx
-                .user_manager
-                .get_session_by_nickname(participant_nickname)
-                .await
-            {
-                let _ = participant_user.tx.send((leave_notification, None));
-            }
-        }
-    }
+    // Broadcast VoiceUserLeft to remaining participants (not to self - this is explicit leave)
+    send_voice_leave_notifications(&info, None, ctx.user_manager).await;
 
     // Send success response
     let response = ServerMessage::VoiceLeaveResponse {

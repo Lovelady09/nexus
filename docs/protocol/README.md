@@ -12,12 +12,15 @@ Nexus uses a custom framed JSON protocol over TLS. The protocol is designed to b
 
 ## Ports
 
-| Port | Purpose | Description |
-|------|---------|-------------|
-| 7500 | BBS | Main protocol (chat, users, news, file browsing) |
-| 7501 | Transfers | File uploads and downloads |
-| 7502 | WebSocket BBS | Main protocol over WebSocket (requires `--websocket`) |
-| 7503 | WebSocket Transfers | File transfers over WebSocket (requires `--websocket`) |
+| Port | Purpose | Protocol | Description |
+|------|---------|----------|-------------|
+| 7500 | BBS | TCP | Main protocol (chat, users, news, file browsing) |
+| 7500 | Voice | UDP | Voice chat audio (DTLS encrypted) |
+| 7501 | Transfers | TCP | File uploads and downloads |
+| 7502 | WebSocket BBS | TCP | Main protocol over WebSocket (requires `--websocket`) |
+| 7503 | WebSocket Transfers | TCP | File transfers over WebSocket (requires `--websocket`) |
+
+**Note:** Port 7500 is shared between TCP (BBS protocol) and UDP (voice chat). The operating system routes packets to the correct handler based on protocol.
 
 All ports use the same TLS certificate and frame format. The transfer port is communicated to clients in the `LoginResponse` via `transfer_port`. If WebSocket is enabled, `transfer_websocket_port` is also included.
 
@@ -145,7 +148,7 @@ The protocol version follows [Semantic Versioning](https://semver.org/):
 - **Minor** - New features (client minor ≤ server minor)
 - **Patch** - Bug fixes (ignored for compatibility)
 
-Current version: `0.5.1`
+Current version: `0.5.2`
 
 ## Documents
 
@@ -164,6 +167,7 @@ Current version: `0.5.1`
 | [11-bans.md](11-bans.md) | IP bans and CIDR ranges |
 | [12-trusts.md](12-trusts.md) | IP trust list (ban bypass) |
 | [13-connection-monitor.md](13-connection-monitor.md) | Connection monitor (active sessions) |
+| [14-voice.md](14-voice.md) | Voice chat (signaling and UDP audio) |
 
 ## ServerInfo Fields
 

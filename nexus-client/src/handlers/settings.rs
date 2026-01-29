@@ -5,9 +5,11 @@ use std::time::Instant;
 
 use iced::Task;
 use iced::widget::{Id, operation};
+use nexus_common::voice::VoiceQuality;
 use rfd::AsyncFileDialog;
 
 use crate::NexusApp;
+use crate::config::audio::PttMode;
 use crate::config::events::{EventType, NotificationContent, SoundChoice};
 use crate::config::settings::{
     AVATAR_MAX_SIZE, CHAT_FONT_SIZE_MAX, CHAT_FONT_SIZE_MIN, default_download_path,
@@ -16,6 +18,7 @@ use crate::i18n::{t, t_args};
 use crate::image::{ImagePickerError, decode_data_uri_square};
 use crate::style::AVATAR_MAX_CACHE_SIZE;
 use crate::types::{ActivePanel, InputId, Message, SettingsFormState, SettingsTab};
+use crate::voice::audio::AudioDevice;
 
 impl NexusApp {
     // ==================== Settings Panel ====================
@@ -62,6 +65,10 @@ impl NexusApp {
             }
             SettingsTab::Events => {
                 // Events tab has no text input fields (only pickers and checkboxes)
+                Task::none()
+            }
+            SettingsTab::Audio => {
+                // Audio tab has no text input fields (only pickers and key capture)
                 Task::none()
             }
         }
@@ -255,6 +262,10 @@ impl NexusApp {
             }
             SettingsTab::Events => {
                 // Events tab has no text input fields, just pickers and checkboxes
+                Task::none()
+            }
+            SettingsTab::Audio => {
+                // Audio tab has no text input fields, just pickers and key capture
                 Task::none()
             }
             SettingsTab::Network => {
@@ -616,8 +627,126 @@ impl NexusApp {
             let event_type = form.selected_event_type;
             let config = self.config.settings.event_settings.get(event_type);
 
-            // Play the selected sound at the current volume
-            crate::sound::play_sound(&config.sound, self.config.settings.sound_volume);
+            // Play the selected sound at the current volume on the selected output device
+            crate::sound::play_sound_on_device(
+                &config.sound,
+                self.config.settings.sound_volume,
+                &self.config.settings.audio.output_device,
+            );
+        }
+        Task::none()
+    }
+
+    // =========================================================================
+    // Audio Settings Handlers
+    // =========================================================================
+
+    /// Handle refresh audio devices button
+    ///
+    /// Re-enumerates audio devices and updates the cached lists in SettingsFormState.
+    /// This allows users to see newly connected devices without closing/reopening settings.
+    pub fn handle_audio_refresh_devices(&mut self) -> Task<Message> {
+        if let Some(form) = &mut self.settings_form {
+            form.output_devices = crate::voice::audio::list_output_devices();
+            form.input_devices = crate::voice::audio::list_input_devices();
+        }
+        Task::none()
+    }
+
+    /// Handle output device selection
+    pub fn handle_audio_output_device_selected(&mut self, device: AudioDevice) -> Task<Message> {
+        // Store empty string for system default, otherwise the device name
+        self.config.settings.audio.output_device = if device.is_default {
+            String::new()
+        } else {
+            device.name
+        };
+        Task::none()
+    }
+
+    /// Handle input device selection
+    pub fn handle_audio_input_device_selected(&mut self, device: AudioDevice) -> Task<Message> {
+        // Store empty string for system default, otherwise the device name
+        self.config.settings.audio.input_device = if device.is_default {
+            String::new()
+        } else {
+            device.name
+        };
+        Task::none()
+    }
+
+    /// Handle voice quality selection
+    pub fn handle_audio_quality_selected(&mut self, quality: VoiceQuality) -> Task<Message> {
+        self.config.settings.audio.voice_quality = quality;
+        Task::none()
+    }
+
+    /// Handle PTT key capture mode toggle
+    pub fn handle_audio_ptt_key_capture(&mut self) -> Task<Message> {
+        if let Some(form) = &mut self.settings_form {
+            form.ptt_capturing = true;
+        }
+        Task::none()
+    }
+
+    /// Handle PTT key captured
+    pub fn handle_audio_ptt_key_captured(&mut self, key: String) -> Task<Message> {
+        if let Some(form) = &mut self.settings_form {
+            form.ptt_capturing = false;
+        }
+        self.config.settings.audio.ptt_key = key;
+        Task::none()
+    }
+
+    /// Handle PTT mode selection
+    pub fn handle_audio_ptt_mode_selected(&mut self, mode: PttMode) -> Task<Message> {
+        self.config.settings.audio.ptt_mode = mode;
+
+        // Update active PTT manager if in voice (applies immediately, no rejoin needed)
+        if let Some(ref mut ptt) = self.ptt_manager {
+            ptt.set_mode(mode);
+        }
+
+        // Stop transmitting if mode changed while transmitting (e.g., toggle mode was on)
+        // set_mode() resets the active flag, so we need to sync the voice session
+        if let Some(ref handle) = self.voice_session_handle {
+            handle.stop_transmitting();
+        }
+        self.is_local_speaking = false;
+
+        Task::none()
+    }
+
+    /// Handle microphone test start
+    ///
+    /// Sets mic_testing to true, which triggers the mic_test_subscription
+    /// in the main subscription function to start capturing audio.
+    pub fn handle_audio_test_mic_start(&mut self) -> Task<Message> {
+        if let Some(form) = &mut self.settings_form {
+            form.mic_testing = true;
+            form.mic_level = 0.0;
+        }
+        Task::none()
+    }
+
+    /// Handle microphone test stop
+    ///
+    /// Sets mic_testing to false, which causes the mic_test_subscription
+    /// to be dropped and audio capture stops.
+    pub fn handle_audio_test_mic_stop(&mut self) -> Task<Message> {
+        if let Some(form) = &mut self.settings_form {
+            form.mic_testing = false;
+            form.mic_level = 0.0;
+        }
+        Task::none()
+    }
+
+    /// Handle microphone level update (from audio capture)
+    pub fn handle_audio_mic_level(&mut self, level: f32) -> Task<Message> {
+        if let Some(form) = &mut self.settings_form
+            && form.mic_testing
+        {
+            form.mic_level = level.clamp(0.0, 1.0);
         }
         Task::none()
     }

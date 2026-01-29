@@ -138,6 +138,9 @@ impl NexusApp {
 
     /// Disconnect from a server and clean up resources
     pub fn handle_disconnect_from_server(&mut self, connection_id: usize) -> Task<Message> {
+        // Clean up voice session first (before removing connection)
+        self.cleanup_voice_session(connection_id);
+
         if let Some(conn) = self.connections.remove(&connection_id) {
             let shutdown_arc = conn.shutdown_handle.clone();
             tokio::spawn(async move {

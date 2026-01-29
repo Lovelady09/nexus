@@ -14,6 +14,8 @@ For users connecting to Nexus BBS servers.
 - [News](client/06-news.md) — Reading and posting news articles
 - [Settings](client/07-settings.md) — Themes, sounds, notifications, and preferences
 - [Troubleshooting](client/08-troubleshooting.md) — Common issues and solutions
+- [Connection Monitor](client/09-connection-monitor.md) — View active connections and transfers (admin)
+- [Voice Chat](client/10-voice-chat.md) — Push-to-talk voice for channels and user messages
 
 ## Server Admin Guide
 

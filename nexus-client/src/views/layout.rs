@@ -4,6 +4,10 @@ use iced::widget::{
     Column, Space, button, column, container, row, scrollable, stack, text_editor, tooltip,
 };
 use iced::{Center, Element, Fill};
+use nexus_common::voice::VoiceQuality;
+
+use crate::config::audio::PttMode;
+use crate::voice::audio::AudioDevice;
 
 use super::connection_monitor::connection_monitor_view;
 use super::constants::{
@@ -97,6 +101,31 @@ struct ServerContentContext<'a> {
     pub sound_volume: f32,
     /// Voice target for the current tab (channel or nickname)
     pub voice_target: Option<String>,
+    // ==================== Audio Settings ====================
+    /// Available output devices (borrowed from SettingsFormState cache)
+    pub output_devices: &'a [AudioDevice],
+    /// Selected output device
+    pub selected_output_device: AudioDevice,
+    /// Available input devices (borrowed from SettingsFormState cache)
+    pub input_devices: &'a [AudioDevice],
+    /// Selected input device
+    pub selected_input_device: AudioDevice,
+    /// Voice quality setting
+    pub voice_quality: VoiceQuality,
+    /// Push-to-talk key binding
+    pub ptt_key: &'a str,
+    /// Whether PTT key capture is active
+    pub ptt_capturing: bool,
+    /// Push-to-talk mode
+    pub ptt_mode: PttMode,
+    /// Whether microphone test is active
+    pub mic_testing: bool,
+    /// Current microphone input level (0.0 - 1.0)
+    pub mic_level: f32,
+    /// Whether local user is currently transmitting (PTT active)
+    pub is_local_speaking: bool,
+    /// Whether local user has deafened (muted all incoming voice audio)
+    pub is_deafened: bool,
 }
 
 // ============================================================================
@@ -268,6 +297,18 @@ pub fn main_layout<'a>(config: ViewConfig<'a>) -> Element<'a, Message> {
                 sound_enabled: config.sound_enabled,
                 sound_volume: config.sound_volume,
                 voice_target: config.voice_target.clone(),
+                output_devices: config.output_devices,
+                selected_output_device: config.selected_output_device.clone(),
+                input_devices: config.input_devices,
+                selected_input_device: config.selected_input_device.clone(),
+                voice_quality: config.voice_quality,
+                ptt_key: config.ptt_key,
+                ptt_capturing: config.ptt_capturing,
+                ptt_mode: config.ptt_mode,
+                mic_testing: config.mic_testing,
+                mic_level: config.mic_level,
+                is_local_speaking: config.is_local_speaking,
+                is_deafened: config.is_deafened,
             })
         } else if config.active_connection.is_some() {
             // Connection exists but couldn't get all required state
@@ -305,6 +346,16 @@ pub fn main_layout<'a>(config: ViewConfig<'a>) -> Element<'a, Message> {
                         notifications_enabled: config.notifications_enabled,
                         sound_enabled: config.sound_enabled,
                         sound_volume: config.sound_volume,
+                        output_devices: config.output_devices,
+                        selected_output_device: config.selected_output_device.clone(),
+                        input_devices: config.input_devices,
+                        selected_input_device: config.selected_input_device.clone(),
+                        voice_quality: config.voice_quality,
+                        ptt_key: config.ptt_key,
+                        ptt_capturing: config.ptt_capturing,
+                        ptt_mode: config.ptt_mode,
+                        mic_testing: config.mic_testing,
+                        mic_level: config.mic_level,
                     })
                 ]
                 .width(Fill)
@@ -738,6 +789,8 @@ fn server_content_view<'a>(ctx: ServerContentContext<'a>) -> Element<'a, Message
         ctx.chat_font_size,
         ctx.timestamp_settings,
         ctx.voice_target.clone(),
+        ctx.is_local_speaking,
+        ctx.is_deafened,
     );
 
     // Build the main content based on active panel
@@ -781,6 +834,16 @@ fn server_content_view<'a>(ctx: ServerContentContext<'a>) -> Element<'a, Message
                 notifications_enabled: ctx.notifications_enabled,
                 sound_enabled: ctx.sound_enabled,
                 sound_volume: ctx.sound_volume,
+                output_devices: ctx.output_devices,
+                selected_output_device: ctx.selected_output_device.clone(),
+                input_devices: ctx.input_devices,
+                selected_input_device: ctx.selected_input_device.clone(),
+                voice_quality: ctx.voice_quality,
+                ptt_key: ctx.ptt_key,
+                ptt_capturing: ctx.ptt_capturing,
+                ptt_mode: ctx.ptt_mode,
+                mic_testing: ctx.mic_testing,
+                mic_level: ctx.mic_level,
             })
         ]
         .width(Fill)

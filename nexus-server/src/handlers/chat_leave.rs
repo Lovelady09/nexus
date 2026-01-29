@@ -11,6 +11,7 @@ use super::{
     HandlerContext, channel_error_to_message, err_authentication, err_channel_not_found,
     err_chat_feature_not_enabled, err_not_logged_in,
 };
+use crate::voice::send_voice_leave_notifications;
 
 use crate::constants::FEATURE_CHAT;
 
@@ -59,6 +60,18 @@ where
             channel: None,
         };
         return ctx.send_message(&response).await;
+    }
+
+    // Check if user is in voice for this channel - if so, remove them from voice first
+    // This must happen before leaving the channel to maintain consistency
+    if let Some(voice_session) = ctx.voice_registry.get_by_session_id(session_id).await
+        && voice_session.is_channel()
+        && voice_session.target_matches_channel(&channel)
+    {
+        // Remove from voice and notify using the consolidated helper
+        if let Some(info) = ctx.voice_registry.remove_by_session_id(session_id).await {
+            send_voice_leave_notifications(&info, Some(&user.tx), ctx.user_manager).await;
+        }
     }
 
     // Leave the channel

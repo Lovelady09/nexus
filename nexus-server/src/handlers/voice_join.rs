@@ -146,7 +146,6 @@ where
     // Create and add the voice session
     let voice_session = VoiceSession::new(
         user.nickname.clone(),
-        user.username.clone(),
         internal_target,
         session_id,
         ctx.peer_addr.ip(),

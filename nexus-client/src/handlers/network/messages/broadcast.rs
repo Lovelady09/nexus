@@ -23,11 +23,7 @@ impl NexusApp {
         let is_from_self = self
             .connections
             .get(&connection_id)
-            .map(|conn| {
-                conn.connection_info
-                    .username
-                    .eq_ignore_ascii_case(&username)
-            })
+            .map(|conn| conn.connection_info.username.to_lowercase() == username.to_lowercase())
             .unwrap_or(false);
 
         emit_event(

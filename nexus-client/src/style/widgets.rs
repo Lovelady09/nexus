@@ -401,14 +401,32 @@ pub fn badge_style(theme: &Theme) -> container::Style {
 /// Uses a slightly tinted background to distinguish the voice bar from the
 /// rest of the chat area while remaining visually unobtrusive.
 pub fn voice_bar_style(theme: &Theme) -> container::Style {
-    let palette = theme.extended_palette();
     container::Style {
-        background: Some(Background::Color(palette.primary.weak.color)),
-        text_color: Some(palette.primary.weak.text),
+        background: Some(Background::Color(ui::toolbar_background(theme))),
+        text_color: Some(ui::text_color(theme)),
         border: Border {
             radius: STANDARD_BORDER_RADIUS.into(),
             ..Default::default()
         },
+        ..Default::default()
+    }
+}
+
+/// Voice deafen button style - transparent icon button for the voice bar
+///
+/// Uses the same pattern as bookmark icons: icon color normally, blue on hover, no background.
+pub fn voice_deafen_button_style(theme: &Theme, status: button::Status) -> button::Style {
+    transparent_icon_button_style(theme, status)
+}
+
+/// Speaking indicator style - highlights users who are currently speaking
+///
+/// Uses the success color (green) to indicate active voice transmission, no background.
+pub fn speaking_indicator_style(theme: &Theme) -> container::Style {
+    let palette = theme.extended_palette();
+    container::Style {
+        background: None,
+        text_color: Some(palette.success.base.color),
         ..Default::default()
     }
 }

@@ -46,7 +46,7 @@ impl NexusApp {
     fn find_connection_for_uri(&self, uri: &NexusUri) -> Option<usize> {
         for (conn_id, conn) in &self.connections {
             // Check host matches (case-insensitive)
-            if !conn.connection_info.address.eq_ignore_ascii_case(&uri.host) {
+            if conn.connection_info.address.to_lowercase() != uri.host.to_lowercase() {
                 continue;
             }
 
@@ -57,7 +57,7 @@ impl NexusApp {
 
             // If URI has credentials, also check username matches
             if let Some(ref uri_user) = uri.user
-                && !conn.connection_info.username.eq_ignore_ascii_case(uri_user)
+                && conn.connection_info.username.to_lowercase() != uri_user.to_lowercase()
             {
                 continue;
             }
@@ -77,67 +77,65 @@ impl NexusApp {
         let port = uri.port;
 
         // If URI has no credentials, look for a matching bookmark to use its credentials
-        let (username, password, nickname, display_name) = if uri.user.is_none() {
-            // Find bookmark matching host:port
-            if let Some(bookmark) = self
-                .config
-                .bookmarks
-                .iter()
-                .find(|b| b.address.eq_ignore_ascii_case(&uri.host) && b.port == uri.port)
-            {
-                (
-                    bookmark.username.clone(),
-                    bookmark.password.clone(),
-                    if bookmark.nickname.is_empty() {
-                        self.config.settings.nickname.clone()
-                    } else {
-                        Some(bookmark.nickname.clone())
-                    },
-                    bookmark.name.clone(),
-                )
+        let (username, password, nickname, display_name) =
+            if uri.user.is_none() {
+                // Find bookmark matching host:port
+                if let Some(bookmark) = self.config.bookmarks.iter().find(|b| {
+                    b.address.to_lowercase() == uri.host.to_lowercase() && b.port == uri.port
+                }) {
+                    (
+                        bookmark.username.clone(),
+                        bookmark.password.clone(),
+                        if bookmark.nickname.is_empty() {
+                            self.config.settings.nickname.clone()
+                        } else {
+                            Some(bookmark.nickname.clone())
+                        },
+                        bookmark.name.clone(),
+                    )
+                } else {
+                    // No bookmark found - use guest login
+                    (
+                        String::new(),
+                        String::new(),
+                        self.config.settings.nickname.clone(),
+                        format!("{}:{}", uri.host, uri.port),
+                    )
+                }
             } else {
-                // No bookmark found - use guest login
-                (
-                    String::new(),
-                    String::new(),
-                    self.config.settings.nickname.clone(),
-                    format!("{}:{}", uri.host, uri.port),
-                )
-            }
-        } else {
-            // URI has username - find matching bookmark for password and display name
-            let uri_user = uri.user.clone().unwrap_or_default();
+                // URI has username - find matching bookmark for password and display name
+                let uri_user = uri.user.clone().unwrap_or_default();
 
-            if let Some(bookmark) = self.config.bookmarks.iter().find(|b| {
-                b.address.eq_ignore_ascii_case(&uri.host)
-                    && b.port == uri.port
-                    && b.username.eq_ignore_ascii_case(&uri_user)
-            }) {
-                // Use bookmark's password if URI didn't provide one
-                let password = uri
-                    .password
-                    .clone()
-                    .unwrap_or_else(|| bookmark.password.clone());
-                (
-                    uri_user,
-                    password,
-                    if bookmark.nickname.is_empty() {
-                        self.config.settings.nickname.clone()
-                    } else {
-                        Some(bookmark.nickname.clone())
-                    },
-                    bookmark.name.clone(),
-                )
-            } else {
-                // No matching bookmark - use URI credentials as-is
-                (
-                    uri_user,
-                    uri.password.clone().unwrap_or_default(),
-                    self.config.settings.nickname.clone(),
-                    format!("{}:{}", uri.host, uri.port),
-                )
-            }
-        };
+                if let Some(bookmark) = self.config.bookmarks.iter().find(|b| {
+                    b.address.to_lowercase() == uri.host.to_lowercase()
+                        && b.port == uri.port
+                        && b.username.to_lowercase() == uri_user.to_lowercase()
+                }) {
+                    // Use bookmark's password if URI didn't provide one
+                    let password = uri
+                        .password
+                        .clone()
+                        .unwrap_or_else(|| bookmark.password.clone());
+                    (
+                        uri_user,
+                        password,
+                        if bookmark.nickname.is_empty() {
+                            self.config.settings.nickname.clone()
+                        } else {
+                            Some(bookmark.nickname.clone())
+                        },
+                        bookmark.name.clone(),
+                    )
+                } else {
+                    // No matching bookmark - use URI credentials as-is
+                    (
+                        uri_user,
+                        uri.password.clone().unwrap_or_default(),
+                        self.config.settings.nickname.clone(),
+                        format!("{}:{}", uri.host, uri.port),
+                    )
+                }
+            };
 
         let locale = get_locale().to_string();
         let avatar = self.config.settings.avatar.clone();
@@ -348,11 +346,10 @@ impl NexusApp {
                     .bookmarks
                     .iter()
                     .find(|b| {
-                        b.address
-                            .eq_ignore_ascii_case(&conn.connection_info.address)
+                        b.address.to_lowercase() == conn.connection_info.address.to_lowercase()
                             && b.port == conn.connection_info.port
-                            && b.username
-                                .eq_ignore_ascii_case(&conn.connection_info.username)
+                            && b.username.to_lowercase()
+                                == conn.connection_info.username.to_lowercase()
                     })
                     .map(|b| b.id);
 

@@ -6,13 +6,19 @@ use uuid::Uuid;
 
 use nexus_common::framing::MessageId;
 use nexus_common::protocol::FileSearchResult;
+use nexus_common::voice::VoiceQuality;
 
 use super::form::{FileSortColumn, SettingsTab, TabId};
 use super::{ChatTab, NetworkConnection, ServerMessage};
+use crate::config::audio::PttMode;
 use crate::config::events::{EventType, NotificationContent, SoundChoice};
 use crate::image::ImagePickerError;
 use crate::transfers::TransferEvent;
 use crate::uri::NexusUri;
+use crate::voice::audio::AudioDevice;
+use crate::voice::manager::VoiceEvent;
+use crate::voice::ptt::PttState;
+use global_hotkey::GlobalHotKeyEvent;
 
 /// Messages that drive the application state machine
 #[derive(Debug, Clone)]
@@ -540,6 +546,43 @@ pub enum Message {
     VoiceJoinPressed(String),
     /// Voice: Leave current voice session
     VoiceLeavePressed,
+    /// Voice: Event from voice session (DTLS connected, speaking, etc.)
+    VoiceSessionEvent(usize, VoiceEvent),
+    /// Voice: PTT state changed (called internally from VoicePttEvent handler)
+    #[allow(dead_code)] // Constructed indirectly via handle_voice_ptt_state_changed
+    VoicePttStateChanged(PttState),
+    /// Voice: Raw PTT hotkey event (forwarded from global hotkey subscription)
+    VoicePttEvent(GlobalHotKeyEvent),
+    /// Voice: Mute a user (client-side, stops hearing them)
+    VoiceUserMute(String),
+    /// Voice: Unmute a user
+    VoiceUserUnmute(String),
+    /// Voice: Toggle deafen (mute all incoming voice audio)
+    VoiceDeafenToggle,
+
+    // ==================== Audio Settings ====================
+    /// Audio: Refresh device list (re-enumerate audio devices)
+    AudioRefreshDevices,
+    /// Audio: Output device selected
+    AudioOutputDeviceSelected(AudioDevice),
+    /// Audio: Input device selected
+    AudioInputDeviceSelected(AudioDevice),
+    /// Audio: Voice quality selected
+    AudioQualitySelected(VoiceQuality),
+    /// Audio: Enter PTT key capture mode
+    AudioPttKeyCapture,
+    /// Audio: PTT key captured
+    #[allow(dead_code)] // Will be emitted by keyboard event handler
+    AudioPttKeyCaptured(String),
+    /// Audio: PTT mode selected
+    AudioPttModeSelected(PttMode),
+    /// Audio: Start microphone test
+    AudioTestMicStart,
+    /// Audio: Stop microphone test
+    AudioTestMicStop,
+    /// Audio: Microphone level update (0.0 - 1.0)
+    #[allow(dead_code)] // Will be emitted by mic test subscription
+    AudioMicLevel(f32),
 
     // ==================== URI Scheme ====================
     /// URI: Handle a nexus:// URI (from startup arg or IPC)

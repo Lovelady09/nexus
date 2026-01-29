@@ -22,10 +22,11 @@ use super::{
     err_permissions_invalid_characters, err_permissions_permission_too_long,
     err_permissions_too_many, err_shared_cannot_change_password, err_shared_invalid_permissions,
     err_update_failed, err_user_not_found, err_username_empty, err_username_exists,
-    err_username_invalid, err_username_too_long,
+    err_username_invalid, err_username_too_long, remove_user_with_voice_cleanup,
 };
 use crate::db::sql::GUEST_USERNAME;
 use crate::db::{Permission, Permissions, hash_password, verify_password};
+use crate::voice::send_voice_leave_notifications;
 
 /// User update request parameters
 pub struct UserUpdateRequest {
@@ -555,83 +556,23 @@ where
                                 .await;
 
                             for session_id in session_ids {
-                                if let Some(voice_session) =
+                                if let Some(info) =
                                     ctx.voice_registry.remove_by_session_id(session_id).await
                                 {
-                                    // Check if this nickname still has other sessions in voice
-                                    let target_key = voice_session.target_key();
-                                    let nickname_still_in_voice = ctx
-                                        .voice_registry
-                                        .is_nickname_in_target(
-                                            &target_key,
-                                            &voice_session.nickname,
-                                            None,
-                                        )
-                                        .await;
+                                    // Get the leaving user's tx if still connected
+                                    let leaving_user_tx = ctx
+                                        .user_manager
+                                        .get_user_by_session_id(session_id)
+                                        .await
+                                        .map(|u| u.tx.clone());
 
-                                    // Broadcast VoiceUserLeft if this was the last session
-                                    if !nickname_still_in_voice {
-                                        let remaining_participants =
-                                            ctx.voice_registry.get_participants(&target_key).await;
-                                        let is_channel = voice_session.is_channel();
-
-                                        for participant_nickname in &remaining_participants {
-                                            let broadcast_target = if is_channel {
-                                                voice_session
-                                                    .target
-                                                    .first()
-                                                    .cloned()
-                                                    .unwrap_or_default()
-                                            } else {
-                                                voice_session.nickname.clone()
-                                            };
-
-                                            let leave_notification = ServerMessage::VoiceUserLeft {
-                                                nickname: voice_session.nickname.clone(),
-                                                target: broadcast_target,
-                                            };
-
-                                            if let Some(participant_user) = ctx
-                                                .user_manager
-                                                .get_session_by_nickname(participant_nickname)
-                                                .await
-                                            {
-                                                let _ = participant_user
-                                                    .tx
-                                                    .send((leave_notification, None));
-                                            }
-                                        }
-                                    }
-
-                                    // Notify the kicked user that they left voice
-                                    if let Some(user) =
-                                        ctx.user_manager.get_user_by_session_id(session_id).await
-                                    {
-                                        let target_for_user = if voice_session.is_channel() {
-                                            voice_session
-                                                .target
-                                                .first()
-                                                .cloned()
-                                                .unwrap_or_default()
-                                        } else {
-                                            // For user message, send the other user's nickname
-                                            voice_session
-                                                .target
-                                                .iter()
-                                                .find(|n| {
-                                                    n.to_lowercase()
-                                                        != voice_session.nickname.to_lowercase()
-                                                })
-                                                .cloned()
-                                                .unwrap_or_default()
-                                        };
-
-                                        let left_notification = ServerMessage::VoiceUserLeft {
-                                            nickname: voice_session.nickname.clone(),
-                                            target: target_for_user,
-                                        };
-                                        let _ = user.tx.send((left_notification, None));
-                                    }
+                                    // Send notifications using the consolidated helper
+                                    send_voice_leave_notifications(
+                                        &info,
+                                        leaving_user_tx.as_ref(),
+                                        ctx.user_manager,
+                                    )
+                                    .await;
                                 }
                             }
                         }
@@ -673,10 +614,16 @@ where
                                 command: None,
                             };
                             let _ = user.tx.send((disconnect_msg, None));
-                        }
 
-                        // Remove user from manager and broadcast disconnection
-                        ctx.user_manager.remove_user_and_broadcast(session_id).await;
+                            // Remove from voice (if in voice) and UserManager, broadcast disconnection
+                            remove_user_with_voice_cleanup(
+                                ctx.user_manager,
+                                ctx.voice_registry,
+                                session_id,
+                                &user,
+                            )
+                            .await;
+                        }
                     }
                 }
 
@@ -3180,7 +3127,6 @@ mod tests {
         // Create a voice session for the user
         let voice_session = crate::voice::VoiceSession::new(
             "voiceuser".to_string(),
-            "voiceuser".to_string(),
             vec!["#general".to_string()],
             voice_user_session,
             test_ctx.peer_addr.ip(),
@@ -3284,7 +3230,6 @@ mod tests {
 
         // Create a voice session for the user
         let voice_session = crate::voice::VoiceSession::new(
-            "voiceuser".to_string(),
             "voiceuser".to_string(),
             vec!["#general".to_string()],
             voice_user_session,

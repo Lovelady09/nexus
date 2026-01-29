@@ -20,6 +20,7 @@ mod transfers;
 mod types;
 pub mod uri;
 mod views;
+mod voice;
 mod widgets;
 
 use std::collections::{HashMap, HashSet, VecDeque};
@@ -163,6 +164,13 @@ fn get_startup_uri() -> Option<String> {
 /// Configures the Iced application with window settings, fonts, and theme,
 /// then starts the event loop.
 pub fn main() -> iced::Result {
+    // Install rustls crypto provider before any TLS/DTLS operations
+    // This is required because both tokio-rustls and dtls use rustls 0.23
+    // which needs an explicit crypto provider selection
+    tokio_rustls::rustls::crypto::ring::default_provider()
+        .install_default()
+        .expect("Failed to install rustls crypto provider");
+
     // Check for startup URI and single-instance handling
     let startup_uri = get_startup_uri();
 
@@ -299,6 +307,14 @@ struct NexusApp {
     // -------------------------------------------------------------------------
     /// Connection ID with active voice session (only one voice session per client)
     active_voice_connection: Option<usize>,
+    /// Active voice session handle (for controlling the session)
+    voice_session_handle: Option<voice::manager::VoiceSessionHandle>,
+    /// PTT (push-to-talk) manager for global hotkey handling
+    ptt_manager: Option<voice::ptt::PttManager>,
+    /// Whether local user is currently transmitting (PTT active)
+    is_local_speaking: bool,
+    /// Whether local user has deafened (muted all incoming voice audio)
+    is_deafened: bool,
 
     // -------------------------------------------------------------------------
     // Drag and Drop
@@ -325,6 +341,10 @@ impl Default for NexusApp {
             connections: HashMap::new(),
             active_connection: None,
             active_voice_connection: None,
+            voice_session_handle: None,
+            ptt_manager: None,
+            is_local_speaking: false,
+            is_deafened: false,
             next_connection_id: 0,
             connecting_bookmarks: HashSet::new(),
             // Forms
@@ -876,6 +896,30 @@ impl NexusApp {
             // Voice
             Message::VoiceJoinPressed(target) => self.handle_voice_join_pressed(target),
             Message::VoiceLeavePressed => self.handle_voice_leave_pressed(),
+            Message::VoiceSessionEvent(connection_id, event) => {
+                self.handle_voice_session_event(connection_id, event)
+            }
+            Message::VoicePttStateChanged(state) => self.handle_voice_ptt_state_changed(state),
+            Message::VoicePttEvent(event) => self.handle_voice_ptt_event(event),
+            Message::VoiceUserMute(nickname) => self.handle_voice_user_mute(nickname),
+            Message::VoiceUserUnmute(nickname) => self.handle_voice_user_unmute(nickname),
+            Message::VoiceDeafenToggle => self.handle_voice_deafen_toggle(),
+
+            // Audio settings
+            Message::AudioRefreshDevices => self.handle_audio_refresh_devices(),
+            Message::AudioOutputDeviceSelected(device) => {
+                self.handle_audio_output_device_selected(device)
+            }
+            Message::AudioInputDeviceSelected(device) => {
+                self.handle_audio_input_device_selected(device)
+            }
+            Message::AudioQualitySelected(quality) => self.handle_audio_quality_selected(quality),
+            Message::AudioPttKeyCapture => self.handle_audio_ptt_key_capture(),
+            Message::AudioPttKeyCaptured(key) => self.handle_audio_ptt_key_captured(key),
+            Message::AudioPttModeSelected(mode) => self.handle_audio_ptt_mode_selected(mode),
+            Message::AudioTestMicStart => self.handle_audio_test_mic_start(),
+            Message::AudioTestMicStop => self.handle_audio_test_mic_stop(),
+            Message::AudioMicLevel(level) => self.handle_audio_mic_level(level),
 
             // URI scheme
             Message::HandleNexusUri(uri) => self.handle_nexus_uri(uri),
@@ -1009,6 +1053,23 @@ impl NexusApp {
             }
         }
 
+        // Subscribe to mic test when active in settings
+        if let Some(form) = &self.settings_form
+            && form.mic_testing
+        {
+            subscriptions.push(voice::mic_test::mic_test_subscription(
+                self.config.settings.audio.input_device.clone(),
+            ));
+        }
+
+        // Subscribe to voice events when in an active voice session
+        if let Some(connection_id) = self.active_voice_connection {
+            subscriptions.push(voice::subscription::voice_event_subscription(connection_id));
+
+            // Subscribe to PTT hotkey events when in voice
+            subscriptions.push(voice::ptt::ptt_subscription());
+        }
+
         Subscription::batch(subscriptions)
     }
 
@@ -1029,6 +1090,38 @@ impl NexusApp {
             .and_then(|id| self.news_body_content.get(&id));
 
         // Build view configuration
+        // Get audio state from settings form (for PTT capture, mic test) or defaults
+        let (ptt_capturing, mic_testing, mic_level) = self
+            .settings_form
+            .as_ref()
+            .map(|f| (f.ptt_capturing, f.mic_testing, f.mic_level))
+            .unwrap_or((false, false, 0.0));
+
+        // Get audio device lists from settings form cache (if open) or use empty slices
+        // Device lists are only needed when settings panel is open, and are cached there
+        // to avoid ALSA device enumeration spam on every frame
+        static EMPTY_DEVICES: &[voice::audio::AudioDevice] = &[];
+        let (output_devices, input_devices): (
+            &[voice::audio::AudioDevice],
+            &[voice::audio::AudioDevice],
+        ) = self
+            .settings_form
+            .as_ref()
+            .map(|f| (f.output_devices.as_slice(), f.input_devices.as_slice()))
+            .unwrap_or((EMPTY_DEVICES, EMPTY_DEVICES));
+
+        let selected_output_device = output_devices
+            .iter()
+            .find(|d| d.name == self.config.settings.audio.output_device)
+            .cloned()
+            .unwrap_or_else(voice::audio::AudioDevice::system_default);
+
+        let selected_input_device = input_devices
+            .iter()
+            .find(|d| d.name == self.config.settings.audio.input_device)
+            .cloned()
+            .unwrap_or_else(voice::audio::AudioDevice::system_default);
+
         let config = ViewConfig {
             theme: self.theme(),
             show_connection_events: self.config.settings.show_connection_events,
@@ -1065,6 +1158,19 @@ impl NexusApp {
             sound_enabled: self.config.settings.sound_enabled,
             sound_volume: self.config.settings.sound_volume,
             voice_target: self.get_voice_target_for_current_tab(),
+            // Audio settings
+            output_devices,
+            selected_output_device,
+            input_devices,
+            selected_input_device,
+            voice_quality: self.config.settings.audio.voice_quality,
+            ptt_key: &self.config.settings.audio.ptt_key,
+            ptt_capturing,
+            ptt_mode: self.config.settings.audio.ptt_mode,
+            mic_testing,
+            mic_level,
+            is_local_speaking: self.is_local_speaking,
+            is_deafened: self.is_deafened,
         };
 
         let main_view = views::main_layout(config);

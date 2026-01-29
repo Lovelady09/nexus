@@ -364,6 +364,7 @@ err-dir-name-invalid = 資料夾名稱包含無效字元
 tab-general = 一般
 tab-chat = 聊天
 tab-network = 網路
+tab-audio = 音訊
 
 # =============================================================================
 # Chat Tab Labels
@@ -777,6 +778,7 @@ transfer-save-permissions-failed = 設定檔案權限失敗: { $error }
 
 # Settings tab
 settings-tab-events = 事件
+settings-tab-audio = 音訊
 
 # Event type names
 event-broadcast = 廣播
@@ -946,6 +948,11 @@ err-voice-already-active = 您已在另一個伺服器的語音聊天中
 err-voice-no-permission = 您沒有權限加入語音聊天
 err-voice-not-in-channel = 您必須在頻道中才能加入語音聊天
 err-voice-not-in-session = 您不在語音聊天中
+err-voice-resolve-address = 無法解析語音伺服器地址
+err-voice-resolve = 無法解析伺服器地址：{ $error }
+err-voice-connection-failed = 語音連線失敗：{ $error }
+err-voice-disconnected = 語音已斷線：{ $reason }
+err-voice-audio = 音訊錯誤：{ $error }
 
 # Voice success messages
 msg-voice-joined = 已加入 { $target } 的語音聊天（{ $count } 人）
@@ -953,10 +960,38 @@ msg-voice-joined-empty = 已加入 { $target } 的語音聊天
 msg-voice-left = 已離開 { $target } 的語音聊天
 msg-voice-user-joined = { $nickname } 加入了語音聊天
 msg-voice-user-left = { $nickname } 離開了語音聊天
-msg-voice-you-left = 您已被移出語音聊天
+msg-voice-you-left = 您已離開語音聊天
 
 # Voice UI
 voice-join-tooltip = 加入語音聊天
 voice-leave-tooltip = 離開語音聊天
-voice-bar-participants = { $count } 人在語音中
-voice-indicator-tooltip = 在語音聊天中
+voice-mute-all-tooltip = 全部靜音
+voice-unmute-all-tooltip = 取消靜音
+voice-bar-participants = ({ $count })
+voice-indicator-tooltip = 語音聊天中
+tooltip-mute = 靜音
+tooltip-unmute = 取消靜音
+
+# Voice quality levels
+voice-quality-low = 低 (16 kbps)
+voice-quality-medium = 中 (32 kbps)
+voice-quality-high = 高 (64 kbps)
+voice-quality-very-high = 極高 (96 kbps)
+
+# PTT modes
+ptt-mode-hold = 按住說話
+ptt-mode-toggle = 切換
+
+# Audio settings
+audio-output-device = 輸出裝置
+audio-input-device = 輸入裝置
+audio-refresh-devices = 重新整理裝置
+audio-voice-quality = 語音品質
+audio-ptt-key = 按鍵說話鍵
+audio-ptt-mode = PTT 模式
+audio-ptt-key-hint = 按任意鍵…
+audio-input-level = 輸入電平
+audio-system-default = 系統預設
+audio-test-mic = 測試麥克風
+audio-testing = 測試中…
+audio-stop-test = 停止測試

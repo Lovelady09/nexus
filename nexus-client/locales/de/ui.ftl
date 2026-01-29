@@ -363,6 +363,7 @@ err-dir-name-invalid = Verzeichnisname enthält ungültige Zeichen
 tab-general = Allgemein
 tab-chat = Chat
 tab-network = Netzwerk
+tab-audio = Audio
 
 # =============================================================================
 # Chat Tab Labels
@@ -801,6 +802,7 @@ transfer-save-permissions-failed = Dateiberechtigungen konnten nicht gesetzt wer
 
 # Settings tab
 settings-tab-events = Ereignisse
+settings-tab-audio = Audio
 
 # Event type names
 event-broadcast = Broadcast
@@ -970,6 +972,11 @@ err-voice-already-active = Du bist bereits in einem Sprachchat auf einem anderen
 err-voice-no-permission = Du hast keine Berechtigung, dem Sprachchat beizutreten
 err-voice-not-in-channel = Du musst im Kanal sein, um dem Sprachchat beizutreten
 err-voice-not-in-session = Du bist nicht in einem Sprachchat
+err-voice-resolve-address = Serveradresse für Sprachchat konnte nicht aufgelöst werden
+err-voice-resolve = Serveradresse konnte nicht aufgelöst werden: { $error }
+err-voice-connection-failed = Sprachchat-Verbindung fehlgeschlagen: { $error }
+err-voice-disconnected = Sprachchat getrennt: { $reason }
+err-voice-audio = Audiofehler: { $error }
 
 # Voice success messages
 msg-voice-joined = Sprachchat in { $target } beigetreten ({ $count } andere)
@@ -977,10 +984,38 @@ msg-voice-joined-empty = Sprachchat in { $target } beigetreten
 msg-voice-left = Sprachchat in { $target } verlassen
 msg-voice-user-joined = { $nickname } ist dem Sprachchat beigetreten
 msg-voice-user-left = { $nickname } hat den Sprachchat verlassen
-msg-voice-you-left = Du wurdest aus dem Sprachchat entfernt
+msg-voice-you-left = Du hast den Sprachchat verlassen
 
 # Voice UI
 voice-join-tooltip = Sprachchat beitreten
 voice-leave-tooltip = Sprachchat verlassen
-voice-bar-participants = { $count } im Sprachchat
+voice-mute-all-tooltip = Alle stummschalten
+voice-unmute-all-tooltip = Stummschaltung aufheben
+voice-bar-participants = ({ $count })
 voice-indicator-tooltip = Im Sprachchat
+tooltip-mute = Stummschalten
+tooltip-unmute = Stummschaltung aufheben
+
+# Voice quality levels
+voice-quality-low = Niedrig (16 kbps)
+voice-quality-medium = Mittel (32 kbps)
+voice-quality-high = Hoch (64 kbps)
+voice-quality-very-high = Sehr hoch (96 kbps)
+
+# PTT modes
+ptt-mode-hold = Halten zum Sprechen
+ptt-mode-toggle = Umschalten
+
+# Audio settings
+audio-output-device = Ausgabegerät
+audio-input-device = Eingabegerät
+audio-refresh-devices = Geräte aktualisieren
+audio-voice-quality = Sprachqualität
+audio-ptt-key = Push-to-Talk-Taste
+audio-ptt-mode = PTT-Modus
+audio-ptt-key-hint = Drücke eine Taste…
+audio-input-level = Eingangspegel
+audio-system-default = Systemstandard
+audio-test-mic = Mikrofon testen
+audio-testing = Testen…
+audio-stop-test = Test beenden
