@@ -466,6 +466,14 @@ jobs:
           echo "C:\msys64\ucrt64\bin" >> $env:GITHUB_PATH
           echo "C:\msys64\usr\bin" >> $env:GITHUB_PATH
 
+      - name: Verify build tools
+        shell: bash
+        run: |
+          echo "PATH=$PATH"
+          which libtoolize
+          which autoconf
+          which automake
+
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
 
