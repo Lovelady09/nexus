@@ -571,6 +571,7 @@ pub fn chat_view<'a>(
     voice_target: Option<String>,
     is_local_speaking: bool,
     is_deafened: bool,
+    mic_level: f32,
 ) -> Element<'a, Message> {
     let font_size = chat_font_size as f32;
 
@@ -604,7 +605,7 @@ pub fn chat_view<'a>(
     // Build the bottom section (voice bar + input row)
     let bottom_section = if let Some(ref session) = conn.voice_session {
         // Show voice bar above input when in a voice session
-        let voice_bar = build_voice_bar(session, is_local_speaking, is_deafened);
+        let voice_bar = build_voice_bar(session, is_local_speaking, is_deafened, mic_level, &theme);
         column![voice_bar, input_row]
             .spacing(SMALL_SPACING)
             .width(Fill)

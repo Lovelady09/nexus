@@ -803,6 +803,7 @@ fn server_content_view<'a>(ctx: ServerContentContext<'a>) -> Element<'a, Message
         ctx.voice_target.clone(),
         ctx.is_local_speaking,
         ctx.is_deafened,
+        ctx.mic_level,
     );
 
     // Build the main content based on active panel

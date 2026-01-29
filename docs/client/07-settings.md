@@ -170,7 +170,7 @@ Select the microphone for voice chat transmission.
 
 Choose **System Default** to use your operating system's default input device.
 
-**Tip:** Use the level meter to verify your microphone is working. Speak and watch for the meter to respond.
+**Tip:** Use the VU meter to verify your microphone is working. Speak and watch for the segments to respond—green for normal levels, yellow for loud, red for too hot.
 
 ### Voice Quality
 
@@ -228,8 +228,10 @@ Test your microphone before joining voice:
 
 1. Select your input device
 2. Click **Test Microphone**
-3. Speak and watch the level meter respond
+3. Speak and watch the VU meter respond (green/yellow/red segments)
 4. Click **Stop Test** when done
+
+The same VU meter style is used during voice transmission in the voice bar.
 
 ### Mute All
 

@@ -5,6 +5,8 @@
 
 use std::collections::HashSet;
 use std::net::SocketAddr;
+use std::sync::Arc;
+use std::sync::atomic::{AtomicU32, Ordering};
 use std::thread::JoinHandle;
 use std::time::Duration;
 
@@ -41,6 +43,8 @@ pub struct VoiceSessionConfig {
     pub processor_settings: AudioProcessorSettings,
     /// Push-to-talk mode (hold or toggle)
     pub ptt_mode: PttMode,
+    /// Shared mic level for VU meter display (f32 stored as bits, written by manager)
+    pub mic_level: Arc<AtomicU32>,
 }
 
 // =============================================================================
@@ -49,6 +53,28 @@ pub struct VoiceSessionConfig {
 
 /// Interval for processing audio frames (10ms = 100 frames/second)
 const AUDIO_PROCESS_INTERVAL_MS: u64 = 10;
+
+/// Scaling factor for RMS to UI level conversion (provides headroom for typical speech)
+const RMS_DISPLAY_SCALE: f64 = 2.0;
+
+// =============================================================================
+// Helper Functions
+// =============================================================================
+
+/// Calculate RMS level from audio samples for VU meter display
+///
+/// Returns a value from 0.0 to 1.0 representing the audio level.
+fn calculate_rms_level(samples: &[f32]) -> f32 {
+    if samples.is_empty() {
+        return 0.0;
+    }
+
+    let sum_squares: f64 = samples.iter().map(|&s| (s as f64) * (s as f64)).sum();
+    let rms = (sum_squares / samples.len() as f64).sqrt();
+
+    // Convert to 0-1 range with some headroom
+    (rms * RMS_DISPLAY_SCALE).min(1.0) as f32
+}
 
 // =============================================================================
 // Voice Events
@@ -249,6 +275,10 @@ async fn run_voice_session(
                 if transmitting && capture.is_active()
                     && let Some(mut samples) = capture.take_frame()
                 {
+                    // Calculate mic level from captured samples for VU meter display
+                    let level = calculate_rms_level(&samples);
+                    config.mic_level.store(level.to_bits(), Ordering::Relaxed);
+
                     // Apply audio processing (noise suppression, AGC) to capture
                     if let Some(ref mut proc) = processor {
                         let _ = proc.process_capture_frame(&mut samples);
@@ -262,6 +292,9 @@ async fn run_voice_session(
                     if let Ok(encoded) = encoder.encode(&samples) {
                         let _ = dtls_command_tx.send(VoiceDtlsCommand::SendVoice(encoded));
                     }
+                } else if transmitting {
+                    // Still transmitting but no frame ready - clear level
+                    config.mic_level.store(0f32.to_bits(), Ordering::Relaxed);
                 }
 
                 // Process jitter buffers and play audio
@@ -344,6 +377,8 @@ async fn run_voice_session(
                         if transmitting {
                             transmitting = false;
                             capture.stop();
+                            // Clear mic level when stopping
+                            config.mic_level.store(0f32.to_bits(), Ordering::Relaxed);
                             let _ = dtls_command_tx.send(VoiceDtlsCommand::SendSpeakingStopped);
                             let _ = event_tx.send(VoiceEvent::LocalSpeakingChanged(false));
                         }

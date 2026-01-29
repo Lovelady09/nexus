@@ -559,6 +559,8 @@ pub enum Message {
     VoiceUserUnmute(String),
     /// Voice: Toggle deafen (mute all incoming voice audio)
     VoiceDeafenToggle,
+    /// Voice: VU meter tick (triggers UI update when transmitting)
+    VoiceMeterTick,
 
     // ==================== Audio Settings ====================
     /// Audio: Refresh device list (re-enumerate audio devices)

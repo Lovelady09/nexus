@@ -4,8 +4,7 @@ use crate::config::settings::ChatHistoryRetention;
 
 use iced::widget::button as btn;
 use iced::widget::{
-    Column, Id, Space, button, checkbox, container, pick_list, progress_bar, row, scrollable,
-    slider, text_input,
+    Column, Id, Space, button, checkbox, container, pick_list, row, scrollable, slider, text_input,
 };
 use iced::{Center, Element, Fill, Theme};
 use iced_aw::NumberInput;
@@ -14,6 +13,7 @@ use iced_aw::Tabs;
 use nexus_common::voice::VoiceQuality;
 
 use super::chat::TimestampSettings;
+use super::voice::build_vu_meter;
 use crate::config::audio::{LocalizedVoiceQuality, PttMode};
 use crate::config::events::{EventSettings, EventType, NotificationContent, SoundChoice};
 use crate::config::settings::{
@@ -60,6 +60,8 @@ pub struct AudioTabData<'a> {
     pub echo_cancellation: bool,
     /// Enable automatic gain control
     pub agc: bool,
+    /// Current theme for styling
+    pub theme: Theme,
 }
 
 // ============================================================================
@@ -168,6 +170,7 @@ pub fn settings_view<'a>(data: SettingsViewData<'a>) -> Element<'a, Message> {
         .unwrap_or((None, None, None, SettingsTab::General));
 
     // Build tab content
+    let theme = data.current_theme.clone();
     let general_content =
         general_tab_content(data.current_theme, avatar, default_avatar, data.nickname);
     let chat_content = chat_tab_content(
@@ -209,6 +212,7 @@ pub fn settings_view<'a>(data: SettingsViewData<'a>) -> Element<'a, Message> {
         noise_suppression: data.noise_suppression,
         echo_cancellation: data.echo_cancellation,
         agc: data.agc,
+        theme,
     });
 
     // Create tabs widget with compact styling
@@ -785,8 +789,8 @@ fn audio_tab_content(data: AudioTabData<'_>) -> Element<'_, Message> {
     // Microphone test section
     let mic_test_label = shaped_text(t("audio-input-level")).size(TEXT_SIZE);
 
-    // Progress bar for mic level
-    let mic_progress = progress_bar(0.0..=1.0, data.mic_level).girth(16);
+    // VU meter for mic level (larger size for settings)
+    let mic_meter = build_vu_meter(data.mic_level, &data.theme, 8.0, 16.0);
 
     let mic_test_button = if data.mic_testing {
         button(shaped_text(t("audio-stop-test")).size(TEXT_SIZE))
@@ -803,7 +807,7 @@ fn audio_tab_content(data: AudioTabData<'_>) -> Element<'_, Message> {
     let mic_test_row = row![
         mic_test_label,
         Space::new().width(ELEMENT_SPACING),
-        mic_progress,
+        mic_meter,
         Space::new().width(ELEMENT_SPACING),
         mic_test_button,
     ]

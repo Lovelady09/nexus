@@ -118,6 +118,7 @@ impl NexusApp {
                 agc: self.config.settings.audio.agc,
             },
             ptt_mode: self.config.settings.audio.ptt_mode,
+            mic_level: self.mic_level.clone(),
         });
 
         // Store the handle

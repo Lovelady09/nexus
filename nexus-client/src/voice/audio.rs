@@ -463,7 +463,9 @@ struct UserAudioBuffer {
 impl UserAudioBuffer {
     fn new() -> Self {
         Self {
-            samples: Vec::with_capacity(VOICE_SAMPLES_PER_FRAME as usize * MAX_PLAYBACK_BUFFER_FRAMES),
+            samples: Vec::with_capacity(
+                VOICE_SAMPLES_PER_FRAME as usize * MAX_PLAYBACK_BUFFER_FRAMES,
+            ),
         }
     }
 }
@@ -546,7 +548,8 @@ impl AudioMixer {
                         && supported_formats.contains(&c.sample_format())
                 })
                 .ok_or_else(|| {
-                    "No supported output configuration found (need 48kHz mono or stereo)".to_string()
+                    "No supported output configuration found (need 48kHz mono or stereo)"
+                        .to_string()
                 })?;
             (2u16, stereo_config.sample_format())
         };
@@ -559,24 +562,48 @@ impl AudioMixer {
 
         // Build the appropriate stream based on channel count and sample format
         let stream = match (channels, sample_format) {
-            (1, SampleFormat::F32) => {
-                build_mixer_stream_mono::<f32>(&device, &config, state_clone, active_clone, error_tx)
-            }
-            (1, SampleFormat::I16) => {
-                build_mixer_stream_mono::<i16>(&device, &config, state_clone, active_clone, error_tx)
-            }
-            (1, SampleFormat::U16) => {
-                build_mixer_stream_mono::<u16>(&device, &config, state_clone, active_clone, error_tx)
-            }
-            (2, SampleFormat::F32) => {
-                build_mixer_stream_stereo::<f32>(&device, &config, state_clone, active_clone, error_tx)
-            }
-            (2, SampleFormat::I16) => {
-                build_mixer_stream_stereo::<i16>(&device, &config, state_clone, active_clone, error_tx)
-            }
-            (2, SampleFormat::U16) => {
-                build_mixer_stream_stereo::<u16>(&device, &config, state_clone, active_clone, error_tx)
-            }
+            (1, SampleFormat::F32) => build_mixer_stream_mono::<f32>(
+                &device,
+                &config,
+                state_clone,
+                active_clone,
+                error_tx,
+            ),
+            (1, SampleFormat::I16) => build_mixer_stream_mono::<i16>(
+                &device,
+                &config,
+                state_clone,
+                active_clone,
+                error_tx,
+            ),
+            (1, SampleFormat::U16) => build_mixer_stream_mono::<u16>(
+                &device,
+                &config,
+                state_clone,
+                active_clone,
+                error_tx,
+            ),
+            (2, SampleFormat::F32) => build_mixer_stream_stereo::<f32>(
+                &device,
+                &config,
+                state_clone,
+                active_clone,
+                error_tx,
+            ),
+            (2, SampleFormat::I16) => build_mixer_stream_stereo::<i16>(
+                &device,
+                &config,
+                state_clone,
+                active_clone,
+                error_tx,
+            ),
+            (2, SampleFormat::U16) => build_mixer_stream_stereo::<u16>(
+                &device,
+                &config,
+                state_clone,
+                active_clone,
+                error_tx,
+            ),
             _ => Err("Unsupported audio format".to_string()),
         }?;
 

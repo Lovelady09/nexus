@@ -5,7 +5,7 @@
 //! - Voice button: Join/leave toggle in the input row
 
 use iced::widget::{Row, Space, button, container, row, tooltip};
-use iced::{Element, Fill};
+use iced::{Background, Border, Element, Fill, Theme};
 
 use crate::i18n::{t, t_args};
 use crate::icon;
@@ -38,6 +38,24 @@ const DEAFEN_BUTTON_WIDTH: f32 = 24.0;
 /// Maximum number of speaking users to show in voice bar
 const MAX_SPEAKING_DISPLAY: usize = 3;
 
+/// Number of segments in the VU meter
+pub const VU_METER_SEGMENTS: usize = 8;
+
+/// Width of each VU meter segment (small, for voice bar)
+const VU_METER_SEGMENT_WIDTH_SMALL: f32 = 4.0;
+
+/// Height of each VU meter segment (small, for voice bar)
+const VU_METER_SEGMENT_HEIGHT_SMALL: f32 = 10.0;
+
+/// Gap between VU meter segments
+pub const VU_METER_SEGMENT_GAP: f32 = 2.0;
+
+/// Threshold for yellow segments (60%)
+pub const VU_METER_YELLOW_THRESHOLD: f32 = 0.6;
+
+/// Threshold for red segments (80%)
+pub const VU_METER_RED_THRESHOLD: f32 = 0.8;
+
 // =============================================================================
 // Voice Bar
 // =============================================================================
@@ -55,6 +73,8 @@ pub fn build_voice_bar(
     session: &VoiceState,
     is_local_speaking: bool,
     is_deafened: bool,
+    mic_level: f32,
+    theme: &Theme,
 ) -> Element<'static, Message> {
     // Icon
     let headphones_icon = icon::headphones().size(VOICE_BAR_ICON_SIZE);
@@ -88,11 +108,20 @@ pub fn build_voice_bar(
         // Separator
         bar_row = bar_row.push(shaped_text("│").size(VOICE_BAR_FONT_SIZE));
 
-        // Show local speaking indicator first
+        // Show local speaking indicator with VU meter
         if is_local_speaking {
             let local_indicator =
                 container(icon::mic().size(VOICE_BAR_ICON_SIZE)).style(speaking_indicator_style);
             bar_row = bar_row.push(local_indicator);
+
+            // Add VU meter (small size for voice bar)
+            let vu_meter = build_vu_meter(
+                mic_level,
+                theme,
+                VU_METER_SEGMENT_WIDTH_SMALL,
+                VU_METER_SEGMENT_HEIGHT_SMALL,
+            );
+            bar_row = bar_row.push(vu_meter);
         }
 
         // Show who's speaking (up to MAX_SPEAKING_DISPLAY)
@@ -155,6 +184,74 @@ pub fn build_voice_bar(
         .padding(VOICE_BAR_PADDING)
         .style(voice_bar_style)
         .into()
+}
+
+// =============================================================================
+// VU Meter
+// =============================================================================
+
+/// Build a segmented VU meter showing microphone input level
+///
+/// Displays 8 segments with theme-appropriate colors:
+/// - Green (0-60%): Normal speaking level
+/// - Yellow (60-80%): Getting loud
+/// - Red (80-100%): Too hot / clipping
+///
+/// # Arguments
+/// * `level` - Audio level from 0.0 to 1.0
+/// * `theme` - Current theme for colors
+/// * `segment_width` - Width of each segment in pixels
+/// * `segment_height` - Height of each segment in pixels
+pub fn build_vu_meter(
+    level: f32,
+    theme: &Theme,
+    segment_width: f32,
+    segment_height: f32,
+) -> Row<'static, Message> {
+    let palette = theme.extended_palette();
+
+    // Calculate how many segments should be lit
+    let lit_segments = (level * VU_METER_SEGMENTS as f32).ceil() as usize;
+
+    let mut meter_row = Row::new().spacing(VU_METER_SEGMENT_GAP);
+
+    for i in 0..VU_METER_SEGMENTS {
+        let segment_threshold = (i as f32 + 1.0) / VU_METER_SEGMENTS as f32;
+        let is_lit = i < lit_segments;
+
+        // Determine segment color based on its position
+        let color = if segment_threshold <= VU_METER_YELLOW_THRESHOLD {
+            palette.success.base.color
+        } else if segment_threshold <= VU_METER_RED_THRESHOLD {
+            palette.warning.base.color
+        } else {
+            palette.danger.base.color
+        };
+
+        // Dim color for unlit segments
+        let segment_color = if is_lit {
+            color
+        } else {
+            // Use a very dim version of the background
+            iced::Color {
+                a: 0.2,
+                ..palette.background.strong.color
+            }
+        };
+
+        let segment = container(Space::new())
+            .width(segment_width)
+            .height(segment_height)
+            .style(move |_theme: &Theme| container::Style {
+                background: Some(Background::Color(segment_color)),
+                border: Border::default(),
+                ..Default::default()
+            });
+
+        meter_row = meter_row.push(segment);
+    }
+
+    meter_row
 }
 
 // =============================================================================

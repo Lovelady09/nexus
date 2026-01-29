@@ -59,12 +59,24 @@ You can only be in one voice session at a time, even if connected to multiple se
 When in voice, a bar appears above the input area showing:
 
 ```
-🎧 #general (3 in voice)
+🎧 #general (3 in voice) │ 🎤 [▮▮▮▮░░░░] Alice
 ```
 
 - **Headphones icon** — Indicates you're in voice
 - **Target name** — Channel name or user nickname
 - **Participant count** — How many people are in this voice session
+- **Mic icon + VU meter** — When you're transmitting, shows your input level
+- **Speaking names** — Names of others currently speaking
+
+### VU Meter
+
+When transmitting, a segmented VU meter appears next to the mic icon showing your input level in real-time:
+
+- **Green segments** (0-60%) — Normal speaking level
+- **Yellow segments** (60-80%) — Getting loud
+- **Red segments** (80-100%) — Too hot / clipping
+
+The meter updates at 60fps for smooth visual feedback. If you see red frequently, move back from your microphone or lower your system input volume.
 
 The voice bar only appears on the connection with an active voice session.
 
@@ -214,8 +226,10 @@ All audio processing settings apply immediately—you don't need to leave and re
 1. Open **Settings > Audio**
 2. Select your input device
 3. Click **Test Microphone**
-4. The level meter shows your microphone input in real-time
+4. The VU meter shows your microphone input level in real-time (green/yellow/red segments)
 5. Speak to verify the meter responds
+
+The same VU meter style is used in both the settings mic test and the voice bar during transmission.
 
 ## Troubleshooting
 

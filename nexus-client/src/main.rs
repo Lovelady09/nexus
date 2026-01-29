@@ -23,6 +23,9 @@ mod views;
 mod voice;
 mod widgets;
 
+use std::sync::Arc;
+use std::sync::atomic::AtomicU32;
+
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::sync::Mutex;
 
@@ -315,6 +318,8 @@ struct NexusApp {
     is_local_speaking: bool,
     /// Whether local user has deafened (muted all incoming voice audio)
     is_deafened: bool,
+    /// Shared mic level for VU meter display (f32 stored as bits, 0.0-1.0)
+    mic_level: Arc<AtomicU32>,
 
     // -------------------------------------------------------------------------
     // Drag and Drop
@@ -345,6 +350,7 @@ impl Default for NexusApp {
             ptt_manager: None,
             is_local_speaking: false,
             is_deafened: false,
+            mic_level: Arc::new(AtomicU32::new(0)),
             next_connection_id: 0,
             connecting_bookmarks: HashSet::new(),
             // Forms
@@ -904,6 +910,7 @@ impl NexusApp {
             Message::VoiceUserMute(nickname) => self.handle_voice_user_mute(nickname),
             Message::VoiceUserUnmute(nickname) => self.handle_voice_user_unmute(nickname),
             Message::VoiceDeafenToggle => self.handle_voice_deafen_toggle(),
+            Message::VoiceMeterTick => Task::none(), // Just triggers re-render
 
             // Audio settings
             Message::AudioRefreshDevices => self.handle_audio_refresh_devices(),
@@ -1086,6 +1093,14 @@ impl NexusApp {
 
             // Subscribe to PTT hotkey events when in voice
             subscriptions.push(voice::ptt::ptt_subscription());
+
+            // Subscribe to VU meter ticks when transmitting (for UI updates)
+            if self.is_local_speaking {
+                subscriptions.push(
+                    iced::time::every(std::time::Duration::from_millis(16))
+                        .map(|_| Message::VoiceMeterTick),
+                );
+            }
         }
 
         Subscription::batch(subscriptions)
@@ -1109,11 +1124,22 @@ impl NexusApp {
 
         // Build view configuration
         // Get audio state from settings form (for PTT capture, mic test) or defaults
-        let (ptt_capturing, mic_testing, mic_level) = self
+        let (ptt_capturing, mic_testing) = self
             .settings_form
             .as_ref()
-            .map(|f| (f.ptt_capturing, f.mic_testing, f.mic_level))
-            .unwrap_or((false, false, 0.0));
+            .map(|f| (f.ptt_capturing, f.mic_testing))
+            .unwrap_or((false, false));
+
+        // Get mic level: prefer voice session atomic (when in voice), fallback to settings form (mic test)
+        let mic_level = if self.is_local_speaking {
+            // In voice and transmitting - read from shared atomic
+            f32::from_bits(self.mic_level.load(std::sync::atomic::Ordering::Relaxed))
+        } else if let Some(ref form) = self.settings_form {
+            // Mic testing in settings
+            form.mic_level
+        } else {
+            0.0
+        };
 
         // Get audio device lists from settings form cache (if open) or use empty slices
         // Device lists are only needed when settings panel is open, and are cached there
