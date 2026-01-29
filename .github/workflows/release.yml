@@ -469,16 +469,6 @@ jobs:
         run: |
           echo "PATH=C:\msys64\ucrt64\bin;C:\msys64\usr\bin;$env:PATH" >> $env:GITHUB_ENV
 
-      - name: Create autotools wrapper scripts for Windows
-        shell: pwsh
-        run: |
-          $tools = @("libtoolize", "aclocal", "automake", "autoconf")
-          foreach ($tool in $tools) {
-            $content = "@echo off`r`nC:\msys64\usr\bin\sh.exe -l -c `"$tool %*`""
-            Set-Content -Path "C:\msys64\ucrt64\bin\$tool.cmd" -Value $content -Encoding ASCII
-          }
-          Get-ChildItem C:\msys64\ucrt64\bin\*.cmd | ForEach-Object { Write-Host $_.Name }
-
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
 
