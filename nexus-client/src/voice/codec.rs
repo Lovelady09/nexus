@@ -54,6 +54,19 @@ impl VoiceEncoder {
             .set_bitrate(opus::Bitrate::Bits(quality.bitrate()))
             .map_err(|e| format!("Failed to set bitrate: {}", e))?;
 
+        // Enable in-band FEC for automatic packet loss recovery
+        // This embeds redundant data from the previous frame (~50% overhead)
+        // which allows the decoder to recover from single packet losses
+        encoder
+            .set_inband_fec(true)
+            .map_err(|e| format!("Failed to enable FEC: {}", e))?;
+
+        // Enable DTX (discontinuous transmission) to skip sending during silence
+        // This saves bandwidth and CPU when users aren't actively speaking
+        encoder
+            .set_dtx(true)
+            .map_err(|e| format!("Failed to enable DTX: {}", e))?;
+
         Ok(Self { encoder })
     }
 
