@@ -20,6 +20,7 @@ concurrency:
 
 env:
   CARGO_TERM_COLOR: always
+  CMAKE_POLICY_VERSION_MINIMUM: "3.5"
 
 jobs:
   test:
@@ -215,8 +216,6 @@ jobs:
     name: Bundle macOS (x64)
     runs-on: macos-14
     timeout-minutes: 30
-    env:
-      CMAKE_POLICY_VERSION_MINIMUM: "3.5"
     steps:
       - uses: actions/checkout@v4
 
@@ -367,8 +366,6 @@ jobs:
     name: Bundle Windows (MSI)
     runs-on: windows-latest
     timeout-minutes: 30
-    env:
-      CMAKE_POLICY_VERSION_MINIMUM: "3.5"
     steps:
       - uses: actions/checkout@v4
 
