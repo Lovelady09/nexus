@@ -115,9 +115,9 @@ jobs:
 
       - name: Run tests (Windows)
         if: runner.os == 'Windows'
-        shell: cmd
+        shell: msys2 {0}
         run: |
-          set PATH=C:\msys64\ucrt64\bin;C:\msys64\usr\bin;%PATH%
+          export PATH="/c/Users/runneradmin/.cargo/bin:$PATH"
           cargo test --workspace --verbose
 
   clippy:
@@ -485,9 +485,9 @@ jobs:
           sed -i 's/^license = "MIT"$/license-file = "..\/LICENSE"/' nexus-client/Cargo.toml
 
       - name: Build MSI installer
-        shell: cmd
+        shell: msys2 {0}
         run: |
-          set PATH=C:\msys64\ucrt64\bin;C:\msys64\usr\bin;%PATH%
+          export PATH="/c/Users/runneradmin/.cargo/bin:$PATH"
           cd nexus-client
           cargo bundle --target x86_64-pc-windows-msvc --format wxsmsi --release
 
