@@ -404,7 +404,10 @@ pub async fn run_voice_client(
                         // Timeout or closed, continue
                     }
                     Err(e) => {
-                        let _ = event_tx.send(VoiceDtlsEvent::Error(e));
+                        // DTLS Alert messages are normal during disconnect, not errors
+                        if !e.contains("Alert") {
+                            let _ = event_tx.send(VoiceDtlsEvent::Error(e));
+                        }
                         let _ = event_tx.send(VoiceDtlsEvent::Disconnected);
                         return;
                     }
