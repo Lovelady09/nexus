@@ -53,14 +53,6 @@ jobs:
         if: runner.os == 'macOS'
         run: brew install libtool autoconf automake pkg-config
 
-      - name: Install cmake (chocolatey)
-        if: runner.os == 'Windows'
-        run: choco install cmake -y
-
-      - name: Install nasm (chocolatey)
-        if: runner.os == 'Windows'
-        run: choco install nasm -y
-
       - name: Install MSYS2 and build tools
         if: runner.os == 'Windows'
         uses: msys2/setup-msys2@v2
@@ -69,11 +61,15 @@ jobs:
           update: true
           install: >-
             base-devel
+            autoconf
+            automake
+            libtool
+            cmake
+            nasm
             mingw-w64-ucrt-x86_64-toolchain
-            mingw-w64-ucrt-x86_64-autoconf
-            mingw-w64-ucrt-x86_64-automake
             mingw-w64-ucrt-x86_64-libtool
-            mingw-w64-ucrt-x86_64-pkg-config
+            mingw-w64-ucrt-x86_64-cmake
+            mingw-w64-ucrt-x86_64-nasm
 
 
 
@@ -420,12 +416,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install cmake (chocolatey)
-        run: choco install cmake -y
-
-      - name: Install nasm (chocolatey)
-        run: choco install nasm -y
-
       - name: Install MSYS2 and build tools
         uses: msys2/setup-msys2@v2
         with:
@@ -433,11 +423,15 @@ jobs:
           update: true
           install: >-
             base-devel
+            autoconf
+            automake
+            libtool
+            cmake
+            nasm
             mingw-w64-ucrt-x86_64-toolchain
-            mingw-w64-ucrt-x86_64-autoconf
-            mingw-w64-ucrt-x86_64-automake
             mingw-w64-ucrt-x86_64-libtool
-            mingw-w64-ucrt-x86_64-pkg-config
+            mingw-w64-ucrt-x86_64-cmake
+            mingw-w64-ucrt-x86_64-nasm
 
 
 
