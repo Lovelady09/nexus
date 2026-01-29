@@ -53,9 +53,28 @@ jobs:
         if: runner.os == 'macOS'
         run: brew install libtool autoconf automake pkg-config
 
-      - name: Install Windows build tools
+      - name: Install cmake (chocolatey)
         if: runner.os == 'Windows'
-        run: choco install libtool cmake nasm -y
+        run: choco install cmake -y
+
+      - name: Install nasm (chocolatey)
+        if: runner.os == 'Windows'
+        run: choco install nasm -y
+
+      - name: Install MSYS2 and build tools
+        if: runner.os == 'Windows'
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64
+          update: true
+          install: >-
+            base-devel
+            autoconf
+            automake
+            libtool
+            pkg-config
+
+
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
@@ -85,8 +104,16 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-${{ steps.arch.outputs.arch }}-cargo-build-
 
-      - name: Run tests
+      - name: Run tests (Unix)
+        if: runner.os != 'Windows'
         run: cargo test --workspace --verbose
+
+      - name: Run tests (Windows)
+        if: runner.os == 'Windows'
+        shell: msys2 {0}
+        run: |
+          export PATH="/c/Users/runneradmin/.cargo/bin:$PATH"
+          cargo test --workspace --verbose
 
   clippy:
     name: Clippy
@@ -388,8 +415,25 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Windows build tools
-        run: choco install libtool cmake nasm -y
+      - name: Install cmake (chocolatey)
+        run: choco install cmake -y
+
+      - name: Install nasm (chocolatey)
+        run: choco install nasm -y
+
+      - name: Install MSYS2 and build tools
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64
+          update: true
+          install: >-
+            base-devel
+            autoconf
+            automake
+            libtool
+            pkg-config
+
+
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
@@ -429,8 +473,11 @@ jobs:
           sed -i 's/^license = "MIT"$/license-file = "..\/LICENSE"/' nexus-client/Cargo.toml
 
       - name: Build MSI installer
-        working-directory: nexus-client
-        run: cargo bundle --target x86_64-pc-windows-msvc --format wxsmsi --release
+        shell: msys2 {0}
+        run: |
+          export PATH="/c/Users/runneradmin/.cargo/bin:$PATH"
+          cd nexus-client
+          cargo bundle --target x86_64-pc-windows-msvc --format wxsmsi --release
 
   # Test Docker image build
   docker-build:
