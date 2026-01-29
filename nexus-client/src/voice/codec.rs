@@ -1,7 +1,8 @@
 //! Opus codec wrapper for voice encoding/decoding
 //!
 //! Provides a simple interface to the Opus codec for encoding microphone
-//! input and decoding received voice packets.
+//! input and decoding received voice packets. Uses f32 samples throughout
+//! for compatibility with WebRTC audio processing.
 
 use std::collections::HashMap;
 
@@ -73,12 +74,13 @@ impl VoiceEncoder {
     /// Encode a frame of audio samples
     ///
     /// # Arguments
-    /// * `samples` - Audio samples (must be VOICE_SAMPLES_PER_FRAME samples)
+    /// * `samples` - Audio samples in f32 format (must be VOICE_SAMPLES_PER_FRAME samples).
+    ///   Values should be normalized to [-1.0, 1.0].
     ///
     /// # Returns
     /// * `Ok(Vec<u8>)` - Encoded Opus frame
     /// * `Err(String)` - Error message if encoding failed
-    pub fn encode(&mut self, samples: &[i16]) -> Result<Vec<u8>, String> {
+    pub fn encode(&mut self, samples: &[f32]) -> Result<Vec<u8>, String> {
         if samples.len() != VOICE_SAMPLES_PER_FRAME as usize {
             return Err(format!(
                 "Expected {} samples, got {}",
@@ -91,7 +93,7 @@ impl VoiceEncoder {
 
         let len = self
             .encoder
-            .encode(samples, &mut output)
+            .encode_float(samples, &mut output)
             .map_err(|e| format!("Opus encode error: {}", e))?;
 
         output.truncate(len);
@@ -134,14 +136,14 @@ impl VoiceDecoder {
     /// * `data` - Encoded Opus frame
     ///
     /// # Returns
-    /// * `Ok(Vec<i16>)` - Decoded audio samples
+    /// * `Ok(Vec<f32>)` - Decoded audio samples normalized to [-1.0, 1.0]
     /// * `Err(String)` - Error message if decoding failed
-    pub fn decode(&mut self, data: &[u8]) -> Result<Vec<i16>, String> {
-        let mut output = vec![0i16; VOICE_SAMPLES_PER_FRAME as usize];
+    pub fn decode(&mut self, data: &[u8]) -> Result<Vec<f32>, String> {
+        let mut output = vec![0f32; VOICE_SAMPLES_PER_FRAME as usize];
 
         let len = self
             .decoder
-            .decode(data, &mut output, false)
+            .decode_float(data, &mut output, false)
             .map_err(|e| format!("Opus decode error: {}", e))?;
 
         output.truncate(len);
@@ -153,14 +155,14 @@ impl VoiceDecoder {
     /// Call this when a packet is lost to generate interpolated audio.
     ///
     /// # Returns
-    /// * `Ok(Vec<i16>)` - Concealed audio samples
+    /// * `Ok(Vec<f32>)` - Concealed audio samples
     /// * `Err(String)` - Error message if PLC failed
-    pub fn decode_lost(&mut self) -> Result<Vec<i16>, String> {
-        let mut output = vec![0i16; VOICE_SAMPLES_PER_FRAME as usize];
+    pub fn decode_lost(&mut self) -> Result<Vec<f32>, String> {
+        let mut output = vec![0f32; VOICE_SAMPLES_PER_FRAME as usize];
 
         let len = self
             .decoder
-            .decode(&[], &mut output, true)
+            .decode_float(&[], &mut output, true)
             .map_err(|e| format!("Opus PLC error: {}", e))?;
 
         output.truncate(len);
@@ -198,9 +200,9 @@ impl DecoderPool {
     /// * `data` - Encoded Opus frame
     ///
     /// # Returns
-    /// * `Ok(Vec<i16>)` - Decoded audio samples
+    /// * `Ok(Vec<f32>)` - Decoded audio samples
     /// * `Err(String)` - Error message if decoding failed
-    pub fn decode(&mut self, sender: &str, data: &[u8]) -> Result<Vec<i16>, String> {
+    pub fn decode(&mut self, sender: &str, data: &[u8]) -> Result<Vec<f32>, String> {
         let key = sender.to_lowercase();
 
         let decoder = if let Some(d) = self.decoders.get_mut(&key) {
@@ -224,9 +226,9 @@ impl DecoderPool {
     /// * `sender` - Nickname of the sender
     ///
     /// # Returns
-    /// * `Ok(Vec<i16>)` - Concealed audio samples
+    /// * `Ok(Vec<f32>)` - Concealed audio samples
     /// * `Err(String)` - Error message if PLC failed or sender unknown
-    pub fn decode_lost(&mut self, sender: &str) -> Result<Vec<i16>, String> {
+    pub fn decode_lost(&mut self, sender: &str) -> Result<Vec<f32>, String> {
         let key = sender.to_lowercase();
 
         let decoder = self
@@ -294,7 +296,7 @@ mod tests {
         assert!(encoder.set_quality(VoiceQuality::VeryHigh).is_ok());
 
         // Encoding should still work after quality change
-        let samples: Vec<i16> = (0..VOICE_SAMPLES_PER_FRAME).map(|_| 0).collect();
+        let samples = vec![0.0f32; VOICE_SAMPLES_PER_FRAME as usize];
         assert!(encoder.encode(&samples).is_ok());
     }
 
@@ -309,18 +311,18 @@ mod tests {
         let mut encoder = VoiceEncoder::new(VoiceQuality::High).unwrap();
         let mut decoder = VoiceDecoder::new().unwrap();
 
-        // Create a simple test signal (sine wave)
-        let samples: Vec<i16> = (0..VOICE_SAMPLES_PER_FRAME)
+        // Create a simple test signal (sine wave) - f32 samples are already normalized
+        let samples: Vec<f32> = (0..VOICE_SAMPLES_PER_FRAME)
             .map(|i| {
                 let t = i as f32 / VOICE_SAMPLE_RATE as f32;
-                (f32::sin(2.0 * std::f32::consts::PI * 440.0 * t) * 16000.0) as i16
+                f32::sin(2.0 * std::f32::consts::PI * 440.0 * t) * 0.5
             })
             .collect();
 
         // Encode
         let encoded = encoder.encode(&samples).unwrap();
         assert!(!encoded.is_empty());
-        assert!(encoded.len() < samples.len() * 2); // Should be smaller than raw PCM
+        assert!(encoded.len() < samples.len() * 4); // Should be smaller than raw PCM f32
 
         // Decode
         let decoded = decoder.decode(&encoded).unwrap();
@@ -328,8 +330,8 @@ mod tests {
 
         // Values should be similar (lossy compression means not exact)
         // Just verify we got reasonable output, not silence
-        let max_amplitude: i16 = decoded.iter().map(|&s| s.abs()).max().unwrap_or(0);
-        assert!(max_amplitude > 1000, "Decoded audio seems too quiet");
+        let max_amplitude: f32 = decoded.iter().map(|&s| s.abs()).fold(0.0, f32::max);
+        assert!(max_amplitude > 0.1, "Decoded audio seems too quiet");
     }
 
     #[test]
@@ -337,11 +339,11 @@ mod tests {
         let mut encoder = VoiceEncoder::new(VoiceQuality::High).unwrap();
 
         // Too few samples
-        let samples = vec![0i16; 100];
+        let samples = vec![0.0f32; 100];
         assert!(encoder.encode(&samples).is_err());
 
         // Too many samples
-        let samples = vec![0i16; VOICE_SAMPLES_PER_FRAME as usize * 2];
+        let samples = vec![0.0f32; VOICE_SAMPLES_PER_FRAME as usize * 2];
         assert!(encoder.encode(&samples).is_err());
     }
 
@@ -352,7 +354,7 @@ mod tests {
 
         // Create encoder and encode a frame
         let mut encoder = VoiceEncoder::new(VoiceQuality::High).unwrap();
-        let samples: Vec<i16> = (0..VOICE_SAMPLES_PER_FRAME).map(|_| 0).collect();
+        let samples = vec![0.0f32; VOICE_SAMPLES_PER_FRAME as usize];
         let encoded = encoder.encode(&samples).unwrap();
 
         // Decode from two different senders
@@ -384,10 +386,10 @@ mod tests {
         let mut decoder = VoiceDecoder::new().unwrap();
 
         // First decode a real frame to initialize decoder state
-        let samples: Vec<i16> = (0..VOICE_SAMPLES_PER_FRAME)
+        let samples: Vec<f32> = (0..VOICE_SAMPLES_PER_FRAME)
             .map(|i| {
                 let t = i as f32 / VOICE_SAMPLE_RATE as f32;
-                (f32::sin(2.0 * std::f32::consts::PI * 440.0 * t) * 16000.0) as i16
+                f32::sin(2.0 * std::f32::consts::PI * 440.0 * t) * 0.5
             })
             .collect();
         let encoded = encoder.encode(&samples).unwrap();

@@ -39,8 +39,8 @@ const MAX_SEQUENCE_GAP: u32 = 100;
 /// A packet stored in the jitter buffer
 #[derive(Debug, Clone)]
 struct BufferedPacket {
-    /// Decoded audio samples
-    samples: Vec<i16>,
+    /// Decoded audio samples (f32 normalized to -1.0..1.0)
+    samples: Vec<f32>,
 }
 
 // =============================================================================
@@ -85,12 +85,12 @@ impl JitterBuffer {
     /// # Arguments
     /// * `sequence` - Packet sequence number
     /// * `_timestamp` - Packet timestamp in samples (reserved for future use)
-    /// * `samples` - Decoded audio samples
+    /// * `samples` - Decoded audio samples (f32 normalized to -1.0..1.0)
     ///
     /// # Returns
     /// * `true` if packet was accepted
     /// * `false` if packet was too old or duplicate
-    pub fn push(&mut self, sequence: u32, _timestamp: u32, samples: Vec<i16>) -> bool {
+    pub fn push(&mut self, sequence: u32, _timestamp: u32, samples: Vec<f32>) -> bool {
         let now = Instant::now();
 
         // Update jitter estimate
@@ -177,9 +177,9 @@ impl JitterBuffer {
     /// has been filled enough to absorb jitter.
     ///
     /// # Returns
-    /// * `Some(samples)` - Next frame's audio samples
+    /// * `Some(samples)` - Next frame's audio samples (f32 normalized to -1.0..1.0)
     /// * `None` - No frame available (buffer underrun or not ready)
-    pub fn pop(&mut self) -> Option<Vec<i16>> {
+    pub fn pop(&mut self) -> Option<Vec<f32>> {
         let next = self.next_sequence?;
 
         // Wait for buffer to fill before starting playback
@@ -276,7 +276,7 @@ impl JitterBufferPool {
     }
 
     /// Push a packet for a sender
-    pub fn push(&mut self, sender: &str, sequence: u32, timestamp: u32, samples: Vec<i16>) -> bool {
+    pub fn push(&mut self, sender: &str, sequence: u32, timestamp: u32, samples: Vec<f32>) -> bool {
         let key = sender.to_lowercase();
         self.buffers
             .entry(key)
@@ -332,8 +332,8 @@ mod tests {
 
     use super::*;
 
-    fn make_samples() -> Vec<i16> {
-        vec![0i16; VOICE_SAMPLES_PER_FRAME as usize]
+    fn make_samples() -> Vec<f32> {
+        vec![0.0f32; VOICE_SAMPLES_PER_FRAME as usize]
     }
 
     #[test]

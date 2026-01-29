@@ -1,7 +1,8 @@
 //! Audio device management and streaming
 //!
 //! Provides audio device enumeration, microphone capture, and speaker playback
-//! using the cpal crate for cross-platform audio I/O.
+//! using the cpal crate for cross-platform audio I/O. Uses f32 samples throughout
+//! for compatibility with WebRTC audio processing.
 
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc as std_mpsc;
@@ -121,9 +122,7 @@ pub fn list_input_devices() -> Vec<AudioDevice> {
     devices
 }
 
-/// Find an output device by name
-///
-/// If name is empty or "System Default", returns the default output device.
+/// Find an output device by name, or return the default
 fn find_output_device(name: &str) -> Option<Device> {
     let host = get_host();
 
@@ -133,12 +132,11 @@ fn find_output_device(name: &str) -> Option<Device> {
 
     host.output_devices()
         .ok()?
-        .find(|d| d.name().map(|n| n == name).unwrap_or(false))
+        .find(|d| d.name().is_ok_and(|n| n == name))
+        .or_else(|| host.default_output_device())
 }
 
-/// Find an input device by name
-///
-/// If name is empty or "System Default", returns the default input device.
+/// Find an input device by name, or return the default
 fn find_input_device(name: &str) -> Option<Device> {
     let host = get_host();
 
@@ -148,7 +146,8 @@ fn find_input_device(name: &str) -> Option<Device> {
 
     host.input_devices()
         .ok()?
-        .find(|d| d.name().map(|n| n == name).unwrap_or(false))
+        .find(|d| d.name().is_ok_and(|n| n == name))
+        .or_else(|| host.default_input_device())
 }
 
 // =============================================================================
@@ -157,13 +156,13 @@ fn find_input_device(name: &str) -> Option<Device> {
 
 /// Audio capture from microphone
 ///
-/// Captures audio samples at 48kHz mono and provides them in frames
-/// suitable for Opus encoding.
+/// Captures audio at 48kHz mono for voice encoding. Uses f32 samples internally
+/// for compatibility with WebRTC audio processing.
 pub struct AudioCapture {
     /// The cpal input stream
     _stream: Stream,
-    /// Buffer for captured audio samples
-    buffer: Arc<Mutex<Vec<i16>>>,
+    /// Buffer for captured audio samples (f32 normalized to -1.0..1.0)
+    buffer: Arc<Mutex<Vec<f32>>>,
     /// Flag indicating if capture is active
     active: Arc<AtomicBool>,
     /// Receiver for audio stream errors
@@ -317,12 +316,13 @@ impl AudioCapture {
     ///
     /// Returns a frame of VOICE_SAMPLES_PER_FRAME samples if available,
     /// or None if not enough samples have been captured yet.
-    pub fn take_frame(&self) -> Option<Vec<i16>> {
+    /// Samples are f32 normalized to [-1.0, 1.0].
+    pub fn take_frame(&self) -> Option<Vec<f32>> {
         let mut buffer = self.buffer.lock().ok()?;
         let frame_size = VOICE_SAMPLES_PER_FRAME as usize;
 
         if buffer.len() >= frame_size {
-            let frame: Vec<i16> = buffer.drain(..frame_size).collect();
+            let frame: Vec<f32> = buffer.drain(..frame_size).collect();
             Some(frame)
         } else {
             None
@@ -348,17 +348,11 @@ impl AudioCapture {
             return 0.0;
         }
 
-        // Calculate RMS of recent samples
+        // Calculate RMS of recent samples (f32 samples are already normalized)
         let sample_count = buffer.len().min(VOICE_SAMPLES_PER_FRAME as usize);
         let samples = &buffer[buffer.len() - sample_count..];
 
-        let sum_squares: f64 = samples
-            .iter()
-            .map(|&s| {
-                let normalized = s as f64 / i16::MAX as f64;
-                normalized * normalized
-            })
-            .sum();
+        let sum_squares: f64 = samples.iter().map(|&s| (s as f64) * (s as f64)).sum();
 
         let rms = (sum_squares / sample_count as f64).sqrt();
 
@@ -371,13 +365,13 @@ impl AudioCapture {
 fn build_input_stream_mono<T>(
     device: &Device,
     config: &StreamConfig,
-    buffer: Arc<Mutex<Vec<i16>>>,
+    buffer: Arc<Mutex<Vec<f32>>>,
     active: Arc<AtomicBool>,
     error_tx: std_mpsc::Sender<String>,
 ) -> Result<Stream, String>
 where
     T: Sample + cpal::SizedSample,
-    i16: FromSample<T>,
+    f32: FromSample<T>,
 {
     device
         .build_input_stream(
@@ -387,7 +381,7 @@ where
                     && let Ok(mut buf) = buffer.lock()
                 {
                     for sample in data {
-                        buf.push(i16::from_sample(*sample));
+                        buf.push(f32::from_sample(*sample));
                     }
                     // Limit buffer size to prevent unbounded growth
                     let max_size = VOICE_SAMPLES_PER_FRAME as usize * MAX_CAPTURE_BUFFER_FRAMES;
@@ -413,14 +407,13 @@ where
 fn build_input_stream_stereo<T>(
     device: &Device,
     config: &StreamConfig,
-    buffer: Arc<Mutex<Vec<i16>>>,
+    buffer: Arc<Mutex<Vec<f32>>>,
     active: Arc<AtomicBool>,
     error_tx: std_mpsc::Sender<String>,
 ) -> Result<Stream, String>
 where
     T: Sample + cpal::SizedSample,
-    i16: FromSample<T>,
-    i32: FromSample<T>,
+    f32: FromSample<T>,
 {
     device
         .build_input_stream(
@@ -431,9 +424,9 @@ where
                 {
                     // Downmix stereo to mono by averaging L+R channels
                     for chunk in data.chunks_exact(2) {
-                        let left = i32::from_sample(chunk[0]);
-                        let right = i32::from_sample(chunk[1]);
-                        let mono = ((left + right) / 2) as i16;
+                        let left = f32::from_sample(chunk[0]);
+                        let right = f32::from_sample(chunk[1]);
+                        let mono = (left + right) * 0.5;
                         buf.push(mono);
                     }
                     // Limit buffer size to prevent unbounded growth
@@ -463,11 +456,12 @@ where
 /// Audio playback to speakers
 ///
 /// Plays back audio samples at 48kHz mono, mixing multiple incoming streams.
+/// Uses f32 samples internally for compatibility with WebRTC audio processing.
 pub struct AudioPlayback {
     /// The cpal output stream
     _stream: Stream,
-    /// Buffer for audio samples to play
-    buffer: Arc<Mutex<Vec<i16>>>,
+    /// Buffer for audio samples to play (f32 normalized to -1.0..1.0)
+    buffer: Arc<Mutex<Vec<f32>>>,
     /// Flag indicating if playback is active
     active: Arc<AtomicBool>,
     /// Receiver for audio stream errors
@@ -616,7 +610,8 @@ impl AudioPlayback {
     ///
     /// Samples are added to the playback buffer and will be played
     /// in order as the audio device consumes them.
-    pub fn queue_samples(&self, samples: &[i16]) {
+    /// Samples should be f32 normalized to [-1.0, 1.0].
+    pub fn queue_samples(&self, samples: &[f32]) {
         if let Ok(mut buffer) = self.buffer.lock() {
             buffer.extend_from_slice(samples);
 
@@ -642,12 +637,12 @@ impl AudioPlayback {
 fn build_output_stream_mono<T>(
     device: &Device,
     config: &StreamConfig,
-    buffer: Arc<Mutex<Vec<i16>>>,
+    buffer: Arc<Mutex<Vec<f32>>>,
     active: Arc<AtomicBool>,
     error_tx: std_mpsc::Sender<String>,
 ) -> Result<Stream, String>
 where
-    T: Sample + cpal::SizedSample + FromSample<i16>,
+    T: Sample + cpal::SizedSample + FromSample<f32>,
 {
     device
         .build_output_stream(
@@ -662,18 +657,18 @@ where
                         }
                         // Fill remainder with silence if underrun
                         for sample in &mut data[available..] {
-                            *sample = T::from_sample(0i16);
+                            *sample = T::from_sample(0.0f32);
                         }
                     } else {
                         // Couldn't lock buffer - output silence
                         for sample in data.iter_mut() {
-                            *sample = T::from_sample(0i16);
+                            *sample = T::from_sample(0.0f32);
                         }
                     }
                 } else {
                     // Not active - output silence
                     for sample in data.iter_mut() {
-                        *sample = T::from_sample(0i16);
+                        *sample = T::from_sample(0.0f32);
                     }
                 }
             },
@@ -693,12 +688,12 @@ where
 fn build_output_stream_stereo<T>(
     device: &Device,
     config: &StreamConfig,
-    buffer: Arc<Mutex<Vec<i16>>>,
+    buffer: Arc<Mutex<Vec<f32>>>,
     active: Arc<AtomicBool>,
     error_tx: std_mpsc::Sender<String>,
 ) -> Result<Stream, String>
 where
-    T: Sample + cpal::SizedSample + FromSample<i16>,
+    T: Sample + cpal::SizedSample + FromSample<f32>,
 {
     device
         .build_output_stream(
@@ -718,20 +713,20 @@ where
                                 chunk[1] = sample;
                             } else {
                                 // Underrun - output silence
-                                chunk[0] = T::from_sample(0i16);
-                                chunk[1] = T::from_sample(0i16);
+                                chunk[0] = T::from_sample(0.0f32);
+                                chunk[1] = T::from_sample(0.0f32);
                             }
                         }
                     } else {
                         // Couldn't lock buffer - output silence
                         for sample in data.iter_mut() {
-                            *sample = T::from_sample(0i16);
+                            *sample = T::from_sample(0.0f32);
                         }
                     }
                 } else {
                     // Not active - output silence
                     for sample in data.iter_mut() {
-                        *sample = T::from_sample(0i16);
+                        *sample = T::from_sample(0.0f32);
                     }
                 }
             },
@@ -754,6 +749,7 @@ where
 /// Mixes multiple audio streams into one output
 ///
 /// Used to combine audio from multiple voice chat participants.
+/// Uses f32 samples for simplified mixing (no overflow concerns).
 pub struct AudioMixer {
     /// Playback device
     playback: AudioPlayback,
@@ -815,7 +811,8 @@ impl AudioMixer {
     /// Queue audio from a user for playback
     ///
     /// Audio from muted or deafened users is silently discarded.
-    pub fn queue_audio(&self, nickname: &str, samples: &[i16]) {
+    /// Samples should be f32 normalized to [-1.0, 1.0].
+    pub fn queue_audio(&self, nickname: &str, samples: &[f32]) {
         if !self.deafened && !self.is_muted(nickname) {
             self.playback.queue_samples(samples);
         }
