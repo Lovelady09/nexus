@@ -452,6 +452,7 @@ jobs:
         with:
           msystem: UCRT64
           update: true
+          cache: false
           install: >-
             base-devel
             autoconf
@@ -497,14 +498,8 @@ jobs:
 
       - name: Build client
         shell: msys2 {0}
-        env:
-          MSYSTEM: UCRT64
-          CHERE_INVOKING: 1
         run: |
-          source /etc/profile
-          export PATH="/ucrt64/bin:/usr/bin:$PATH"
           export PATH="/c/Users/runneradmin/.cargo/bin:$PATH"
-          which libtoolize
           cargo build --release --package nexus-client --target x86_64-pc-windows-msvc
 
       - name: Get version from tag
@@ -530,14 +525,8 @@ jobs:
 
       - name: Create MSI installer
         shell: msys2 {0}
-        env:
-          MSYSTEM: UCRT64
-          CHERE_INVOKING: 1
         run: |
-          source /etc/profile
-          export PATH="/ucrt64/bin:/usr/bin:$PATH"
           export PATH="/c/Users/runneradmin/.cargo/bin:$PATH"
-          which libtoolize
           cargo bundle --target x86_64-pc-windows-msvc --format wxsmsi --release -p nexus-client
 
       - name: Collect client artifact
