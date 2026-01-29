@@ -805,6 +805,8 @@ event-user-connected = User Connected
 event-user-disconnected = User Disconnected
 event-user-kicked = User Kicked
 event-user-message = User Message
+event-voice-joined = Voice Joined
+event-voice-left = Voice Left
 
 # Notification content levels
 notification-content-simple = Simple
@@ -865,6 +867,12 @@ notification-user-kicked = You were kicked
 notification-user-kicked-from = Kicked from {$server}
 notification-user-message = New user message
 notification-user-message-from = Message from {$username}
+notification-voice-joined = User joined voice
+notification-voice-joined-details = {$username} joined voice in {$target}
+notification-voice-joined-user = {$username} joined voice
+notification-voice-left = User left voice
+notification-voice-left-details = {$username} left voice in {$target}
+notification-voice-left-user = {$username} left voice
 
 # Fallback values
 unknown-server = Unknown server

@@ -12,6 +12,8 @@ use iced::Task;
 use uuid::Uuid;
 
 use crate::NexusApp;
+use crate::config::events::EventType;
+use crate::events::{EventContext, emit_event};
 use crate::i18n::{t, t_args};
 use crate::types::{ChatMessage, Message, VoiceState};
 use crate::voice::manager::{VoiceSessionConfig, VoiceSessionHandle};
@@ -216,6 +218,16 @@ impl NexusApp {
             session.add_participant(nickname.clone());
         }
 
+        // Emit VoiceJoined event for notifications
+        emit_event(
+            self,
+            EventType::VoiceJoined,
+            EventContext::new()
+                .with_connection_id(connection_id)
+                .with_username(&nickname)
+                .with_channel(&target),
+        );
+
         // Show notification in target tab if events are enabled
         if self.config.settings.show_join_leave_events {
             let message =
@@ -295,6 +307,16 @@ impl NexusApp {
                 handle.user_left(&nickname);
             }
         }
+
+        // Emit VoiceLeft event for notifications
+        emit_event(
+            self,
+            EventType::VoiceLeft,
+            EventContext::new()
+                .with_connection_id(connection_id)
+                .with_username(&nickname)
+                .with_channel(&target),
+        );
 
         // Show notification in target tab if events are enabled
         if self.config.settings.show_join_leave_events {

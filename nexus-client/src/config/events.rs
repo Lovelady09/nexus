@@ -44,6 +44,10 @@ pub enum EventType {
     UserKicked,
     /// User message received
     UserMessage,
+    /// A user joined voice chat
+    VoiceJoined,
+    /// A user left voice chat
+    VoiceLeft,
 }
 
 impl EventType {
@@ -64,6 +68,8 @@ impl EventType {
             EventType::UserDisconnected,
             EventType::UserKicked,
             EventType::UserMessage,
+            EventType::VoiceJoined,
+            EventType::VoiceLeft,
         ]
     }
 
@@ -84,6 +90,8 @@ impl EventType {
             EventType::UserDisconnected => "event-user-disconnected",
             EventType::UserKicked => "event-user-kicked",
             EventType::UserMessage => "event-user-message",
+            EventType::VoiceJoined => "event-voice-joined",
+            EventType::VoiceLeft => "event-voice-left",
         }
     }
 }
@@ -359,6 +367,12 @@ fn default_event_configs() -> HashMap<EventType, EventConfig> {
     // User messages: enabled by default
     events.insert(EventType::UserMessage, EventConfig::with_notification());
 
+    // Voice joined: disabled by default (can be noisy)
+    events.insert(EventType::VoiceJoined, EventConfig::default());
+
+    // Voice left: disabled by default (can be noisy)
+    events.insert(EventType::VoiceLeft, EventConfig::default());
+
     events
 }
 
@@ -373,7 +387,7 @@ mod tests {
     #[test]
     fn test_event_type_all() {
         let all = EventType::all();
-        assert_eq!(all.len(), 14);
+        assert_eq!(all.len(), 16);
         assert!(all.contains(&EventType::Broadcast));
         assert!(all.contains(&EventType::ChatJoin));
         assert!(all.contains(&EventType::ChatLeave));
@@ -388,6 +402,8 @@ mod tests {
         assert!(all.contains(&EventType::UserDisconnected));
         assert!(all.contains(&EventType::UserKicked));
         assert!(all.contains(&EventType::UserMessage));
+        assert!(all.contains(&EventType::VoiceJoined));
+        assert!(all.contains(&EventType::VoiceLeft));
     }
 
     #[test]

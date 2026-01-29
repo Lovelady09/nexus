@@ -333,6 +333,27 @@ fn should_show_notification(app: &NexusApp, event_type: EventType, context: &Eve
             }
             true
         }
+        EventType::VoiceJoined | EventType::VoiceLeft => {
+            // Don't notify if window is focused AND viewing that channel/user message on this connection
+            if app.window_focused
+                && let Some(event_conn_id) = context.connection_id
+                && let Some(active_conn_id) = app.active_connection
+                && event_conn_id == active_conn_id
+                && let Some(conn) = app.connections.get(&event_conn_id)
+                && let Some(ref channel) = context.channel
+            {
+                // Check if viewing the channel or user message tab where voice event occurred
+                let viewing_target = if channel.starts_with('#') {
+                    conn.active_chat_tab == ChatTab::Channel(channel.clone())
+                } else {
+                    conn.active_chat_tab == ChatTab::UserMessage(channel.clone())
+                };
+                if viewing_target && conn.active_panel == ActivePanel::None {
+                    return false;
+                }
+            }
+            true
+        }
     }
 }
 
@@ -359,6 +380,8 @@ fn build_notification_content(
         EventType::UserDisconnected => build_user_disconnected_notification(context, content_level),
         EventType::UserKicked => build_user_kicked_notification(context, content_level),
         EventType::UserMessage => build_user_message_notification(context, content_level),
+        EventType::VoiceJoined => build_voice_joined_notification(context, content_level),
+        EventType::VoiceLeft => build_voice_left_notification(context, content_level),
     }
 }
 
@@ -803,6 +826,60 @@ fn build_chat_leave_notification(
                     &[("username", username)],
                 ),
                 _ => t("notification-chat-leave"),
+            };
+            (summary, None)
+        }
+    }
+}
+
+/// Build notification content for voice joined events
+fn build_voice_joined_notification(
+    context: &EventContext,
+    content_level: NotificationContent,
+) -> (String, Option<String>) {
+    match content_level {
+        NotificationContent::EventOnly => {
+            // "User joined voice"
+            (t("notification-voice-joined"), None)
+        }
+        NotificationContent::WithContext | NotificationContent::WithPreview => {
+            // "Alice joined voice in #general"
+            let summary = match (&context.username, &context.channel) {
+                (Some(username), Some(channel)) => t_args(
+                    "notification-voice-joined-details",
+                    &[("username", username), ("target", channel)],
+                ),
+                (Some(username), None) => {
+                    t_args("notification-voice-joined-user", &[("username", username)])
+                }
+                _ => t("notification-voice-joined"),
+            };
+            (summary, None)
+        }
+    }
+}
+
+/// Build notification content for voice left events
+fn build_voice_left_notification(
+    context: &EventContext,
+    content_level: NotificationContent,
+) -> (String, Option<String>) {
+    match content_level {
+        NotificationContent::EventOnly => {
+            // "User left voice"
+            (t("notification-voice-left"), None)
+        }
+        NotificationContent::WithContext | NotificationContent::WithPreview => {
+            // "Alice left voice in #general"
+            let summary = match (&context.username, &context.channel) {
+                (Some(username), Some(channel)) => t_args(
+                    "notification-voice-left-details",
+                    &[("username", username), ("target", channel)],
+                ),
+                (Some(username), None) => {
+                    t_args("notification-voice-left-user", &[("username", username)])
+                }
+                _ => t("notification-voice-left"),
             };
             (summary, None)
         }
