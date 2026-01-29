@@ -215,6 +215,8 @@ jobs:
     name: Bundle macOS (x64)
     runs-on: macos-14
     timeout-minutes: 30
+    env:
+      CMAKE_POLICY_VERSION_MINIMUM: "3.5"
     steps:
       - uses: actions/checkout@v4
 
@@ -222,9 +224,6 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: x86_64-apple-darwin
-
-      - name: Install Opus
-        run: brew install opus
 
       - name: Cache cargo registry
         uses: actions/cache@v4
