@@ -77,6 +77,19 @@ jobs:
         run: |
           echo "PATH=C:\msys64\ucrt64\bin;C:\msys64\usr\bin;$env:PATH" >> $env:GITHUB_ENV
 
+      - name: Create autotools wrapper scripts for Windows
+        if: runner.os == 'Windows'
+        shell: cmd
+        run: |
+          echo @echo off > C:\msys64\usr\bin\libtoolize.bat
+          echo C:\msys64\usr\bin\sh.exe /ucrt64/bin/libtoolize %%* >> C:\msys64\usr\bin\libtoolize.bat
+          echo @echo off > C:\msys64\usr\bin\aclocal.bat
+          echo C:\msys64\usr\bin\sh.exe /ucrt64/bin/aclocal %%* >> C:\msys64\usr\bin\aclocal.bat
+          echo @echo off > C:\msys64\usr\bin\automake.bat
+          echo C:\msys64\usr\bin\sh.exe /ucrt64/bin/automake %%* >> C:\msys64\usr\bin\automake.bat
+          echo @echo off > C:\msys64\usr\bin\autoconf.bat
+          echo C:\msys64\usr\bin\sh.exe /ucrt64/bin/autoconf %%* >> C:\msys64\usr\bin\autoconf.bat
+
 
 
       - name: Install Rust
@@ -114,9 +127,7 @@ jobs:
       - name: Run tests (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
-        run: |
-          where.exe libtoolize
-          cargo test --workspace --verbose
+        run: cargo test --workspace --verbose
 
   clippy:
     name: Clippy
@@ -440,7 +451,17 @@ jobs:
         run: |
           echo "PATH=C:\msys64\ucrt64\bin;C:\msys64\usr\bin;$env:PATH" >> $env:GITHUB_ENV
 
-
+      - name: Create autotools wrapper scripts for Windows
+        shell: cmd
+        run: |
+          echo @echo off > C:\msys64\usr\bin\libtoolize.bat
+          echo C:\msys64\usr\bin\sh.exe /ucrt64/bin/libtoolize %%* >> C:\msys64\usr\bin\libtoolize.bat
+          echo @echo off > C:\msys64\usr\bin\aclocal.bat
+          echo C:\msys64\usr\bin\sh.exe /ucrt64/bin/aclocal %%* >> C:\msys64\usr\bin\aclocal.bat
+          echo @echo off > C:\msys64\usr\bin\automake.bat
+          echo C:\msys64\usr\bin\sh.exe /ucrt64/bin/automake %%* >> C:\msys64\usr\bin\automake.bat
+          echo @echo off > C:\msys64\usr\bin\autoconf.bat
+          echo C:\msys64\usr\bin\sh.exe /ucrt64/bin/autoconf %%* >> C:\msys64\usr\bin\autoconf.bat
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
@@ -482,7 +503,6 @@ jobs:
       - name: Build MSI installer
         shell: pwsh
         run: |
-          where.exe libtoolize
           cd nexus-client
           cargo bundle --target x86_64-pc-windows-msvc --format wxsmsi --release
 

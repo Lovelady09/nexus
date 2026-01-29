@@ -469,7 +469,17 @@ jobs:
         run: |
           echo "PATH=C:\msys64\ucrt64\bin;C:\msys64\usr\bin;$env:PATH" >> $env:GITHUB_ENV
 
-
+      - name: Create autotools wrapper scripts for Windows
+        shell: cmd
+        run: |
+          echo @echo off > C:\msys64\usr\bin\libtoolize.bat
+          echo C:\msys64\usr\bin\sh.exe /ucrt64/bin/libtoolize %%* >> C:\msys64\usr\bin\libtoolize.bat
+          echo @echo off > C:\msys64\usr\bin\aclocal.bat
+          echo C:\msys64\usr\bin\sh.exe /ucrt64/bin/aclocal %%* >> C:\msys64\usr\bin\aclocal.bat
+          echo @echo off > C:\msys64\usr\bin\automake.bat
+          echo C:\msys64\usr\bin\sh.exe /ucrt64/bin/automake %%* >> C:\msys64\usr\bin\automake.bat
+          echo @echo off > C:\msys64\usr\bin\autoconf.bat
+          echo C:\msys64\usr\bin\sh.exe /ucrt64/bin/autoconf %%* >> C:\msys64\usr\bin\autoconf.bat
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
@@ -492,9 +502,7 @@ jobs:
 
       - name: Build client
         shell: pwsh
-        run: |
-          where.exe libtoolize
-          cargo build --release --package nexus-client --target x86_64-pc-windows-msvc
+        run: cargo build --release --package nexus-client --target x86_64-pc-windows-msvc
 
       - name: Get version from tag
         id: version
@@ -519,9 +527,7 @@ jobs:
 
       - name: Create MSI installer
         shell: pwsh
-        run: |
-          where.exe libtoolize
-          cargo bundle --target x86_64-pc-windows-msvc --format wxsmsi --release -p nexus-client
+        run: cargo bundle --target x86_64-pc-windows-msvc --format wxsmsi --release -p nexus-client
 
       - name: Collect client artifact
         shell: bash
