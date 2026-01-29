@@ -4,6 +4,7 @@
 //! using the cpal crate for cross-platform audio I/O. Uses f32 samples throughout
 //! for compatibility with WebRTC audio processing.
 
+use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc as std_mpsc;
 use std::sync::{Arc, Mutex};
@@ -450,48 +451,74 @@ where
 }
 
 // =============================================================================
-// Audio Playback
+// Audio Mixer
 // =============================================================================
 
-/// Audio playback to speakers
+/// Per-user audio buffer for mixing
+struct UserAudioBuffer {
+    /// Audio samples waiting to be mixed
+    samples: Vec<f32>,
+}
+
+impl UserAudioBuffer {
+    fn new() -> Self {
+        Self {
+            samples: Vec::with_capacity(VOICE_SAMPLES_PER_FRAME as usize * MAX_PLAYBACK_BUFFER_FRAMES),
+        }
+    }
+}
+
+/// Shared state for the audio mixer (accessed from audio callback)
+struct MixerState {
+    /// Per-user audio buffers (keyed by lowercase nickname)
+    user_buffers: HashMap<String, UserAudioBuffer>,
+    /// Set of muted nicknames (lowercase)
+    muted: std::collections::HashSet<String>,
+    /// Whether all incoming audio is muted (deafened)
+    deafened: bool,
+}
+
+impl MixerState {
+    fn new() -> Self {
+        Self {
+            user_buffers: HashMap::new(),
+            muted: std::collections::HashSet::new(),
+            deafened: false,
+        }
+    }
+}
+
+/// Mixes multiple audio streams into one output
 ///
-/// Plays back audio samples at 48kHz mono, mixing multiple incoming streams.
-/// Uses f32 samples internally for compatibility with WebRTC audio processing.
-pub struct AudioPlayback {
+/// Properly sums audio from multiple simultaneous speakers instead of
+/// concatenating sequentially. Each user has their own buffer, and the
+/// audio callback mixes them together at playback time.
+pub struct AudioMixer {
     /// The cpal output stream
     _stream: Stream,
-    /// Buffer for audio samples to play (f32 normalized to -1.0..1.0)
-    buffer: Arc<Mutex<Vec<f32>>>,
+    /// Shared mixer state (accessed from audio callback and main thread)
+    state: Arc<Mutex<MixerState>>,
     /// Flag indicating if playback is active
     active: Arc<AtomicBool>,
     /// Receiver for audio stream errors
     error_rx: std_mpsc::Receiver<String>,
 }
 
-impl AudioPlayback {
-    /// Create a new audio playback to the specified device
-    ///
-    /// # Arguments
-    /// * `device_name` - Device name, or empty string for system default
-    ///
-    /// # Returns
-    /// * `Ok(AudioPlayback)` - Playback ready to start
-    /// * `Err(String)` - Error message if device not found or couldn't be opened
+impl AudioMixer {
+    /// Create a new audio mixer with the specified output device
     pub fn new(device_name: &str) -> Result<Self, String> {
         let device =
             find_output_device(device_name).ok_or_else(|| "Output device not found".to_string())?;
 
-        let buffer = Arc::new(Mutex::new(Vec::with_capacity(
-            VOICE_SAMPLES_PER_FRAME as usize * MAX_CAPTURE_BUFFER_FRAMES,
-        )));
-        let buffer_clone = buffer.clone();
+        let state = Arc::new(Mutex::new(MixerState::new()));
+        let state_clone = state.clone();
         let active = Arc::new(AtomicBool::new(false));
         let active_clone = active.clone();
 
         // Create channel for error reporting from audio callback
         let (error_tx, error_rx) = std_mpsc::channel();
 
-        // Check supported formats - must support 48kHz and a format we can handle
+        // Check supported formats
         let supported_formats = [SampleFormat::F32, SampleFormat::I16, SampleFormat::U16];
 
         // First try mono at 48kHz
@@ -505,7 +532,7 @@ impl AudioPlayback {
                     && supported_formats.contains(&c.sample_format())
             });
 
-        // If mono not available, try stereo (we'll upmix)
+        // If mono not available, try stereo
         let (channels, sample_format) = if let Some(cfg) = mono_config {
             (1u16, cfg.sample_format())
         } else {
@@ -517,15 +544,11 @@ impl AudioPlayback {
                         && c.min_sample_rate().0 <= VOICE_SAMPLE_RATE
                         && c.max_sample_rate().0 >= VOICE_SAMPLE_RATE
                         && supported_formats.contains(&c.sample_format())
-                });
-
-            if let Some(cfg) = stereo_config {
-                (2u16, cfg.sample_format())
-            } else {
-                return Err(
-                    "No compatible audio format found (need 48kHz mono or stereo)".to_string(),
-                );
-            }
+                })
+                .ok_or_else(|| {
+                    "No supported output configuration found (need 48kHz mono or stereo)".to_string()
+                })?;
+            (2u16, stereo_config.sample_format())
         };
 
         let config = StreamConfig {
@@ -534,289 +557,268 @@ impl AudioPlayback {
             buffer_size: cpal::BufferSize::Default,
         };
 
-        // Build stream based on sample format and channel count
-        let stream = match (sample_format, channels) {
-            (SampleFormat::I16, 1) => build_output_stream_mono::<i16>(
-                &device,
-                &config,
-                buffer_clone,
-                active_clone,
-                error_tx,
-            ),
-            (SampleFormat::F32, 1) => build_output_stream_mono::<f32>(
-                &device,
-                &config,
-                buffer_clone,
-                active_clone,
-                error_tx,
-            ),
-            (SampleFormat::U16, 1) => build_output_stream_mono::<u16>(
-                &device,
-                &config,
-                buffer_clone,
-                active_clone,
-                error_tx,
-            ),
-            (SampleFormat::I16, 2) => build_output_stream_stereo::<i16>(
-                &device,
-                &config,
-                buffer_clone,
-                active_clone,
-                error_tx,
-            ),
-            (SampleFormat::F32, 2) => build_output_stream_stereo::<f32>(
-                &device,
-                &config,
-                buffer_clone,
-                active_clone,
-                error_tx,
-            ),
-            (SampleFormat::U16, 2) => build_output_stream_stereo::<u16>(
-                &device,
-                &config,
-                buffer_clone,
-                active_clone,
-                error_tx,
-            ),
-            _ => return Err(format!("Unsupported sample format: {:?}", sample_format)),
+        // Build the appropriate stream based on channel count and sample format
+        let stream = match (channels, sample_format) {
+            (1, SampleFormat::F32) => {
+                build_mixer_stream_mono::<f32>(&device, &config, state_clone, active_clone, error_tx)
+            }
+            (1, SampleFormat::I16) => {
+                build_mixer_stream_mono::<i16>(&device, &config, state_clone, active_clone, error_tx)
+            }
+            (1, SampleFormat::U16) => {
+                build_mixer_stream_mono::<u16>(&device, &config, state_clone, active_clone, error_tx)
+            }
+            (2, SampleFormat::F32) => {
+                build_mixer_stream_stereo::<f32>(&device, &config, state_clone, active_clone, error_tx)
+            }
+            (2, SampleFormat::I16) => {
+                build_mixer_stream_stereo::<i16>(&device, &config, state_clone, active_clone, error_tx)
+            }
+            (2, SampleFormat::U16) => {
+                build_mixer_stream_stereo::<u16>(&device, &config, state_clone, active_clone, error_tx)
+            }
+            _ => Err("Unsupported audio format".to_string()),
         }?;
 
         Ok(Self {
             _stream: stream,
-            buffer,
+            state,
             active,
             error_rx,
         })
     }
 
-    /// Start audio playback
+    /// Start the mixer
     pub fn start(&self) -> Result<(), String> {
         self.active.store(true, Ordering::SeqCst);
         self._stream
             .play()
-            .map_err(|e| format!("Failed to start playback: {}", e))
-    }
-
-    /// Stop audio playback
-    pub fn stop(&self) {
-        self.active.store(false, Ordering::SeqCst);
-        // Clear the buffer when stopping
-        if let Ok(mut buf) = self.buffer.lock() {
-            buf.clear();
-        }
-    }
-
-    /// Queue audio samples for playback
-    ///
-    /// Samples are added to the playback buffer and will be played
-    /// in order as the audio device consumes them.
-    /// Samples should be f32 normalized to [-1.0, 1.0].
-    pub fn queue_samples(&self, samples: &[f32]) {
-        if let Ok(mut buffer) = self.buffer.lock() {
-            buffer.extend_from_slice(samples);
-
-            // Limit buffer size to prevent latency buildup
-            let max_size = VOICE_SAMPLES_PER_FRAME as usize * MAX_PLAYBACK_BUFFER_FRAMES;
-            if buffer.len() > max_size {
-                let drain_count = buffer.len() - max_size;
-                buffer.drain(..drain_count);
-            }
-        }
-    }
-
-    /// Check for audio stream errors (non-blocking)
-    ///
-    /// Returns the first error if one has occurred, or None if no errors.
-    /// Only returns the first error since the session will be torn down anyway.
-    pub fn check_error(&self) -> Option<String> {
-        self.error_rx.try_recv().ok()
-    }
-}
-
-/// Build a mono output stream for the given sample type
-fn build_output_stream_mono<T>(
-    device: &Device,
-    config: &StreamConfig,
-    buffer: Arc<Mutex<Vec<f32>>>,
-    active: Arc<AtomicBool>,
-    error_tx: std_mpsc::Sender<String>,
-) -> Result<Stream, String>
-where
-    T: Sample + cpal::SizedSample + FromSample<f32>,
-{
-    device
-        .build_output_stream(
-            config,
-            move |data: &mut [T], _: &cpal::OutputCallbackInfo| {
-                if active.load(Ordering::SeqCst) {
-                    if let Ok(mut buf) = buffer.lock() {
-                        // Use drain for O(n) instead of remove(0) which is O(n²)
-                        let available = buf.len().min(data.len());
-                        for (dst, src) in data.iter_mut().zip(buf.drain(..available)) {
-                            *dst = T::from_sample(src);
-                        }
-                        // Fill remainder with silence if underrun
-                        for sample in &mut data[available..] {
-                            *sample = T::from_sample(0.0f32);
-                        }
-                    } else {
-                        // Couldn't lock buffer - output silence
-                        for sample in data.iter_mut() {
-                            *sample = T::from_sample(0.0f32);
-                        }
-                    }
-                } else {
-                    // Not active - output silence
-                    for sample in data.iter_mut() {
-                        *sample = T::from_sample(0.0f32);
-                    }
-                }
-            },
-            {
-                let error_tx = error_tx.clone();
-                move |err| {
-                    // Send error to manager (ignore if receiver dropped)
-                    let _ = error_tx.send(format!("Audio playback error: {}", err));
-                }
-            },
-            None,
-        )
-        .map_err(|e| format!("Failed to build output stream: {}", e))
-}
-
-/// Build a stereo output stream that upmixes from mono
-fn build_output_stream_stereo<T>(
-    device: &Device,
-    config: &StreamConfig,
-    buffer: Arc<Mutex<Vec<f32>>>,
-    active: Arc<AtomicBool>,
-    error_tx: std_mpsc::Sender<String>,
-) -> Result<Stream, String>
-where
-    T: Sample + cpal::SizedSample + FromSample<f32>,
-{
-    device
-        .build_output_stream(
-            config,
-            move |data: &mut [T], _: &cpal::OutputCallbackInfo| {
-                if active.load(Ordering::SeqCst) {
-                    if let Ok(mut buf) = buffer.lock() {
-                        // Upmix mono to stereo by duplicating samples to L+R
-                        let samples_needed = data.len() / 2;
-                        let available = buf.len().min(samples_needed);
-                        let mut drain_iter = buf.drain(..available);
-
-                        for chunk in data.chunks_exact_mut(2) {
-                            if let Some(mono) = drain_iter.next() {
-                                let sample = T::from_sample(mono);
-                                chunk[0] = sample;
-                                chunk[1] = sample;
-                            } else {
-                                // Underrun - output silence
-                                chunk[0] = T::from_sample(0.0f32);
-                                chunk[1] = T::from_sample(0.0f32);
-                            }
-                        }
-                    } else {
-                        // Couldn't lock buffer - output silence
-                        for sample in data.iter_mut() {
-                            *sample = T::from_sample(0.0f32);
-                        }
-                    }
-                } else {
-                    // Not active - output silence
-                    for sample in data.iter_mut() {
-                        *sample = T::from_sample(0.0f32);
-                    }
-                }
-            },
-            {
-                let error_tx = error_tx.clone();
-                move |err| {
-                    // Send error to manager (ignore if receiver dropped)
-                    let _ = error_tx.send(format!("Audio playback error: {}", err));
-                }
-            },
-            None,
-        )
-        .map_err(|e| format!("Failed to build stereo output stream: {}", e))
-}
-
-// =============================================================================
-// Audio Mixer
-// =============================================================================
-
-/// Mixes multiple audio streams into one output
-///
-/// Used to combine audio from multiple voice chat participants.
-/// Uses f32 samples for simplified mixing (no overflow concerns).
-pub struct AudioMixer {
-    /// Playback device
-    playback: AudioPlayback,
-    /// Set of muted nicknames
-    muted: std::collections::HashSet<String>,
-    /// Whether all incoming audio is muted (deafened)
-    deafened: bool,
-}
-
-impl AudioMixer {
-    /// Create a new audio mixer with the specified output device
-    pub fn new(device_name: &str) -> Result<Self, String> {
-        let playback = AudioPlayback::new(device_name)?;
-        Ok(Self {
-            playback,
-            muted: std::collections::HashSet::new(),
-            deafened: false,
-        })
-    }
-
-    /// Start the mixer
-    pub fn start(&self) -> Result<(), String> {
-        self.playback.start()
+            .map_err(|e| format!("Failed to start mixer: {}", e))
     }
 
     /// Stop the mixer
     pub fn stop(&self) {
-        self.playback.stop();
+        self.active.store(false, Ordering::SeqCst);
+        let _ = self._stream.pause();
     }
 
     /// Mute a user by nickname
     pub fn mute_user(&mut self, nickname: &str) {
-        self.muted.insert(nickname.to_lowercase());
+        if let Ok(mut state) = self.state.lock() {
+            state.muted.insert(nickname.to_lowercase());
+        }
     }
 
     /// Unmute a user by nickname
     pub fn unmute_user(&mut self, nickname: &str) {
-        self.muted.remove(&nickname.to_lowercase());
+        if let Ok(mut state) = self.state.lock() {
+            state.muted.remove(&nickname.to_lowercase());
+        }
     }
 
     /// Check if a user is muted
+    #[allow(dead_code)]
     pub fn is_muted(&self, nickname: &str) -> bool {
-        self.muted.contains(&nickname.to_lowercase())
+        self.state
+            .lock()
+            .map(|state| state.muted.contains(&nickname.to_lowercase()))
+            .unwrap_or(false)
     }
 
     /// Set deafened state (mute all incoming audio)
     pub fn set_deafened(&mut self, deafened: bool) {
-        self.deafened = deafened;
+        if let Ok(mut state) = self.state.lock() {
+            state.deafened = deafened;
+        }
     }
 
     /// Check for audio stream errors (non-blocking)
-    ///
-    /// Returns the first error if one has occurred, or None if no errors.
-    /// Only returns the first error since the session will be torn down anyway.
     pub fn check_error(&self) -> Option<String> {
-        self.playback.check_error()
+        self.error_rx.try_recv().ok()
     }
 
     /// Queue audio from a user for playback
     ///
-    /// Audio from muted or deafened users is silently discarded.
+    /// Audio is buffered per-user and mixed together at playback time.
     /// Samples should be f32 normalized to [-1.0, 1.0].
     pub fn queue_audio(&self, nickname: &str, samples: &[f32]) {
-        if !self.deafened && !self.is_muted(nickname) {
-            self.playback.queue_samples(samples);
+        if let Ok(mut state) = self.state.lock() {
+            // Skip if deafened or user is muted
+            if state.deafened || state.muted.contains(&nickname.to_lowercase()) {
+                return;
+            }
+
+            // Get or create buffer for this user
+            let key = nickname.to_lowercase();
+            let buffer = state
+                .user_buffers
+                .entry(key)
+                .or_insert_with(UserAudioBuffer::new);
+
+            buffer.samples.extend_from_slice(samples);
+
+            // Limit buffer size to prevent latency buildup
+            let max_size = VOICE_SAMPLES_PER_FRAME as usize * MAX_PLAYBACK_BUFFER_FRAMES;
+            if buffer.samples.len() > max_size {
+                let drain_count = buffer.samples.len() - max_size;
+                buffer.samples.drain(..drain_count);
+            }
         }
     }
+}
+
+/// Build a mono mixer output stream
+fn build_mixer_stream_mono<T>(
+    device: &Device,
+    config: &StreamConfig,
+    state: Arc<Mutex<MixerState>>,
+    active: Arc<AtomicBool>,
+    error_tx: std_mpsc::Sender<String>,
+) -> Result<Stream, String>
+where
+    T: Sample + cpal::SizedSample + FromSample<f32>,
+{
+    device
+        .build_output_stream(
+            config,
+            move |data: &mut [T], _: &cpal::OutputCallbackInfo| {
+                if active.load(Ordering::SeqCst) {
+                    if let Ok(mut state) = state.lock() {
+                        // Mix all user buffers together
+                        for (i, dst) in data.iter_mut().enumerate() {
+                            let mut mixed: f32 = 0.0;
+                            let mut has_audio = false;
+
+                            for buffer in state.user_buffers.values_mut() {
+                                if i < buffer.samples.len() {
+                                    mixed += buffer.samples[i];
+                                    has_audio = true;
+                                }
+                            }
+
+                            // Soft clamp to prevent harsh clipping
+                            if has_audio {
+                                mixed = soft_clip(mixed);
+                            }
+
+                            *dst = T::from_sample(mixed);
+                        }
+
+                        // Drain consumed samples from all buffers
+                        let consumed = data.len();
+                        for buffer in state.user_buffers.values_mut() {
+                            let drain_count = consumed.min(buffer.samples.len());
+                            buffer.samples.drain(..drain_count);
+                        }
+
+                        // Remove empty buffers to free memory for users who stopped talking
+                        state.user_buffers.retain(|_, b| !b.samples.is_empty());
+                    } else {
+                        // Couldn't lock state - output silence
+                        for sample in data.iter_mut() {
+                            *sample = T::from_sample(0.0f32);
+                        }
+                    }
+                } else {
+                    // Not active - output silence
+                    for sample in data.iter_mut() {
+                        *sample = T::from_sample(0.0f32);
+                    }
+                }
+            },
+            {
+                let error_tx = error_tx.clone();
+                move |err| {
+                    let _ = error_tx.send(format!("Mixer error: {}", err));
+                }
+            },
+            None,
+        )
+        .map_err(|e| format!("Failed to build mixer stream: {}", e))
+}
+
+/// Build a stereo mixer output stream (upmixes from mono)
+fn build_mixer_stream_stereo<T>(
+    device: &Device,
+    config: &StreamConfig,
+    state: Arc<Mutex<MixerState>>,
+    active: Arc<AtomicBool>,
+    error_tx: std_mpsc::Sender<String>,
+) -> Result<Stream, String>
+where
+    T: Sample + cpal::SizedSample + FromSample<f32>,
+{
+    device
+        .build_output_stream(
+            config,
+            move |data: &mut [T], _: &cpal::OutputCallbackInfo| {
+                if active.load(Ordering::SeqCst) {
+                    if let Ok(mut state) = state.lock() {
+                        let samples_needed = data.len() / 2;
+
+                        // Mix all user buffers together and upmix to stereo
+                        for (i, chunk) in data.chunks_exact_mut(2).enumerate() {
+                            let mut mixed: f32 = 0.0;
+                            let mut has_audio = false;
+
+                            for buffer in state.user_buffers.values_mut() {
+                                if i < buffer.samples.len() {
+                                    mixed += buffer.samples[i];
+                                    has_audio = true;
+                                }
+                            }
+
+                            // Soft clamp to prevent harsh clipping
+                            if has_audio {
+                                mixed = soft_clip(mixed);
+                            }
+
+                            let sample = T::from_sample(mixed);
+                            chunk[0] = sample;
+                            chunk[1] = sample;
+                        }
+
+                        // Drain consumed samples from all buffers
+                        for buffer in state.user_buffers.values_mut() {
+                            let drain_count = samples_needed.min(buffer.samples.len());
+                            buffer.samples.drain(..drain_count);
+                        }
+
+                        // Remove empty buffers
+                        state.user_buffers.retain(|_, b| !b.samples.is_empty());
+                    } else {
+                        // Couldn't lock state - output silence
+                        for sample in data.iter_mut() {
+                            *sample = T::from_sample(0.0f32);
+                        }
+                    }
+                } else {
+                    // Not active - output silence
+                    for sample in data.iter_mut() {
+                        *sample = T::from_sample(0.0f32);
+                    }
+                }
+            },
+            {
+                let error_tx = error_tx.clone();
+                move |err| {
+                    let _ = error_tx.send(format!("Mixer error: {}", err));
+                }
+            },
+            None,
+        )
+        .map_err(|e| format!("Failed to build stereo mixer stream: {}", e))
+}
+
+/// Soft clip function to prevent harsh digital clipping
+///
+/// Uses tanh-based soft clipping which smoothly limits the signal
+/// as it approaches the maximum, resulting in less harsh distortion
+/// when multiple loud sources are summed together.
+fn soft_clip(sample: f32) -> f32 {
+    // tanh gives smooth saturation, but we scale input to make it more gradual
+    // This provides ~3dB of headroom before noticeable saturation
+    (sample * 0.7).tanh() / 0.7_f32.tanh()
 }
 
 // =============================================================================
