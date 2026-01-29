@@ -49,7 +49,7 @@ jobs:
 
       - name: Install macOS dependencies
         if: runner.os == 'macOS'
-        run: brew install libtool autoconf automake
+        run: brew install libtool autoconf automake pkg-config
 
       - name: Install MSYS2 and build tools
         if: runner.os == 'Windows'
@@ -62,6 +62,7 @@ jobs:
             autoconf
             automake
             libtool
+            pkg-config
             mingw-w64-ucrt-x86_64-toolchain
 
       - name: Add MSYS2 to PATH
@@ -174,7 +175,7 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
 
       - name: Install build dependencies
-        run: brew install opus libtool autoconf automake
+        run: brew install opus libtool autoconf automake pkg-config
 
       - name: Cache cargo registry
         uses: actions/cache@v4
@@ -254,7 +255,7 @@ jobs:
           targets: x86_64-apple-darwin
 
       - name: Install build dependencies
-        run: brew install libtool autoconf automake
+        run: brew install libtool autoconf automake pkg-config
 
       - name: Cache cargo registry
         uses: actions/cache@v4
@@ -411,6 +412,7 @@ jobs:
             autoconf
             automake
             libtool
+            pkg-config
             mingw-w64-ucrt-x86_64-toolchain
 
       - name: Add MSYS2 to PATH
