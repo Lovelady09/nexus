@@ -461,13 +461,13 @@ jobs:
             mingw-w64-ucrt-x86_64-toolchain
 
       - name: Add MSYS2 to PATH
-        shell: pwsh
+        shell: msys2 {0}
         run: |
-          echo "C:\msys64\ucrt64\bin" >> $env:GITHUB_PATH
-          echo "C:\msys64\usr\bin" >> $env:GITHUB_PATH
+          echo "C:/msys64/ucrt64/bin" >> $GITHUB_PATH
+          echo "C:/msys64/usr/bin" >> $GITHUB_PATH
 
       - name: Verify build tools
-        shell: bash
+        shell: msys2 {0}
         run: |
           echo "PATH=$PATH"
           which libtoolize
