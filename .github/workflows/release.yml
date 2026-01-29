@@ -486,9 +486,10 @@ jobs:
             windows-x64-cargo-index-
 
       - name: Build client
-        shell: msys2 {0}
+        shell: cmd
         run: |
-          export PATH="/c/Users/runneradmin/.cargo/bin:$PATH"
+          set PATH=C:\msys64\ucrt64\bin;C:\msys64\usr\bin;%PATH%
+          where libtoolize
           cargo build --release --package nexus-client --target x86_64-pc-windows-msvc
 
       - name: Get version from tag
@@ -513,9 +514,10 @@ jobs:
           sed -i 's/^license = "MIT"$/license-file = "..\/LICENSE"/' nexus-client/Cargo.toml
 
       - name: Create MSI installer
-        shell: msys2 {0}
+        shell: cmd
         run: |
-          export PATH="/c/Users/runneradmin/.cargo/bin:$PATH"
+          set PATH=C:\msys64\ucrt64\bin;C:\msys64\usr\bin;%PATH%
+          where libtoolize
           cargo bundle --target x86_64-pc-windows-msvc --format wxsmsi --release -p nexus-client
 
       - name: Collect client artifact

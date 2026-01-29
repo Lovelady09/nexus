@@ -107,13 +107,10 @@ jobs:
 
       - name: Run tests (Windows)
         if: runner.os == 'Windows'
-        shell: msys2 {0}
+        shell: cmd
         run: |
-          echo "PATH=$PATH"
-          which libtoolize || echo "libtoolize not found"
-          which cmake || echo "cmake not found"
-          which nasm || echo "nasm not found"
-          export PATH="/c/Users/runneradmin/.cargo/bin:$PATH"
+          set PATH=C:\msys64\ucrt64\bin;C:\msys64\usr\bin;%PATH%
+          where libtoolize
           cargo test --workspace --verbose
 
   clippy:
@@ -473,9 +470,10 @@ jobs:
           sed -i 's/^license = "MIT"$/license-file = "..\/LICENSE"/' nexus-client/Cargo.toml
 
       - name: Build MSI installer
-        shell: msys2 {0}
+        shell: cmd
         run: |
-          export PATH="/c/Users/runneradmin/.cargo/bin:$PATH"
+          set PATH=C:\msys64\ucrt64\bin;C:\msys64\usr\bin;%PATH%
+          where libtoolize
           cd nexus-client
           cargo bundle --target x86_64-pc-windows-msvc --format wxsmsi --release
 
