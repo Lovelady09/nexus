@@ -437,9 +437,27 @@ jobs:
   build-windows-client:
     name: Build Windows Client
     runs-on: windows-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
+
+      - name: Install MSYS2 and build tools
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64
+          update: true
+          install: >-
+            base-devel
+            autoconf
+            automake
+            libtool
+            mingw-w64-ucrt-x86_64-toolchain
+
+      - name: Add MSYS2 to PATH
+        shell: pwsh
+        run: |
+          echo "C:\msys64\ucrt64\bin" >> $env:GITHUB_PATH
+          echo "C:\msys64\usr\bin" >> $env:GITHUB_PATH
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
