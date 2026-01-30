@@ -62,7 +62,13 @@ impl VoiceDtlsClient {
     /// * `Err(String)` - Error message if connection failed
     pub async fn connect(server_addr: SocketAddr, token: Uuid) -> Result<Self, String> {
         // Create UDP socket bound to any available port
-        let socket = UdpSocket::bind("0.0.0.0:0")
+        // Use the appropriate address family based on server address (IPv4 vs IPv6)
+        let bind_addr = if server_addr.is_ipv6() {
+            "[::]:0"
+        } else {
+            "0.0.0.0:0"
+        };
+        let socket = UdpSocket::bind(bind_addr)
             .await
             .map_err(|e| format!("Failed to bind UDP socket: {}", e))?;
 
