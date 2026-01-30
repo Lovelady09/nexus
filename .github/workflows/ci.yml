@@ -63,8 +63,6 @@ jobs:
         run: |
           echo "PATH=C:\msys64\usr\bin;$env:PATH" >> $env:GITHUB_ENV
 
-
-
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
 
@@ -427,8 +425,6 @@ jobs:
           key: windows-x64-cargo-index-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
             windows-x64-cargo-index-
-
-
 
       - name: Cache cargo-bundle
         id: cache-cargo-bundle
