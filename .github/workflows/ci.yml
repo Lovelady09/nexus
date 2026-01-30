@@ -27,8 +27,7 @@ jobs:
     name: Test (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     timeout-minutes: 45
-    env:
-      MSYS2_PATH_TYPE: inherit
+
     strategy:
       fail-fast: false
       matrix:
@@ -53,20 +52,12 @@ jobs:
         if: runner.os == 'macOS'
         run: brew install libtool autoconf automake pkg-config
 
-      - name: Install MSYS2 packages
+      - name: Install Windows dependencies
         if: runner.os == 'Windows'
-        run: C:\msys64\usr\bin\bash.exe -lc "pacman -S --noconfirm base-devel mingw-w64-x86_64-toolchain autoconf automake libtool pkg-config"
-
-      - name: Add MSYS2 to PATH
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: |
-          echo "PATH=C:\msys64\mingw64\bin;C:\msys64\usr\bin;$env:PATH" >> $env:GITHUB_ENV
+        run: pip install meson ninja
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: ${{ runner.os == 'Windows' && 'x86_64-pc-windows-gnu' || '' }}
 
       - name: Cache cargo registry
         uses: actions/cache@v4
@@ -93,13 +84,8 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-${{ steps.arch.outputs.arch }}-cargo-build-
 
-      - name: Run tests (Unix)
-        if: runner.os != 'Windows'
+      - name: Run tests
         run: cargo test --workspace --verbose
-
-      - name: Run tests (Windows)
-        if: runner.os == 'Windows'
-        run: cargo test --workspace --verbose --target x86_64-pc-windows-gnu
 
   clippy:
     name: Clippy
@@ -401,18 +387,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install MSYS2 packages
-        run: C:\msys64\usr\bin\bash.exe -lc "pacman -S --noconfirm base-devel mingw-w64-x86_64-toolchain autoconf automake libtool pkg-config"
-
-      - name: Add MSYS2 to PATH
-        shell: pwsh
-        run: |
-          echo "PATH=C:\msys64\mingw64\bin;C:\msys64\usr\bin;$env:PATH" >> $env:GITHUB_ENV
+      - name: Install Windows dependencies
+        run: pip install meson ninja
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: x86_64-pc-windows-gnu
 
       - name: Cache cargo registry
         uses: actions/cache@v4
@@ -450,7 +429,7 @@ jobs:
         shell: pwsh
         run: |
           cd nexus-client
-          cargo bundle --target x86_64-pc-windows-gnu --format wxsmsi --release
+          cargo bundle --format wxsmsi --release
 
   # Test Docker image build
   docker-build:
