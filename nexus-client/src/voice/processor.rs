@@ -92,7 +92,7 @@ impl AudioProcessor {
         Config {
             echo_cancellation: if settings.echo_cancellation {
                 Some(EchoCancellation {
-                    suppression_level: EchoCancellationSuppressionLevel::High,
+                    suppression_level: EchoCancellationSuppressionLevel::Moderate,
                     enable_extended_filter: true,
                     enable_delay_agnostic: true,
                     stream_delay_ms: None,
@@ -112,7 +112,7 @@ impl AudioProcessor {
             },
             noise_suppression: if settings.noise_suppression {
                 Some(NoiseSuppression {
-                    suppression_level: NoiseSuppressionLevel::High,
+                    suppression_level: NoiseSuppressionLevel::Moderate,
                 })
             } else {
                 None
