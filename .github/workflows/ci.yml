@@ -53,29 +53,15 @@ jobs:
         if: runner.os == 'macOS'
         run: brew install libtool autoconf automake pkg-config
 
-      - name: Install MSYS2 and build tools
+      - name: Install MSYS2 packages
         if: runner.os == 'Windows'
-        uses: msys2/setup-msys2@v2
-        with:
-          msystem: UCRT64
-          update: true
-          install: >-
-            base-devel
-            autoconf
-            automake
-            libtool
-            cmake
-            nasm
-            mingw-w64-ucrt-x86_64-toolchain
-            mingw-w64-ucrt-x86_64-libtool
-            mingw-w64-ucrt-x86_64-cmake
-            mingw-w64-ucrt-x86_64-nasm
+        run: C:\msys64\usr\bin\bash.exe -lc "pacman -S --noconfirm base-devel autoconf automake libtool pkg-config"
 
-      - name: Add MSYS2 to GITHUB_ENV
+      - name: Add MSYS2 to PATH
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          echo "PATH=C:\msys64\ucrt64\bin;C:\msys64\usr\bin;$env:PATH" >> $env:GITHUB_ENV
+          echo "PATH=C:\msys64\usr\bin;$env:PATH" >> $env:GITHUB_ENV
 
 
 
@@ -415,27 +401,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install MSYS2 and build tools
-        uses: msys2/setup-msys2@v2
-        with:
-          msystem: UCRT64
-          update: true
-          install: >-
-            base-devel
-            autoconf
-            automake
-            libtool
-            cmake
-            nasm
-            mingw-w64-ucrt-x86_64-toolchain
-            mingw-w64-ucrt-x86_64-libtool
-            mingw-w64-ucrt-x86_64-cmake
-            mingw-w64-ucrt-x86_64-nasm
+      - name: Install MSYS2 packages
+        run: C:\msys64\usr\bin\bash.exe -lc "pacman -S --noconfirm base-devel autoconf automake libtool pkg-config"
 
-      - name: Add MSYS2 to GITHUB_ENV
+      - name: Add MSYS2 to PATH
         shell: pwsh
         run: |
-          echo "PATH=C:\msys64\ucrt64\bin;C:\msys64\usr\bin;$env:PATH" >> $env:GITHUB_ENV
+          echo "PATH=C:\msys64\usr\bin;$env:PATH" >> $env:GITHUB_ENV
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
