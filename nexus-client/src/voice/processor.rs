@@ -201,7 +201,7 @@ impl AudioProcessor {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use nexus_common::voice::VOICE_SAMPLE_RATE;
+    use serial_test::serial;
 
     #[test]
     fn test_default_settings() {
@@ -211,13 +211,17 @@ mod tests {
         assert!(settings.agc);
     }
 
+    // Serialize WebRTC processor tests - the library has global state that isn't
+    // thread-safe when creating multiple Processor instances concurrently.
     #[test]
+    #[serial]
     fn test_processor_creation() {
         let processor = AudioProcessor::new(AudioProcessorSettings::default());
         assert!(processor.is_ok());
     }
 
     #[test]
+    #[serial]
     fn test_process_capture_frame() {
         let mut processor = AudioProcessor::new(AudioProcessorSettings::default()).unwrap();
         let mut frame = vec![0.0f32; VOICE_SAMPLES_PER_FRAME as usize];
@@ -227,6 +231,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_process_render_frame() {
         let mut processor = AudioProcessor::new(AudioProcessorSettings::default()).unwrap();
         let mut frame = vec![0.0f32; VOICE_SAMPLES_PER_FRAME as usize];
@@ -236,6 +241,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_wrong_frame_size() {
         let mut processor = AudioProcessor::new(AudioProcessorSettings::default()).unwrap();
         let mut frame = vec![0.0f32; 100]; // Wrong size
@@ -245,6 +251,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_update_settings() {
         let mut processor = AudioProcessor::new(AudioProcessorSettings::default()).unwrap();
 
@@ -260,7 +267,10 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_signal_processing() {
+        use nexus_common::voice::VOICE_SAMPLE_RATE;
+
         let mut processor = AudioProcessor::new(AudioProcessorSettings {
             noise_suppression: true,
             echo_cancellation: false,
