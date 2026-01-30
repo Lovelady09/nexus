@@ -447,18 +447,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install MSYS2 packages
-        run: C:\msys64\usr\bin\bash.exe -lc "pacman -S --noconfirm base-devel mingw-w64-x86_64-toolchain autoconf automake libtool pkg-config"
-
-      - name: Add MSYS2 to PATH
-        shell: pwsh
-        run: |
-          echo "PATH=C:\msys64\mingw64\bin;C:\msys64\usr\bin;$env:PATH" >> $env:GITHUB_ENV
+      - name: Install Windows dependencies
+        run: pip install meson ninja
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: x86_64-pc-windows-gnu
 
       - name: Cache cargo registry
         uses: actions/cache@v4
@@ -478,7 +471,7 @@ jobs:
 
       - name: Build client
         shell: pwsh
-        run: cargo build --release --package nexus-client --target x86_64-pc-windows-gnu
+        run: cargo build --release --package nexus-client
 
       - name: Get version from tag
         id: version
@@ -503,13 +496,13 @@ jobs:
 
       - name: Create MSI installer
         shell: pwsh
-        run: cargo bundle --target x86_64-pc-windows-gnu --format wxsmsi --release -p nexus-client
+        run: cargo bundle --format wxsmsi --release -p nexus-client
 
       - name: Collect client artifact
         shell: bash
         run: |
           mkdir -p dist
-          mv target/x86_64-pc-windows-gnu/release/bundle/wxsmsi/bin/Release/*.msi \
+          mv target/release/bundle/wxsmsi/bin/Release/*.msi \
              dist/nexus-client-${{ steps.version.outputs.VERSION }}-windows-x64.msi
 
       - name: Upload artifacts
@@ -526,18 +519,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install MSYS2 packages
-        run: C:\msys64\usr\bin\bash.exe -lc "pacman -S --noconfirm base-devel mingw-w64-x86_64-toolchain"
-
-      - name: Add MSYS2 to PATH
-        shell: pwsh
-        run: |
-          echo "PATH=C:\msys64\mingw64\bin;C:\msys64\usr\bin;$env:PATH" >> $env:GITHUB_ENV
-
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: x86_64-pc-windows-gnu
 
       - name: Cache cargo registry
         uses: actions/cache@v4
@@ -564,7 +547,7 @@ jobs:
             windows-server-cargo-build-
 
       - name: Build server
-        run: cargo build --release --package nexus-server --target x86_64-pc-windows-gnu
+        run: cargo build --release --package nexus-server
 
       - name: Get version from tag
         id: version
@@ -575,7 +558,7 @@ jobs:
         shell: bash
         run: |
           mkdir -p dist/nexusd
-          cp target/x86_64-pc-windows-gnu/release/nexusd.exe dist/nexusd/
+          cp target/release/nexusd.exe dist/nexusd/
           cp README.md LICENSE dist/nexusd/
           cd dist
           7z a -tzip nexusd-${{ steps.version.outputs.VERSION }}-windows-x64.zip nexusd
