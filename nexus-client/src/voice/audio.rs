@@ -226,9 +226,98 @@ impl AudioCapture {
             if let Some(cfg) = stereo_config {
                 (2u16, cfg.sample_format())
             } else {
-                return Err(
-                    "No compatible audio format found (need 48kHz mono or stereo)".to_string(),
-                );
+                // On Windows, WASAPI shared mode handles sample rate conversion internally.
+                // Try 48kHz with any supported format, even if 48kHz not explicitly listed.
+                // Prefer F32 > I16 > U16 for best quality.
+                #[cfg(target_os = "windows")]
+                {
+                    // For input (mic), prefer mono first (matches normal 48kHz path)
+                    // Find best mono config (prefer F32 > I16 > U16)
+                    let mono_configs: Vec<_> = device
+                        .supported_input_configs()
+                        .ok()
+                        .map(|configs| {
+                            configs
+                                .filter(|c| {
+                                    c.channels() == 1
+                                        && supported_formats.contains(&c.sample_format())
+                                })
+                                .collect()
+                        })
+                        .unwrap_or_default();
+
+                    let best_mono = mono_configs
+                        .iter()
+                        .find(|c| c.sample_format() == SampleFormat::F32)
+                        .or_else(|| {
+                            mono_configs
+                                .iter()
+                                .find(|c| c.sample_format() == SampleFormat::I16)
+                        })
+                        .or_else(|| mono_configs.first());
+
+                    if let Some(cfg) = best_mono {
+                        (1u16, cfg.sample_format())
+                    } else {
+                        // Fall back to stereo (will downmix)
+                        let stereo_configs: Vec<_> = device
+                            .supported_input_configs()
+                            .ok()
+                            .map(|configs| {
+                                configs
+                                    .filter(|c| {
+                                        c.channels() == 2
+                                            && supported_formats.contains(&c.sample_format())
+                                    })
+                                    .collect()
+                            })
+                            .unwrap_or_default();
+
+                        let best_stereo = stereo_configs
+                            .iter()
+                            .find(|c| c.sample_format() == SampleFormat::F32)
+                            .or_else(|| {
+                                stereo_configs
+                                    .iter()
+                                    .find(|c| c.sample_format() == SampleFormat::I16)
+                            })
+                            .or_else(|| stereo_configs.first());
+
+                        if let Some(cfg) = best_stereo {
+                            (2u16, cfg.sample_format())
+                        } else {
+                            return Err("Input device has no supported audio format".to_string());
+                        }
+                    }
+                }
+                #[cfg(not(target_os = "windows"))]
+                {
+                    // Collect supported sample rates for error message
+                    let supported_rates: Vec<String> = device
+                        .supported_input_configs()
+                        .map(|configs| {
+                            configs
+                                .map(|c| {
+                                    if c.min_sample_rate() == c.max_sample_rate() {
+                                        format!("{}Hz", c.min_sample_rate())
+                                    } else {
+                                        format!("{}-{}Hz", c.min_sample_rate(), c.max_sample_rate())
+                                    }
+                                })
+                                .collect()
+                        })
+                        .unwrap_or_default();
+                    let rates_str = if supported_rates.is_empty() {
+                        "unknown".to_string()
+                    } else {
+                        supported_rates.join(", ")
+                    };
+                    return Err(format!(
+                        "Input device doesn't support 48kHz (required for voice chat). \
+                         Device supports: {}",
+                        rates_str
+                    ));
+                }
             }
         };
 
@@ -548,12 +637,103 @@ impl AudioMixer {
                         && c.min_sample_rate() <= VOICE_SAMPLE_RATE
                         && c.max_sample_rate() >= VOICE_SAMPLE_RATE
                         && supported_formats.contains(&c.sample_format())
-                })
-                .ok_or_else(|| {
-                    "No supported output configuration found (need 48kHz mono or stereo)"
-                        .to_string()
-                })?;
-            (2u16, stereo_config.sample_format())
+                });
+
+            if let Some(cfg) = stereo_config {
+                (2u16, cfg.sample_format())
+            } else {
+                // On Windows, WASAPI shared mode handles sample rate conversion internally.
+                // Try 48kHz with any supported format, even if 48kHz not explicitly listed.
+                // Prefer F32 > I16 > U16 for best quality.
+                #[cfg(target_os = "windows")]
+                {
+                    // Find best stereo config (prefer F32 > I16 > U16)
+                    let stereo_configs: Vec<_> = device
+                        .supported_output_configs()
+                        .ok()
+                        .map(|configs| {
+                            configs
+                                .filter(|c| {
+                                    c.channels() == 2
+                                        && supported_formats.contains(&c.sample_format())
+                                })
+                                .collect()
+                        })
+                        .unwrap_or_default();
+
+                    let best_stereo = stereo_configs
+                        .iter()
+                        .find(|c| c.sample_format() == SampleFormat::F32)
+                        .or_else(|| {
+                            stereo_configs
+                                .iter()
+                                .find(|c| c.sample_format() == SampleFormat::I16)
+                        })
+                        .or_else(|| stereo_configs.first());
+
+                    if let Some(cfg) = best_stereo {
+                        (2u16, cfg.sample_format())
+                    } else {
+                        // Try mono (prefer F32 > I16 > U16)
+                        let mono_configs: Vec<_> = device
+                            .supported_output_configs()
+                            .ok()
+                            .map(|configs| {
+                                configs
+                                    .filter(|c| {
+                                        c.channels() == 1
+                                            && supported_formats.contains(&c.sample_format())
+                                    })
+                                    .collect()
+                            })
+                            .unwrap_or_default();
+
+                        let best_mono = mono_configs
+                            .iter()
+                            .find(|c| c.sample_format() == SampleFormat::F32)
+                            .or_else(|| {
+                                mono_configs
+                                    .iter()
+                                    .find(|c| c.sample_format() == SampleFormat::I16)
+                            })
+                            .or_else(|| mono_configs.first());
+
+                        if let Some(cfg) = best_mono {
+                            (1u16, cfg.sample_format())
+                        } else {
+                            return Err("Output device has no supported audio format".to_string());
+                        }
+                    }
+                }
+                #[cfg(not(target_os = "windows"))]
+                {
+                    // Collect supported sample rates for error message
+                    let supported_rates: Vec<String> = device
+                        .supported_output_configs()
+                        .map(|configs| {
+                            configs
+                                .map(|c| {
+                                    if c.min_sample_rate() == c.max_sample_rate() {
+                                        format!("{}Hz", c.min_sample_rate())
+                                    } else {
+                                        format!("{}-{}Hz", c.min_sample_rate(), c.max_sample_rate())
+                                    }
+                                })
+                                .collect()
+                        })
+                        .unwrap_or_default();
+                    let rates_str = if supported_rates.is_empty() {
+                        "unknown".to_string()
+                    } else {
+                        supported_rates.join(", ")
+                    };
+                    return Err(format!(
+                        "Output device doesn't support 48kHz (required for voice chat). \
+                         Device supports: {}",
+                        rates_str
+                    ));
+                }
+            }
         };
 
         let config = StreamConfig {

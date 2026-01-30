@@ -71,7 +71,8 @@ impl NexusApp {
     /// Cancel bookmark editing and close the dialog
     pub fn handle_cancel_bookmark_edit(&mut self) -> Task<Message> {
         self.bookmark_edit = BookmarkEditState::default();
-        Task::none()
+        // Restore chat scroll position when closing bookmark editor
+        self.scroll_chat_if_visible(false)
     }
 
     /// Save the current bookmark (add or update)
@@ -102,7 +103,8 @@ impl NexusApp {
         }
 
         self.bookmark_edit = BookmarkEditState::default();
-        Task::none()
+        // Restore chat scroll position when closing bookmark editor
+        self.scroll_chat_if_visible(false)
     }
 
     /// Show the add bookmark dialog
@@ -208,7 +210,8 @@ impl NexusApp {
         self.bookmark_errors.remove(&id);
 
         self.bookmark_edit = BookmarkEditState::default();
-        Task::none()
+        // Restore chat scroll position when closing bookmark editor
+        self.scroll_chat_if_visible(false)
     }
 
     // ==================== Tab Navigation ====================
