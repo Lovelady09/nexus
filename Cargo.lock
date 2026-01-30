@@ -7629,7 +7629,7 @@ dependencies = [
 [[package]]
 name = "webrtc-audio-processing"
 version = "0.5.0"
-source = "git+https://github.com/zquestz/webrtc-audio-processing#b919a8d2ecc0a5a1555b6d2c9d0cfd260a996778"
+source = "git+https://github.com/zquestz/webrtc-audio-processing#5b0496a745d6cacd89bde1f0b784c48e3c6b3443"
 dependencies = [
  "webrtc-audio-processing-sys",
 ]
@@ -7637,7 +7637,7 @@ dependencies = [
 [[package]]
 name = "webrtc-audio-processing-sys"
 version = "0.5.0"
-source = "git+https://github.com/zquestz/webrtc-audio-processing#b919a8d2ecc0a5a1555b6d2c9d0cfd260a996778"
+source = "git+https://github.com/zquestz/webrtc-audio-processing#5b0496a745d6cacd89bde1f0b784c48e3c6b3443"
 dependencies = [
  "anyhow",
  "autotools",
