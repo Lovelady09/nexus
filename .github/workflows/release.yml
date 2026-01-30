@@ -469,10 +469,6 @@ jobs:
           restore-keys: |
             windows-x64-cargo-index-
 
-      - name: Build client
-        shell: pwsh
-        run: cargo build --release --package nexus-client
-
       - name: Get version from tag
         id: version
         shell: bash
