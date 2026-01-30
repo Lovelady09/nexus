@@ -118,7 +118,7 @@ impl AudioProcessor {
                 None
             },
             voice_detection: Some(VoiceDetection {
-                detection_likelihood: VoiceDetectionLikelihood::Moderate,
+                detection_likelihood: VoiceDetectionLikelihood::High,
             }),
             enable_transient_suppressor: settings.transient_suppression,
             enable_high_pass_filter: true,
