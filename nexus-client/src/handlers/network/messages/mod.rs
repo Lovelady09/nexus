@@ -518,6 +518,9 @@ impl NexusApp {
                 self.handle_voice_user_left(connection_id, nickname, target)
             }
 
+            // Keepalive response - no action needed, receiving it is enough
+            ServerMessage::Pong => Task::none(),
+
             // Catch-all for any unhandled message types
             _ => Task::none(),
         }

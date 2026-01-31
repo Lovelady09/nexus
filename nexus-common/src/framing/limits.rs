@@ -432,6 +432,12 @@ const VOICE_JOIN_SIZE: usize =
 /// VoiceLeave: {"type":"VoiceLeave"}
 const VOICE_LEAVE_SIZE: usize = json_type_base("VoiceLeave");
 
+/// Ping: {"type":"Ping"}
+const PING_SIZE: usize = json_type_base("Ping");
+
+/// Pong: {"type":"Pong"}
+const PONG_SIZE: usize = json_type_base("Pong");
+
 // -----------------------------------------------------------------------------
 // Transfer messages (shared between client and server)
 // -----------------------------------------------------------------------------
@@ -1049,6 +1055,10 @@ static MESSAGE_TYPE_LIMITS: LazyLock<HashMap<&'static str, u64>> = LazyLock::new
     // Voice client messages (self-documenting via const calculations)
     m.insert("VoiceJoin", pad_limit(VOICE_JOIN_SIZE as u64));
     m.insert("VoiceLeave", pad_limit(VOICE_LEAVE_SIZE as u64));
+
+    // Keepalive messages
+    m.insert("Ping", pad_limit(PING_SIZE as u64));
+    m.insert("Pong", pad_limit(PONG_SIZE as u64));
 
     // Server messages - Chat (self-documenting via const calculations)
     m.insert("ChatMessage", pad_limit(CHAT_MESSAGE_SIZE as u64));
@@ -1722,8 +1732,8 @@ mod tests {
         //
         // Note: Some type names are shared between client and server enums
         // (UserMessage, FileStart, FileStartResponse, FileData, FileHashing), so they're only counted once in the HashMap.
-        const CLIENT_MESSAGE_COUNT: usize = 51; // Added 6 News + 7 File + 6 Transfer + 3 Away/Status + 3 Ban + 3 Trust + 2 FileSearch + 4 Chat channel + 1 ConnectionMonitor + 2 Voice client messages
-        const SERVER_MESSAGE_COUNT: usize = 66; // Added 7 News + 8 File + 7 Transfer + 3 Away/Status + 3 Ban + 3 Trust + 2 FileSearch + 6 Chat channel + 1 ConnectionMonitor + 4 Voice server messages
+        const CLIENT_MESSAGE_COUNT: usize = 52; // Added 6 News + 7 File + 6 Transfer + 3 Away/Status + 3 Ban + 3 Trust + 2 FileSearch + 4 Chat channel + 1 ConnectionMonitor + 2 Voice client messages + 1 Ping
+        const SERVER_MESSAGE_COUNT: usize = 67; // Added 7 News + 8 File + 7 Transfer + 3 Away/Status + 3 Ban + 3 Trust + 2 FileSearch + 6 Chat channel + 1 ConnectionMonitor + 4 Voice server messages + 1 Pong
         const SHARED_MESSAGE_COUNT: usize = 5; // UserMessage, FileStart, FileStartResponse, FileData, FileHashing
         const TOTAL_MESSAGE_COUNT: usize =
             CLIENT_MESSAGE_COUNT + SERVER_MESSAGE_COUNT - SHARED_MESSAGE_COUNT;

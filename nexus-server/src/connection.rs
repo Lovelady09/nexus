@@ -554,6 +554,9 @@ where
         ClientMessage::VoiceLeave => {
             handlers::handle_voice_leave(conn_state.session_id, ctx).await?;
         }
+        ClientMessage::Ping => {
+            ctx.send_message(&ServerMessage::Pong).await?;
+        }
     }
 
     Ok(())

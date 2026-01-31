@@ -168,6 +168,7 @@ Current version: `0.5.2`
 | [12-trusts.md](12-trusts.md) | IP trust list (ban bypass) |
 | [13-connection-monitor.md](13-connection-monitor.md) | Connection monitor (active sessions) |
 | [14-voice.md](14-voice.md) | Voice chat (signaling and UDP audio) |
+| [15-keepalive.md](15-keepalive.md) | Ping/pong keepalive for NAT timeout prevention |
 
 ## ServerInfo Fields
 

@@ -351,6 +351,8 @@ pub enum ClientMessage {
     },
     /// Leave current voice session
     VoiceLeave,
+    /// Keepalive ping (client sends periodically to prevent NAT timeout)
+    Ping,
 }
 
 /// Helper for skip_serializing_if on ChatAction
@@ -958,6 +960,8 @@ pub enum ServerMessage {
         /// Target channel or the other user's nickname for user message voice
         target: String,
     },
+    /// Keepalive pong (server response to client Ping)
+    Pong,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -1523,6 +1527,7 @@ impl std::fmt::Debug for ClientMessage {
                 f.debug_struct("VoiceJoin").field("target", target).finish()
             }
             ClientMessage::VoiceLeave => f.debug_struct("VoiceLeave").finish(),
+            ClientMessage::Ping => f.debug_struct("Ping").finish(),
         }
     }
 }

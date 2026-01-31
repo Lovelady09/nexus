@@ -3,6 +3,7 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::time::Duration;
 
 use iced::futures::{SinkExt, Stream};
 use iced::stream;
@@ -18,7 +19,7 @@ use crate::i18n::t;
 use crate::types::connection::CommandSender;
 use crate::types::{ConnectionInfo, Message, NetworkConnection};
 
-use super::constants::STREAM_CHANNEL_SIZE;
+use super::constants::{PING_INTERVAL, STREAM_CHANNEL_SIZE};
 use super::types::{LoginInfo, Reader, Writer};
 
 /// Type alias for the connection registry
@@ -170,7 +171,8 @@ async fn spawn_reader_task(
 
 /// Writer task - sends messages from UI to server
 ///
-/// This task uses `select!` to handle both outgoing messages and shutdown signals.
+/// This task uses `select!` to handle both outgoing messages, shutdown signals,
+/// and periodic keepalive pings to prevent NAT timeout on idle connections.
 /// This is safe because `cmd_rx.recv()` is cancel-safe (no partial state).
 async fn spawn_writer_task(
     mut writer: Writer,
@@ -178,6 +180,11 @@ async fn spawn_writer_task(
     mut shutdown_rx: tokio::sync::oneshot::Receiver<()>,
     stop_flag: Arc<AtomicBool>,
 ) {
+    // Ping interval timer for NAT keepalive
+    let mut ping_interval = tokio::time::interval(Duration::from_secs(PING_INTERVAL));
+    // Don't send ping immediately on connect
+    ping_interval.reset();
+
     loop {
         // Check if reader signaled us to stop
         if stop_flag.load(Ordering::Relaxed) {
@@ -191,6 +198,17 @@ async fn spawn_writer_task(
             Some((message_id, msg)) = cmd_rx.recv() => {
                 if send_client_message_with_id(&mut writer, &msg, message_id).await.is_err() {
                     // Error sending, signal reader to stop
+                    stop_flag.store(true, Ordering::Relaxed);
+                    break;
+                }
+                // Reset ping timer on any activity (we just sent something)
+                ping_interval.reset();
+            }
+            // Periodic ping to keep NAT mappings alive
+            _ = ping_interval.tick() => {
+                let ping_id = MessageId::new();
+                if send_client_message_with_id(&mut writer, &ClientMessage::Ping, ping_id).await.is_err() {
+                    // Error sending ping, signal reader to stop
                     stop_flag.store(true, Ordering::Relaxed);
                     break;
                 }

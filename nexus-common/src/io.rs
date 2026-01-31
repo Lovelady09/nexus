@@ -333,6 +333,7 @@ pub fn client_message_type(message: &ClientMessage) -> &'static str {
         ClientMessage::FileReindex => "FileReindex",
         ClientMessage::VoiceJoin { .. } => "VoiceJoin",
         ClientMessage::VoiceLeave => "VoiceLeave",
+        ClientMessage::Ping => "Ping",
     }
 }
 
@@ -406,6 +407,7 @@ pub fn server_message_type(message: &ServerMessage) -> &'static str {
         ServerMessage::VoiceLeaveResponse { .. } => "VoiceLeaveResponse",
         ServerMessage::VoiceUserJoined { .. } => "VoiceUserJoined",
         ServerMessage::VoiceUserLeft { .. } => "VoiceUserLeft",
+        ServerMessage::Pong => "Pong",
     }
 }
 
