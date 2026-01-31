@@ -40,8 +40,14 @@ pub const VOICE_FRAME_DURATION_MS: u32 = 10;
 /// Number of samples per frame at 48kHz with 10ms frames
 pub const VOICE_SAMPLES_PER_FRAME: u32 = VOICE_SAMPLE_RATE * VOICE_FRAME_DURATION_MS / 1000;
 
-/// Number of audio channels (mono)
+/// Number of audio channels for voice input (mono)
 pub const VOICE_CHANNELS: u16 = 1;
+
+/// Mono channel count
+pub const MONO_CHANNELS: u16 = 1;
+
+/// Stereo channel count
+pub const STEREO_CHANNELS: u16 = 2;
 
 /// Jitter buffer size in milliseconds
 pub const JITTER_BUFFER_MS: u32 = 40;

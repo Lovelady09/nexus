@@ -418,7 +418,9 @@ impl NexusApp {
         // the shared user's nickname (and thus user message tab key) hasn't changed.
         if username_changed {
             // If this is our own username changing, update conn.connection_info.username
-            if conn.connection_info.username == previous_username {
+            // Compare case-insensitively since connection_info.username is user-typed
+            // and previous_username is server-provided (may differ in case)
+            if conn.connection_info.username.to_lowercase() == previous_username.to_lowercase() {
                 conn.connection_info.username = new_username.clone();
             }
 

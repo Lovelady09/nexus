@@ -317,9 +317,11 @@ impl NexusApp {
             }
 
             // Logged in identity: nickname [admin] or nickname (username) [admin] for shared accounts
+            // Compare case-insensitively since username comes from user input (may differ in case)
+            // and nickname comes from server (database-stored case)
             let username = &conn.connection_info.username;
             let nickname = &conn.nickname;
-            let is_shared = conn.nickname != *username;
+            let is_shared = nickname.to_lowercase() != username.to_lowercase();
             let login_info = match (is_shared, conn.is_admin) {
                 (true, true) => t_args(
                     "msg-logged-in-as-shared-admin",

@@ -3,6 +3,9 @@
 //! Provides audio device enumeration, microphone capture, and speaker playback
 //! using the cpal crate for cross-platform audio I/O. Uses f32 samples throughout
 //! for compatibility with WebRTC audio processing.
+//!
+//! Supports resampling for devices that don't natively support 48kHz (required
+//! by Opus codec) using the rubato crate.
 
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -12,7 +15,11 @@ use std::sync::{Arc, Mutex};
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use cpal::{Device, FromSample, Host, Sample, SampleFormat, Stream, StreamConfig};
 
-use nexus_common::voice::{VOICE_SAMPLE_RATE, VOICE_SAMPLES_PER_FRAME};
+use nexus_common::voice::{
+    MONO_CHANNELS, STEREO_CHANNELS, VOICE_SAMPLE_RATE, VOICE_SAMPLES_PER_FRAME,
+};
+
+use super::resample::{InputResampler, OutputResampler, needs_resampling};
 
 // =============================================================================
 // Constants
@@ -29,6 +36,19 @@ const MAX_CAPTURE_BUFFER_FRAMES: usize = 10;
 
 /// Maximum playback buffer size in frames (prevents latency buildup)
 const MAX_PLAYBACK_BUFFER_FRAMES: usize = 20;
+
+/// Supported sample formats in order of preference (best quality first)
+const SUPPORTED_FORMATS: [SampleFormat; 3] =
+    [SampleFormat::F32, SampleFormat::I16, SampleFormat::U16];
+
+/// Mono channel count for audio device configuration
+const MONO: u16 = MONO_CHANNELS;
+
+/// Stereo channel count for audio device configuration
+const STEREO: u16 = STEREO_CHANNELS;
+
+/// Soft clip gain factor - provides ~3dB of headroom before noticeable saturation
+const SOFT_CLIP_GAIN: f32 = 0.7;
 
 // =============================================================================
 // Audio Device
@@ -154,17 +174,192 @@ fn find_input_device(name: &str) -> Option<Device> {
 }
 
 // =============================================================================
+// Device Configuration Selection
+// =============================================================================
+
+/// Configuration for audio stream
+struct AudioConfig {
+    channels: u16,
+    sample_rate: u32,
+    sample_format: SampleFormat,
+}
+
+/// Find the best input configuration for a device
+///
+/// Priority:
+/// 1. Mono at 48kHz with best format (no resampling needed)
+/// 2. Stereo at 48kHz with best format (no resampling needed)
+/// 3. Mono at any rate with best format (will resample)
+/// 4. Stereo at any rate with best format (will resample)
+fn find_best_input_config(device: &Device) -> Result<AudioConfig, String> {
+    let configs: Vec<_> = device
+        .supported_input_configs()
+        .map_err(|e| format!("Failed to get supported input configs: {}", e))?
+        .collect();
+
+    if configs.is_empty() {
+        return Err("Input device has no supported configurations".to_string());
+    }
+
+    // Try 48kHz first (no resampling needed)
+    // Mono at 48kHz
+    for format in &SUPPORTED_FORMATS {
+        if let Some(_cfg) = configs.iter().find(|c| {
+            c.channels() == MONO
+                && c.min_sample_rate() <= VOICE_SAMPLE_RATE
+                && c.max_sample_rate() >= VOICE_SAMPLE_RATE
+                && c.sample_format() == *format
+        }) {
+            return Ok(AudioConfig {
+                channels: MONO,
+                sample_rate: VOICE_SAMPLE_RATE,
+                sample_format: *format,
+            });
+        }
+    }
+
+    // Stereo at 48kHz
+    for format in &SUPPORTED_FORMATS {
+        if let Some(_cfg) = configs.iter().find(|c| {
+            c.channels() == STEREO
+                && c.min_sample_rate() <= VOICE_SAMPLE_RATE
+                && c.max_sample_rate() >= VOICE_SAMPLE_RATE
+                && c.sample_format() == *format
+        }) {
+            return Ok(AudioConfig {
+                channels: STEREO,
+                sample_rate: VOICE_SAMPLE_RATE,
+                sample_format: *format,
+            });
+        }
+    }
+
+    // Need resampling - find best mono config at any rate
+    for format in &SUPPORTED_FORMATS {
+        if let Some(cfg) = configs
+            .iter()
+            .find(|c| c.channels() == MONO && c.sample_format() == *format)
+        {
+            // Use device's max supported rate for best quality before downsampling
+            return Ok(AudioConfig {
+                channels: MONO,
+                sample_rate: cfg.max_sample_rate(),
+                sample_format: *format,
+            });
+        }
+    }
+
+    // Find best stereo config at any rate (will downmix and resample)
+    for format in &SUPPORTED_FORMATS {
+        if let Some(cfg) = configs
+            .iter()
+            .find(|c| c.channels() == STEREO && c.sample_format() == *format)
+        {
+            return Ok(AudioConfig {
+                channels: STEREO,
+                sample_rate: cfg.max_sample_rate(),
+                sample_format: *format,
+            });
+        }
+    }
+
+    Err("Input device has no supported audio configuration".to_string())
+}
+
+/// Find the best output configuration for a device
+///
+/// Priority:
+/// 1. Stereo at 48kHz with best format (no resampling needed)
+/// 2. Mono at 48kHz with best format (no resampling needed)
+/// 3. Stereo at any rate with best format (will resample)
+/// 4. Mono at any rate with best format (will resample)
+fn find_best_output_config(device: &Device) -> Result<AudioConfig, String> {
+    let configs: Vec<_> = device
+        .supported_output_configs()
+        .map_err(|e| format!("Failed to get supported output configs: {}", e))?
+        .collect();
+
+    if configs.is_empty() {
+        return Err("Output device has no supported configurations".to_string());
+    }
+
+    // Try 48kHz first (no resampling needed)
+    // Stereo at 48kHz (preferred for output)
+    for format in &SUPPORTED_FORMATS {
+        if let Some(_cfg) = configs.iter().find(|c| {
+            c.channels() == STEREO
+                && c.min_sample_rate() <= VOICE_SAMPLE_RATE
+                && c.max_sample_rate() >= VOICE_SAMPLE_RATE
+                && c.sample_format() == *format
+        }) {
+            return Ok(AudioConfig {
+                channels: STEREO,
+                sample_rate: VOICE_SAMPLE_RATE,
+                sample_format: *format,
+            });
+        }
+    }
+
+    // Mono at 48kHz
+    for format in &SUPPORTED_FORMATS {
+        if let Some(_cfg) = configs.iter().find(|c| {
+            c.channels() == MONO
+                && c.min_sample_rate() <= VOICE_SAMPLE_RATE
+                && c.max_sample_rate() >= VOICE_SAMPLE_RATE
+                && c.sample_format() == *format
+        }) {
+            return Ok(AudioConfig {
+                channels: MONO,
+                sample_rate: VOICE_SAMPLE_RATE,
+                sample_format: *format,
+            });
+        }
+    }
+
+    // Need resampling - find best stereo config at any rate
+    for format in &SUPPORTED_FORMATS {
+        if let Some(cfg) = configs
+            .iter()
+            .find(|c| c.channels() == STEREO && c.sample_format() == *format)
+        {
+            return Ok(AudioConfig {
+                channels: STEREO,
+                sample_rate: cfg.max_sample_rate(),
+                sample_format: *format,
+            });
+        }
+    }
+
+    // Find best mono config at any rate
+    for format in &SUPPORTED_FORMATS {
+        if let Some(cfg) = configs
+            .iter()
+            .find(|c| c.channels() == MONO && c.sample_format() == *format)
+        {
+            return Ok(AudioConfig {
+                channels: MONO,
+                sample_rate: cfg.max_sample_rate(),
+                sample_format: *format,
+            });
+        }
+    }
+
+    Err("Output device has no supported audio configuration".to_string())
+}
+
+// =============================================================================
 // Audio Capture
 // =============================================================================
 
 /// Audio capture from microphone
 ///
 /// Captures audio at 48kHz mono for voice encoding. Uses f32 samples internally
-/// for compatibility with WebRTC audio processing.
+/// for compatibility with WebRTC audio processing. Automatically resamples if
+/// the device doesn't support 48kHz natively.
 pub struct AudioCapture {
     /// The cpal input stream
     _stream: Stream,
-    /// Buffer for captured audio samples (f32 normalized to -1.0..1.0)
+    /// Buffer for captured audio samples (f32 normalized to -1.0..1.0, always at 48kHz)
     buffer: Arc<Mutex<Vec<f32>>>,
     /// Flag indicating if capture is active
     active: Arc<AtomicBool>,
@@ -195,183 +390,82 @@ impl AudioCapture {
         // Create channel for error reporting from audio callback
         let (error_tx, error_rx) = std_mpsc::channel();
 
-        // Check supported formats - must support 48kHz and a format we can handle
-        let supported_formats = [SampleFormat::F32, SampleFormat::I16, SampleFormat::U16];
-
-        // First try mono at 48kHz
-        let mono_config = device
-            .supported_input_configs()
-            .map_err(|e| format!("Failed to get supported configs: {}", e))?
-            .find(|c| {
-                c.channels() == 1
-                    && c.min_sample_rate() <= VOICE_SAMPLE_RATE
-                    && c.max_sample_rate() >= VOICE_SAMPLE_RATE
-                    && supported_formats.contains(&c.sample_format())
-            });
-
-        // If mono not available, try stereo (we'll downmix)
-        let (channels, sample_format) = if let Some(cfg) = mono_config {
-            (1u16, cfg.sample_format())
-        } else {
-            let stereo_config = device
-                .supported_input_configs()
-                .map_err(|e| format!("Failed to get supported configs: {}", e))?
-                .find(|c| {
-                    c.channels() == 2
-                        && c.min_sample_rate() <= VOICE_SAMPLE_RATE
-                        && c.max_sample_rate() >= VOICE_SAMPLE_RATE
-                        && supported_formats.contains(&c.sample_format())
-                });
-
-            if let Some(cfg) = stereo_config {
-                (2u16, cfg.sample_format())
-            } else {
-                // On Windows, WASAPI shared mode handles sample rate conversion internally.
-                // Try 48kHz with any supported format, even if 48kHz not explicitly listed.
-                // Prefer F32 > I16 > U16 for best quality.
-                #[cfg(target_os = "windows")]
-                {
-                    // For input (mic), prefer mono first (matches normal 48kHz path)
-                    // Find best mono config (prefer F32 > I16 > U16)
-                    let mono_configs: Vec<_> = device
-                        .supported_input_configs()
-                        .ok()
-                        .map(|configs| {
-                            configs
-                                .filter(|c| {
-                                    c.channels() == 1
-                                        && supported_formats.contains(&c.sample_format())
-                                })
-                                .collect()
-                        })
-                        .unwrap_or_default();
-
-                    let best_mono = mono_configs
-                        .iter()
-                        .find(|c| c.sample_format() == SampleFormat::F32)
-                        .or_else(|| {
-                            mono_configs
-                                .iter()
-                                .find(|c| c.sample_format() == SampleFormat::I16)
-                        })
-                        .or_else(|| mono_configs.first());
-
-                    if let Some(cfg) = best_mono {
-                        (1u16, cfg.sample_format())
-                    } else {
-                        // Fall back to stereo (will downmix)
-                        let stereo_configs: Vec<_> = device
-                            .supported_input_configs()
-                            .ok()
-                            .map(|configs| {
-                                configs
-                                    .filter(|c| {
-                                        c.channels() == 2
-                                            && supported_formats.contains(&c.sample_format())
-                                    })
-                                    .collect()
-                            })
-                            .unwrap_or_default();
-
-                        let best_stereo = stereo_configs
-                            .iter()
-                            .find(|c| c.sample_format() == SampleFormat::F32)
-                            .or_else(|| {
-                                stereo_configs
-                                    .iter()
-                                    .find(|c| c.sample_format() == SampleFormat::I16)
-                            })
-                            .or_else(|| stereo_configs.first());
-
-                        if let Some(cfg) = best_stereo {
-                            (2u16, cfg.sample_format())
-                        } else {
-                            return Err("Input device has no supported audio format".to_string());
-                        }
-                    }
-                }
-                #[cfg(not(target_os = "windows"))]
-                {
-                    // Collect supported sample rates for error message
-                    let supported_rates: Vec<String> = device
-                        .supported_input_configs()
-                        .map(|configs| {
-                            configs
-                                .map(|c| {
-                                    if c.min_sample_rate() == c.max_sample_rate() {
-                                        format!("{}Hz", c.min_sample_rate())
-                                    } else {
-                                        format!("{}-{}Hz", c.min_sample_rate(), c.max_sample_rate())
-                                    }
-                                })
-                                .collect()
-                        })
-                        .unwrap_or_default();
-                    let rates_str = if supported_rates.is_empty() {
-                        "unknown".to_string()
-                    } else {
-                        supported_rates.join(", ")
-                    };
-                    return Err(format!(
-                        "Input device doesn't support 48kHz (required for voice chat). \
-                         Device supports: {}",
-                        rates_str
-                    ));
-                }
-            }
-        };
+        // Find best configuration for this device
+        let audio_config = find_best_input_config(&device)?;
 
         let config = StreamConfig {
-            channels,
-            sample_rate: VOICE_SAMPLE_RATE,
+            channels: audio_config.channels,
+            sample_rate: audio_config.sample_rate,
             buffer_size: cpal::BufferSize::Default,
         };
 
+        // Create resampler if device doesn't support 48kHz
+        // Note: InputResampler only handles mono - stereo downmix happens in build_input_stream_stereo
+        let resampler = if needs_resampling(audio_config.sample_rate) {
+            Some(Arc::new(Mutex::new(
+                InputResampler::new(audio_config.sample_rate)
+                    .map_err(|e| format!("Failed to create input resampler: {}", e))?,
+            )))
+        } else {
+            None
+        };
+
         // Build stream based on sample format and channel count
-        let stream = match (sample_format, channels) {
-            (SampleFormat::I16, 1) => build_input_stream_mono::<i16>(
+        let stream = match (audio_config.sample_format, audio_config.channels) {
+            (SampleFormat::F32, MONO) => build_input_stream_mono::<f32>(
                 &device,
                 &config,
                 buffer_clone,
                 active_clone,
                 error_tx,
+                resampler,
             ),
-            (SampleFormat::F32, 1) => build_input_stream_mono::<f32>(
+            (SampleFormat::I16, MONO) => build_input_stream_mono::<i16>(
                 &device,
                 &config,
                 buffer_clone,
                 active_clone,
                 error_tx,
+                resampler,
             ),
-            (SampleFormat::U16, 1) => build_input_stream_mono::<u16>(
+            (SampleFormat::U16, MONO) => build_input_stream_mono::<u16>(
                 &device,
                 &config,
                 buffer_clone,
                 active_clone,
                 error_tx,
+                resampler,
             ),
-            (SampleFormat::I16, 2) => build_input_stream_stereo::<i16>(
+            (SampleFormat::F32, STEREO) => build_input_stream_stereo::<f32>(
                 &device,
                 &config,
                 buffer_clone,
                 active_clone,
                 error_tx,
+                resampler,
             ),
-            (SampleFormat::F32, 2) => build_input_stream_stereo::<f32>(
+            (SampleFormat::I16, STEREO) => build_input_stream_stereo::<i16>(
                 &device,
                 &config,
                 buffer_clone,
                 active_clone,
                 error_tx,
+                resampler,
             ),
-            (SampleFormat::U16, 2) => build_input_stream_stereo::<u16>(
+            (SampleFormat::U16, STEREO) => build_input_stream_stereo::<u16>(
                 &device,
                 &config,
                 buffer_clone,
                 active_clone,
                 error_tx,
+                resampler,
             ),
-            _ => return Err(format!("Unsupported sample format: {:?}", sample_format)),
+            _ => {
+                return Err(format!(
+                    "Unsupported audio format: {:?} with {} channels",
+                    audio_config.sample_format, audio_config.channels
+                ));
+            }
         }?;
 
         Ok(Self {
@@ -460,33 +554,57 @@ fn build_input_stream_mono<T>(
     buffer: Arc<Mutex<Vec<f32>>>,
     active: Arc<AtomicBool>,
     error_tx: std_mpsc::Sender<String>,
+    resampler: Option<Arc<Mutex<InputResampler>>>,
 ) -> Result<Stream, String>
 where
     T: Sample + cpal::SizedSample,
     f32: FromSample<T>,
 {
+    let callback_error_tx = error_tx.clone();
     device
         .build_input_stream(
             config,
             move |data: &[T], _: &cpal::InputCallbackInfo| {
-                if active.load(Ordering::SeqCst)
-                    && let Ok(mut buf) = buffer.lock()
-                {
-                    for sample in data {
-                        buf.push(f32::from_sample(*sample));
+                if !active.load(Ordering::SeqCst) {
+                    return;
+                }
+
+                let Ok(mut buf) = buffer.lock() else {
+                    return;
+                };
+
+                // Convert samples to f32
+                let samples: Vec<f32> = data.iter().map(|s| f32::from_sample(*s)).collect();
+
+                // Resample if needed, otherwise use directly
+                let output_samples = if let Some(ref resampler) = resampler {
+                    if let Ok(mut r) = resampler.lock() {
+                        match r.process(&samples) {
+                            Ok(resampled) => resampled,
+                            Err(e) => {
+                                let _ = callback_error_tx.send(e);
+                                return;
+                            }
+                        }
+                    } else {
+                        samples
                     }
-                    // Limit buffer size to prevent unbounded growth
-                    let max_size = VOICE_SAMPLES_PER_FRAME as usize * MAX_CAPTURE_BUFFER_FRAMES;
-                    if buf.len() > max_size {
-                        let drain_count = buf.len() - max_size;
-                        buf.drain(..drain_count);
-                    }
+                } else {
+                    samples
+                };
+
+                buf.extend_from_slice(&output_samples);
+
+                // Limit buffer size to prevent unbounded growth
+                let max_size = VOICE_SAMPLES_PER_FRAME as usize * MAX_CAPTURE_BUFFER_FRAMES;
+                if buf.len() > max_size {
+                    let drain_count = buf.len() - max_size;
+                    buf.drain(..drain_count);
                 }
             },
             {
                 let error_tx = error_tx.clone();
                 move |err| {
-                    // Send error to manager (ignore if receiver dropped)
                     let _ = error_tx.send(format!("Audio capture error: {}", err));
                 }
             },
@@ -502,37 +620,64 @@ fn build_input_stream_stereo<T>(
     buffer: Arc<Mutex<Vec<f32>>>,
     active: Arc<AtomicBool>,
     error_tx: std_mpsc::Sender<String>,
+    resampler: Option<Arc<Mutex<InputResampler>>>,
 ) -> Result<Stream, String>
 where
     T: Sample + cpal::SizedSample,
     f32: FromSample<T>,
 {
+    let callback_error_tx = error_tx.clone();
     device
         .build_input_stream(
             config,
             move |data: &[T], _: &cpal::InputCallbackInfo| {
-                if active.load(Ordering::SeqCst)
-                    && let Ok(mut buf) = buffer.lock()
-                {
-                    // Downmix stereo to mono by averaging L+R channels
-                    for chunk in data.chunks_exact(2) {
+                if !active.load(Ordering::SeqCst) {
+                    return;
+                }
+
+                let Ok(mut buf) = buffer.lock() else {
+                    return;
+                };
+
+                // Downmix stereo to mono by averaging L+R channels
+                let mono_samples: Vec<f32> = data
+                    .chunks_exact(STEREO as usize)
+                    .map(|chunk| {
                         let left = f32::from_sample(chunk[0]);
                         let right = f32::from_sample(chunk[1]);
-                        let mono = (left + right) * 0.5;
-                        buf.push(mono);
+                        (left + right) * 0.5
+                    })
+                    .collect();
+
+                // Resample if needed, otherwise use directly
+                let output_samples = if let Some(ref resampler) = resampler {
+                    if let Ok(mut r) = resampler.lock() {
+                        match r.process(&mono_samples) {
+                            Ok(resampled) => resampled,
+                            Err(e) => {
+                                let _ = callback_error_tx.send(e);
+                                return;
+                            }
+                        }
+                    } else {
+                        mono_samples
                     }
-                    // Limit buffer size to prevent unbounded growth
-                    let max_size = VOICE_SAMPLES_PER_FRAME as usize * MAX_CAPTURE_BUFFER_FRAMES;
-                    if buf.len() > max_size {
-                        let drain_count = buf.len() - max_size;
-                        buf.drain(..drain_count);
-                    }
+                } else {
+                    mono_samples
+                };
+
+                buf.extend_from_slice(&output_samples);
+
+                // Limit buffer size to prevent unbounded growth
+                let max_size = VOICE_SAMPLES_PER_FRAME as usize * MAX_CAPTURE_BUFFER_FRAMES;
+                if buf.len() > max_size {
+                    let drain_count = buf.len() - max_size;
+                    buf.drain(..drain_count);
                 }
             },
             {
                 let error_tx = error_tx.clone();
                 move |err| {
-                    // Send error to manager (ignore if receiver dropped)
                     let _ = error_tx.send(format!("Audio capture error: {}", err));
                 }
             },
@@ -547,7 +692,7 @@ where
 
 /// Per-user audio buffer for mixing
 struct UserAudioBuffer {
-    /// Audio samples waiting to be mixed
+    /// Audio samples waiting to be mixed (at 48kHz)
     samples: Vec<f32>,
 }
 
@@ -586,6 +731,8 @@ impl MixerState {
 /// Properly sums audio from multiple simultaneous speakers instead of
 /// concatenating sequentially. Each user has their own buffer, and the
 /// audio callback mixes them together at playback time.
+///
+/// Automatically resamples from 48kHz to device sample rate if needed.
 pub struct AudioMixer {
     /// The cpal output stream
     _stream: Stream,
@@ -611,182 +758,79 @@ impl AudioMixer {
         // Create channel for error reporting from audio callback
         let (error_tx, error_rx) = std_mpsc::channel();
 
-        // Check supported formats
-        let supported_formats = [SampleFormat::F32, SampleFormat::I16, SampleFormat::U16];
-
-        // First try mono at 48kHz
-        let mono_config = device
-            .supported_output_configs()
-            .map_err(|e| format!("Failed to get supported configs: {}", e))?
-            .find(|c| {
-                c.channels() == 1
-                    && c.min_sample_rate() <= VOICE_SAMPLE_RATE
-                    && c.max_sample_rate() >= VOICE_SAMPLE_RATE
-                    && supported_formats.contains(&c.sample_format())
-            });
-
-        // If mono not available, try stereo
-        let (channels, sample_format) = if let Some(cfg) = mono_config {
-            (1u16, cfg.sample_format())
-        } else {
-            let stereo_config = device
-                .supported_output_configs()
-                .map_err(|e| format!("Failed to get supported configs: {}", e))?
-                .find(|c| {
-                    c.channels() == 2
-                        && c.min_sample_rate() <= VOICE_SAMPLE_RATE
-                        && c.max_sample_rate() >= VOICE_SAMPLE_RATE
-                        && supported_formats.contains(&c.sample_format())
-                });
-
-            if let Some(cfg) = stereo_config {
-                (2u16, cfg.sample_format())
-            } else {
-                // On Windows, WASAPI shared mode handles sample rate conversion internally.
-                // Try 48kHz with any supported format, even if 48kHz not explicitly listed.
-                // Prefer F32 > I16 > U16 for best quality.
-                #[cfg(target_os = "windows")]
-                {
-                    // Find best stereo config (prefer F32 > I16 > U16)
-                    let stereo_configs: Vec<_> = device
-                        .supported_output_configs()
-                        .ok()
-                        .map(|configs| {
-                            configs
-                                .filter(|c| {
-                                    c.channels() == 2
-                                        && supported_formats.contains(&c.sample_format())
-                                })
-                                .collect()
-                        })
-                        .unwrap_or_default();
-
-                    let best_stereo = stereo_configs
-                        .iter()
-                        .find(|c| c.sample_format() == SampleFormat::F32)
-                        .or_else(|| {
-                            stereo_configs
-                                .iter()
-                                .find(|c| c.sample_format() == SampleFormat::I16)
-                        })
-                        .or_else(|| stereo_configs.first());
-
-                    if let Some(cfg) = best_stereo {
-                        (2u16, cfg.sample_format())
-                    } else {
-                        // Try mono (prefer F32 > I16 > U16)
-                        let mono_configs: Vec<_> = device
-                            .supported_output_configs()
-                            .ok()
-                            .map(|configs| {
-                                configs
-                                    .filter(|c| {
-                                        c.channels() == 1
-                                            && supported_formats.contains(&c.sample_format())
-                                    })
-                                    .collect()
-                            })
-                            .unwrap_or_default();
-
-                        let best_mono = mono_configs
-                            .iter()
-                            .find(|c| c.sample_format() == SampleFormat::F32)
-                            .or_else(|| {
-                                mono_configs
-                                    .iter()
-                                    .find(|c| c.sample_format() == SampleFormat::I16)
-                            })
-                            .or_else(|| mono_configs.first());
-
-                        if let Some(cfg) = best_mono {
-                            (1u16, cfg.sample_format())
-                        } else {
-                            return Err("Output device has no supported audio format".to_string());
-                        }
-                    }
-                }
-                #[cfg(not(target_os = "windows"))]
-                {
-                    // Collect supported sample rates for error message
-                    let supported_rates: Vec<String> = device
-                        .supported_output_configs()
-                        .map(|configs| {
-                            configs
-                                .map(|c| {
-                                    if c.min_sample_rate() == c.max_sample_rate() {
-                                        format!("{}Hz", c.min_sample_rate())
-                                    } else {
-                                        format!("{}-{}Hz", c.min_sample_rate(), c.max_sample_rate())
-                                    }
-                                })
-                                .collect()
-                        })
-                        .unwrap_or_default();
-                    let rates_str = if supported_rates.is_empty() {
-                        "unknown".to_string()
-                    } else {
-                        supported_rates.join(", ")
-                    };
-                    return Err(format!(
-                        "Output device doesn't support 48kHz (required for voice chat). \
-                         Device supports: {}",
-                        rates_str
-                    ));
-                }
-            }
-        };
+        // Find best configuration for this device
+        let audio_config = find_best_output_config(&device)?;
 
         let config = StreamConfig {
-            channels,
-            sample_rate: VOICE_SAMPLE_RATE,
+            channels: audio_config.channels,
+            sample_rate: audio_config.sample_rate,
             buffer_size: cpal::BufferSize::Default,
         };
 
+        // Create resampler if device doesn't support 48kHz
+        let resampler = if needs_resampling(audio_config.sample_rate) {
+            Some(Arc::new(Mutex::new(
+                OutputResampler::new(audio_config.sample_rate, audio_config.channels as usize)
+                    .map_err(|e| format!("Failed to create output resampler: {}", e))?,
+            )))
+        } else {
+            None
+        };
+
         // Build the appropriate stream based on channel count and sample format
-        let stream = match (channels, sample_format) {
-            (1, SampleFormat::F32) => build_mixer_stream_mono::<f32>(
+        let stream = match (audio_config.channels, audio_config.sample_format) {
+            (MONO, SampleFormat::F32) => build_mixer_stream_mono::<f32>(
                 &device,
                 &config,
                 state_clone,
                 active_clone,
                 error_tx,
+                resampler,
             ),
-            (1, SampleFormat::I16) => build_mixer_stream_mono::<i16>(
+            (MONO, SampleFormat::I16) => build_mixer_stream_mono::<i16>(
                 &device,
                 &config,
                 state_clone,
                 active_clone,
                 error_tx,
+                resampler,
             ),
-            (1, SampleFormat::U16) => build_mixer_stream_mono::<u16>(
+            (MONO, SampleFormat::U16) => build_mixer_stream_mono::<u16>(
                 &device,
                 &config,
                 state_clone,
                 active_clone,
                 error_tx,
+                resampler,
             ),
-            (2, SampleFormat::F32) => build_mixer_stream_stereo::<f32>(
+            (STEREO, SampleFormat::F32) => build_mixer_stream_stereo::<f32>(
                 &device,
                 &config,
                 state_clone,
                 active_clone,
                 error_tx,
+                resampler,
             ),
-            (2, SampleFormat::I16) => build_mixer_stream_stereo::<i16>(
+            (STEREO, SampleFormat::I16) => build_mixer_stream_stereo::<i16>(
                 &device,
                 &config,
                 state_clone,
                 active_clone,
                 error_tx,
+                resampler,
             ),
-            (2, SampleFormat::U16) => build_mixer_stream_stereo::<u16>(
+            (STEREO, SampleFormat::U16) => build_mixer_stream_stereo::<u16>(
                 &device,
                 &config,
                 state_clone,
                 active_clone,
                 error_tx,
+                resampler,
             ),
-            _ => Err("Unsupported audio format".to_string()),
+            _ => Err(format!(
+                "Unsupported audio format: {:?} with {} channels",
+                audio_config.sample_format, audio_config.channels
+            )),
         }?;
 
         Ok(Self {
@@ -849,7 +893,7 @@ impl AudioMixer {
     /// Queue audio from a user for playback
     ///
     /// Audio is buffered per-user and mixed together at playback time.
-    /// Samples should be f32 normalized to [-1.0, 1.0].
+    /// Samples should be f32 normalized to [-1.0, 1.0] at 48kHz.
     pub fn queue_audio(&self, nickname: &str, samples: &[f32]) {
         if let Ok(mut state) = self.state.lock() {
             // Skip if deafened or user is muted
@@ -883,56 +927,102 @@ fn build_mixer_stream_mono<T>(
     state: Arc<Mutex<MixerState>>,
     active: Arc<AtomicBool>,
     error_tx: std_mpsc::Sender<String>,
+    resampler: Option<Arc<Mutex<OutputResampler>>>,
 ) -> Result<Stream, String>
 where
     T: Sample + cpal::SizedSample + FromSample<f32>,
 {
+    let callback_error_tx = error_tx.clone();
     device
         .build_output_stream(
             config,
             move |data: &mut [T], _: &cpal::OutputCallbackInfo| {
-                if active.load(Ordering::SeqCst) {
-                    if let Ok(mut state) = state.lock() {
-                        // Mix all user buffers together
-                        for (i, dst) in data.iter_mut().enumerate() {
-                            let mut mixed: f32 = 0.0;
-                            let mut has_audio = false;
-
-                            for buffer in state.user_buffers.values_mut() {
-                                if i < buffer.samples.len() {
-                                    mixed += buffer.samples[i];
-                                    has_audio = true;
-                                }
-                            }
-
-                            // Soft clamp to prevent harsh clipping
-                            if has_audio {
-                                mixed = soft_clip(mixed);
-                            }
-
-                            *dst = T::from_sample(mixed);
-                        }
-
-                        // Drain consumed samples from all buffers
-                        let consumed = data.len();
-                        for buffer in state.user_buffers.values_mut() {
-                            let drain_count = consumed.min(buffer.samples.len());
-                            buffer.samples.drain(..drain_count);
-                        }
-
-                        // Remove empty buffers to free memory for users who stopped talking
-                        state.user_buffers.retain(|_, b| !b.samples.is_empty());
-                    } else {
-                        // Couldn't lock state - output silence
-                        for sample in data.iter_mut() {
-                            *sample = T::from_sample(0.0f32);
-                        }
-                    }
-                } else {
+                if !active.load(Ordering::SeqCst) {
                     // Not active - output silence
                     for sample in data.iter_mut() {
                         *sample = T::from_sample(0.0f32);
                     }
+                    return;
+                }
+
+                let Ok(mut state) = state.lock() else {
+                    // Couldn't lock state - output silence
+                    for sample in data.iter_mut() {
+                        *sample = T::from_sample(0.0f32);
+                    }
+                    return;
+                };
+
+                // Calculate how many 48kHz samples we need
+                let output_samples_needed = data.len();
+                let input_samples_needed = if let Some(ref resampler) = resampler {
+                    if let Ok(r) = resampler.lock() {
+                        // Estimate input samples needed based on resampler ratio
+                        let ratio = VOICE_SAMPLE_RATE as f64 / r.device_rate() as f64;
+                        (output_samples_needed as f64 * ratio).ceil() as usize
+                    } else {
+                        output_samples_needed
+                    }
+                } else {
+                    output_samples_needed
+                };
+
+                // Mix all user buffers together at 48kHz
+                let mut mixed_48k = vec![0.0f32; input_samples_needed];
+                let mut has_audio = false;
+
+                for buffer in state.user_buffers.values_mut() {
+                    let available = buffer.samples.len().min(input_samples_needed);
+                    for (dst, src) in mixed_48k
+                        .iter_mut()
+                        .zip(buffer.samples.iter().take(available))
+                    {
+                        *dst += *src;
+                        has_audio = true;
+                    }
+                }
+
+                // Drain consumed samples from all buffers
+                for buffer in state.user_buffers.values_mut() {
+                    let drain_count = input_samples_needed.min(buffer.samples.len());
+                    buffer.samples.drain(..drain_count);
+                }
+
+                // Remove empty buffers
+                state.user_buffers.retain(|_, b| !b.samples.is_empty());
+
+                // Apply soft clipping if we have audio
+                if has_audio {
+                    for sample in &mut mixed_48k {
+                        *sample = soft_clip(*sample);
+                    }
+                }
+
+                // Resample if needed and write to output
+                let output_samples = if let Some(ref resampler) = resampler {
+                    if let Ok(mut r) = resampler.lock() {
+                        match r.process(&mixed_48k) {
+                            Ok(resampled) => resampled,
+                            Err(e) => {
+                                let _ = callback_error_tx.send(e);
+                                // Output silence on error
+                                for sample in data.iter_mut() {
+                                    *sample = T::from_sample(0.0f32);
+                                }
+                                return;
+                            }
+                        }
+                    } else {
+                        mixed_48k
+                    }
+                } else {
+                    mixed_48k
+                };
+
+                // Write to output buffer
+                for (i, dst) in data.iter_mut().enumerate() {
+                    let sample = output_samples.get(i).copied().unwrap_or(0.0);
+                    *dst = T::from_sample(sample);
                 }
             },
             {
@@ -953,59 +1043,106 @@ fn build_mixer_stream_stereo<T>(
     state: Arc<Mutex<MixerState>>,
     active: Arc<AtomicBool>,
     error_tx: std_mpsc::Sender<String>,
+    resampler: Option<Arc<Mutex<OutputResampler>>>,
 ) -> Result<Stream, String>
 where
     T: Sample + cpal::SizedSample + FromSample<f32>,
 {
+    let callback_error_tx = error_tx.clone();
     device
         .build_output_stream(
             config,
             move |data: &mut [T], _: &cpal::OutputCallbackInfo| {
-                if active.load(Ordering::SeqCst) {
-                    if let Ok(mut state) = state.lock() {
-                        let samples_needed = data.len() / 2;
-
-                        // Mix all user buffers together and upmix to stereo
-                        for (i, chunk) in data.chunks_exact_mut(2).enumerate() {
-                            let mut mixed: f32 = 0.0;
-                            let mut has_audio = false;
-
-                            for buffer in state.user_buffers.values_mut() {
-                                if i < buffer.samples.len() {
-                                    mixed += buffer.samples[i];
-                                    has_audio = true;
-                                }
-                            }
-
-                            // Soft clamp to prevent harsh clipping
-                            if has_audio {
-                                mixed = soft_clip(mixed);
-                            }
-
-                            let sample = T::from_sample(mixed);
-                            chunk[0] = sample;
-                            chunk[1] = sample;
-                        }
-
-                        // Drain consumed samples from all buffers
-                        for buffer in state.user_buffers.values_mut() {
-                            let drain_count = samples_needed.min(buffer.samples.len());
-                            buffer.samples.drain(..drain_count);
-                        }
-
-                        // Remove empty buffers
-                        state.user_buffers.retain(|_, b| !b.samples.is_empty());
-                    } else {
-                        // Couldn't lock state - output silence
-                        for sample in data.iter_mut() {
-                            *sample = T::from_sample(0.0f32);
-                        }
-                    }
-                } else {
+                if !active.load(Ordering::SeqCst) {
                     // Not active - output silence
                     for sample in data.iter_mut() {
                         *sample = T::from_sample(0.0f32);
                     }
+                    return;
+                }
+
+                let Ok(mut state) = state.lock() else {
+                    // Couldn't lock state - output silence
+                    for sample in data.iter_mut() {
+                        *sample = T::from_sample(0.0f32);
+                    }
+                    return;
+                };
+
+                // Stereo: data.len() is total samples, we need half that in mono frames
+                let stereo_frames_needed = data.len() / STEREO as usize;
+
+                // Calculate how many 48kHz mono samples we need
+                let input_samples_needed = if let Some(ref resampler) = resampler {
+                    if let Ok(r) = resampler.lock() {
+                        // The resampler outputs stereo, so we need mono frames * ratio
+                        let ratio = VOICE_SAMPLE_RATE as f64 / r.device_rate() as f64;
+                        (stereo_frames_needed as f64 * ratio).ceil() as usize
+                    } else {
+                        stereo_frames_needed
+                    }
+                } else {
+                    stereo_frames_needed
+                };
+
+                // Mix all user buffers together at 48kHz (mono)
+                let mut mixed_48k = vec![0.0f32; input_samples_needed];
+                let mut has_audio = false;
+
+                for buffer in state.user_buffers.values_mut() {
+                    let available = buffer.samples.len().min(input_samples_needed);
+                    for (dst, src) in mixed_48k
+                        .iter_mut()
+                        .zip(buffer.samples.iter().take(available))
+                    {
+                        *dst += *src;
+                        has_audio = true;
+                    }
+                }
+
+                // Drain consumed samples from all buffers
+                for buffer in state.user_buffers.values_mut() {
+                    let drain_count = input_samples_needed.min(buffer.samples.len());
+                    buffer.samples.drain(..drain_count);
+                }
+
+                // Remove empty buffers
+                state.user_buffers.retain(|_, b| !b.samples.is_empty());
+
+                // Apply soft clipping if we have audio
+                if has_audio {
+                    for sample in &mut mixed_48k {
+                        *sample = soft_clip(*sample);
+                    }
+                }
+
+                // Resample if needed (resampler handles stereo upmix internally)
+                let output_samples = if let Some(ref resampler) = resampler {
+                    if let Ok(mut r) = resampler.lock() {
+                        match r.process(&mixed_48k) {
+                            Ok(resampled) => resampled,
+                            Err(e) => {
+                                let _ = callback_error_tx.send(e);
+                                // Output silence on error
+                                for sample in data.iter_mut() {
+                                    *sample = T::from_sample(0.0f32);
+                                }
+                                return;
+                            }
+                        }
+                    } else {
+                        // Fallback: manually upmix to stereo
+                        mixed_48k.iter().flat_map(|&s| [s, s]).collect()
+                    }
+                } else {
+                    // No resampling needed, just upmix mono to stereo
+                    mixed_48k.iter().flat_map(|&s| [s, s]).collect()
+                };
+
+                // Write to output buffer
+                for (i, dst) in data.iter_mut().enumerate() {
+                    let sample = output_samples.get(i).copied().unwrap_or(0.0);
+                    *dst = T::from_sample(sample);
                 }
             },
             {
@@ -1026,8 +1163,7 @@ where
 /// when multiple loud sources are summed together.
 fn soft_clip(sample: f32) -> f32 {
     // tanh gives smooth saturation, but we scale input to make it more gradual
-    // This provides ~3dB of headroom before noticeable saturation
-    (sample * 0.7).tanh() / 0.7_f32.tanh()
+    (sample * SOFT_CLIP_GAIN).tanh() / SOFT_CLIP_GAIN.tanh()
 }
 
 // =============================================================================
@@ -1076,5 +1212,25 @@ mod tests {
         assert!(!devices.is_empty());
         assert!(devices[0].is_default);
         assert_eq!(devices[0].name, SYSTEM_DEFAULT_DEVICE_NAME);
+    }
+
+    #[test]
+    fn test_soft_clip_passthrough() {
+        // Small values should pass through almost unchanged
+        let input = 0.5;
+        let output = soft_clip(input);
+        assert!((output - input).abs() < 0.1);
+    }
+
+    #[test]
+    fn test_soft_clip_limits() {
+        // Large values should be limited
+        let output = soft_clip(2.0);
+        assert!(output < 1.5);
+        assert!(output > 0.0);
+
+        let output_neg = soft_clip(-2.0);
+        assert!(output_neg > -1.5);
+        assert!(output_neg < 0.0);
     }
 }

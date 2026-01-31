@@ -31,6 +31,8 @@ You must have `voice_listen` to join a voice session. Without `voice_talk`, you 
 
 Configure audio devices in **Settings > Audio** before joining voice.
 
+**Note:** Nexus automatically handles audio devices that don't natively support 48kHz (the sample rate required by the Opus codec). If your device uses a different sample rate (e.g., 44.1kHz or 96kHz), audio is automatically resampled with minimal latency impact.
+
 ## Joining Voice
 
 ### From a Channel Tab
@@ -310,6 +312,7 @@ The same VU meter style is used in both the settings mic test and the voice bar 
 - **Codec:** Opus at 48kHz mono
 - **Frame size:** 10ms (480 samples per frame)
 - **Audio processing:** WebRTC AudioProcessing (same as Discord, Chrome, Meet)
+- **Resampling:** Automatic via rubato (FFT-based) for non-48kHz devices
 
 ### Bandwidth Usage
 
@@ -330,6 +333,7 @@ Typical voice latency: 40-100ms depending on:
 - Network latency to server
 - Jitter buffer size (40ms)
 - Audio device latency
+- Resampling (adds ~10-20ms if device doesn't support 48kHz)
 
 ## Next Steps
 

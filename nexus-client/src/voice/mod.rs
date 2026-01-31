@@ -17,4 +17,5 @@ pub mod manager;
 pub mod mic_test;
 pub mod processor;
 pub mod ptt;
+pub mod resample;
 pub mod subscription;

@@ -46,11 +46,14 @@ impl NexusApp {
             // Use server-confirmed nickname
             let current_nickname = conn.nickname.clone();
 
-            // Check if this is a message from someone else
-            let should_notify = from_nickname != current_nickname;
+            // Check if this is a message from someone else (case-insensitive)
+            let is_from_self = from_nickname.to_lowercase() == current_nickname.to_lowercase();
+            let should_notify = !is_from_self;
 
             // Determine the other party's nickname
-            let other_nickname = if from_nickname == current_nickname {
+            // If we sent the message, the "other" is the recipient (to_nickname)
+            // If someone else sent it, the "other" is the sender (from_nickname)
+            let other_nickname = if is_from_self {
                 to_nickname.clone()
             } else {
                 from_nickname.clone()
