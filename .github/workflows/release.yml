@@ -213,8 +213,8 @@ jobs:
       - name: Configure for macOS bundle
         working-directory: nexus-client
         run: |
-          # Add ICNS icon for macOS builds (remove .ico which is Windows-only)
-          sed -i '' 's/icon = \["assets\/macos\/nexus.png", "assets\/windows\/nexus.ico"\]/icon = ["assets\/macos\/nexus.png", "assets\/macos\/nexus.icns"]/' Cargo.toml
+          # Use only ICNS icon for macOS builds
+          sed -i '' 's/icon = \["assets\/macos\/nexus.png", "assets\/windows\/nexus.ico"\]/icon = ["assets\/macos\/nexus.icns"]/' Cargo.toml
           # Rename binary to Nexus for macOS builds
           sed -i '' 's/name = "nexus"/name = "Nexus"/' Cargo.toml
 
