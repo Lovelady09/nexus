@@ -984,6 +984,8 @@ err-voice-disconnected = Voix déconnectée : { $reason }
 err-voice-audio = Erreur audio : { $error }
 err-voice-ptt-failed = Échec de l'enregistrement de la touche appuyer-pour-parler : { $error }
 err-ptt-init-failed = Système PTT indisponible
+warn-voice-processor-disabled = Traitement audio désactivé : { $error }
+warn-voice-quality-failed = Échec du changement de qualité vocale : { $error }
 
 # Voice success messages
 msg-voice-joined = Rejoint le chat vocal dans { $target } ({ $count } autres)

@@ -97,6 +97,10 @@ pub enum VoiceEvent {
     AudioError(String),
     /// Local speaking state changed
     LocalSpeakingChanged(bool),
+    /// Audio processor failed to initialize (voice works, but no noise suppression/AGC)
+    AudioProcessorDisabled(String),
+    /// Voice quality change failed
+    QualityChangeFailed(String),
 }
 
 /// Commands to control the voice manager
@@ -243,7 +247,7 @@ async fn run_voice_session(
     let mut processor = match AudioProcessor::new(config.processor_settings) {
         Ok(p) => Some(p),
         Err(e) => {
-            eprintln!("Failed to create audio processor: {e}");
+            let _ = event_tx.send(VoiceEvent::AudioProcessorDisabled(e));
             None
         }
     };
@@ -408,7 +412,7 @@ async fn run_voice_session(
                     }
                     Some(VoiceCommand::SetQuality(quality)) => {
                         if let Err(e) = encoder.set_quality(quality) {
-                            eprintln!("Failed to update voice quality: {}", e);
+                            let _ = event_tx.send(VoiceEvent::QualityChangeFailed(e));
                         }
                     }
                     Some(VoiceCommand::SetProcessorSettings(settings)) => {
@@ -576,6 +580,8 @@ mod tests {
         let _ = VoiceEvent::SpeakingStopped("Alice".to_string());
         let _ = VoiceEvent::AudioError("test".to_string());
         let _ = VoiceEvent::LocalSpeakingChanged(true);
+        let _ = VoiceEvent::AudioProcessorDisabled("test".to_string());
+        let _ = VoiceEvent::QualityChangeFailed("test".to_string());
     }
 
     #[test]

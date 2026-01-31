@@ -13,7 +13,7 @@ use std::sync::mpsc as std_mpsc;
 use std::sync::{Arc, Mutex};
 
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
-use cpal::{Device, FromSample, Host, Sample, SampleFormat, Stream, StreamConfig};
+use cpal::{Device, FromSample, Host, Sample, SampleFormat, Stream, StreamConfig, StreamError};
 
 use nexus_common::voice::{
     MONO_CHANNELS, STEREO_CHANNELS, VOICE_SAMPLE_RATE, VOICE_SAMPLES_PER_FRAME,
@@ -605,6 +605,10 @@ where
             {
                 let error_tx = error_tx.clone();
                 move |err| {
+                    // Filter out transient buffer underrun/overrun errors (common during high CPU load)
+                    if matches!(err, StreamError::BufferUnderrun) {
+                        return;
+                    }
                     let _ = error_tx.send(format!("Audio capture error: {}", err));
                 }
             },
@@ -678,6 +682,10 @@ where
             {
                 let error_tx = error_tx.clone();
                 move |err| {
+                    // Filter out transient buffer underrun/overrun errors (common during high CPU load)
+                    if matches!(err, StreamError::BufferUnderrun) {
+                        return;
+                    }
                     let _ = error_tx.send(format!("Audio capture error: {}", err));
                 }
             },
@@ -1128,6 +1136,10 @@ where
             {
                 let error_tx = error_tx.clone();
                 move |err| {
+                    // Filter out transient buffer underrun/overrun errors (common during high CPU load)
+                    if matches!(err, StreamError::BufferUnderrun) {
+                        return;
+                    }
                     let _ = error_tx.send(format!("Mixer error: {}", err));
                 }
             },
@@ -1237,6 +1249,10 @@ where
             {
                 let error_tx = error_tx.clone();
                 move |err| {
+                    // Filter out transient buffer underrun/overrun errors (common during high CPU load)
+                    if matches!(err, StreamError::BufferUnderrun) {
+                        return;
+                    }
                     let _ = error_tx.send(format!("Mixer error: {}", err));
                 }
             },

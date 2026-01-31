@@ -17,7 +17,7 @@ use crate::config::settings::{
 use crate::i18n::{t, t_args};
 use crate::image::{ImagePickerError, decode_data_uri_square};
 use crate::style::AVATAR_MAX_CACHE_SIZE;
-use crate::types::{ActivePanel, InputId, Message, SettingsFormState, SettingsTab};
+use crate::types::{ActivePanel, ChatMessage, InputId, Message, SettingsFormState, SettingsTab};
 use crate::voice::audio::AudioDevice;
 
 impl NexusApp {
@@ -718,7 +718,19 @@ impl NexusApp {
         if let Some(form) = &mut self.settings_form {
             form.ptt_capturing = false;
         }
-        self.config.settings.audio.ptt_key = key;
+        self.config.settings.audio.ptt_key = key.clone();
+
+        // Re-register hotkey immediately if in voice (applies without rejoin)
+        if let Some(ref mut ptt) = self.ptt_manager
+            && let Some(connection_id) = self.active_voice_connection
+            && let Err(e) = ptt.register_hotkey(&key)
+        {
+            return self.add_active_tab_message(
+                connection_id,
+                ChatMessage::error(t_args("err-voice-ptt-failed", &[("error", &e)])),
+            );
+        }
+
         Task::none()
     }
 

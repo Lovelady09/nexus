@@ -347,13 +347,9 @@ impl Default for NexusApp {
             active_connection: None,
             active_voice_connection: None,
             voice_session_handle: None,
-            ptt_manager: match voice::ptt::PttManager::new() {
-                Ok(ptt) => Some(ptt),
-                Err(e) => {
-                    eprintln!("Warning: Failed to initialize PTT manager: {e}");
-                    None
-                }
-            },
+            // Create PTT manager at startup (main thread) for Windows event loop compatibility.
+            // If initialization fails, error is shown when user tries to join voice.
+            ptt_manager: voice::ptt::PttManager::new().ok(),
             is_local_speaking: false,
             is_deafened: false,
             mic_level: Arc::new(AtomicU32::new(0)),

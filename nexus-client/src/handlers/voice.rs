@@ -220,6 +220,25 @@ impl NexusApp {
                 )
             }
 
+            VoiceEvent::AudioProcessorDisabled(error) => {
+                // Audio processor failed - voice works but no noise suppression/AGC
+                self.add_active_tab_message(
+                    connection_id,
+                    ChatMessage::error(t_args(
+                        "warn-voice-processor-disabled",
+                        &[("error", &error)],
+                    )),
+                )
+            }
+
+            VoiceEvent::QualityChangeFailed(error) => {
+                // Voice quality change failed - continue with previous quality
+                self.add_active_tab_message(
+                    connection_id,
+                    ChatMessage::error(t_args("warn-voice-quality-failed", &[("error", &error)])),
+                )
+            }
+
             VoiceEvent::LocalSpeakingChanged(speaking) => {
                 // Local user started/stopped speaking - update PTT indicator and speaking set
                 self.is_local_speaking = speaking;

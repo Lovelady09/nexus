@@ -964,6 +964,8 @@ err-voice-disconnected = 语音已断开：{ $reason }
 err-voice-audio = 音频错误：{ $error }
 err-voice-ptt-failed = 按键说话热键注册失败：{ $error }
 err-ptt-init-failed = PTT系统不可用
+warn-voice-processor-disabled = 音频处理已禁用：{ $error }
+warn-voice-quality-failed = 语音质量更改失败：{ $error }
 
 # Voice success messages
 msg-voice-joined = 已加入 { $target } 的语音聊天（{ $count } 人在线）

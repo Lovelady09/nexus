@@ -963,6 +963,8 @@ err-voice-disconnected = 語音已斷線：{ $reason }
 err-voice-audio = 音訊錯誤：{ $error }
 err-voice-ptt-failed = 按鍵說話熱鍵註冊失敗：{ $error }
 err-ptt-init-failed = PTT系統無法使用
+warn-voice-processor-disabled = 音訊處理已停用：{ $error }
+warn-voice-quality-failed = 無法變更語音品質：{ $error }
 
 # Voice success messages
 msg-voice-joined = 已加入 { $target } 的語音聊天（{ $count } 人）

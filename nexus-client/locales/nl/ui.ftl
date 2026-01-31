@@ -984,6 +984,8 @@ err-voice-disconnected = Spraakchat verbroken: { $reason }
 err-voice-audio = Audiofout: { $error }
 err-voice-ptt-failed = Push-to-talk-toets kon niet worden geregistreerd: { $error }
 err-ptt-init-failed = PTT-systeem niet beschikbaar
+warn-voice-processor-disabled = Audioverwerking uitgeschakeld: { $error }
+warn-voice-quality-failed = Kan spraakkwaliteit niet wijzigen: { $error }
 
 # Voice success messages
 msg-voice-joined = Spraakchat in { $target } gestart ({ $count } anderen)

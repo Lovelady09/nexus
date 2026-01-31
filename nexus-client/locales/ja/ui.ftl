@@ -963,6 +963,8 @@ err-voice-disconnected = ボイスチャットが切断されました: { $reaso
 err-voice-audio = オーディオエラー: { $error }
 err-voice-ptt-failed = プッシュトゥトークのホットキー登録に失敗しました: { $error }
 err-ptt-init-failed = PTTシステムが利用できません
+warn-voice-processor-disabled = 音声処理が無効になりました: { $error }
+warn-voice-quality-failed = 音声品質の変更に失敗しました: { $error }
 
 # Voice success messages
 msg-voice-joined = { $target } のボイスチャットに参加しました（他 { $count } 人）
