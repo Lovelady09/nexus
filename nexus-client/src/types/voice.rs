@@ -53,6 +53,9 @@ impl VoiceState {
     /// Remove a participant from the session
     pub fn remove_participant(&mut self, nickname: &str) {
         self.participants.retain(|n| n != nickname);
+        // Clear speaking state for the removed user (but keep muted state
+        // in case they rejoin - user's mute preference should persist)
+        self.speaking_users.remove(&nickname.to_lowercase());
     }
 
     /// Get the number of participants
