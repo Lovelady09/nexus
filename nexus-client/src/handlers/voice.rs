@@ -167,8 +167,8 @@ impl NexusApp {
             }
 
             VoiceEvent::ConnectionFailed(error) => {
-                // DTLS connection failed - clean up and show error
-                self.cleanup_voice_session(connection_id);
+                // DTLS connection failed - notify server and clean up
+                self.leave_voice_session(connection_id);
                 self.add_active_tab_message(
                     connection_id,
                     ChatMessage::error(t_args("err-voice-connection-failed", &[("error", &error)])),
@@ -176,8 +176,8 @@ impl NexusApp {
             }
 
             VoiceEvent::Disconnected(reason) => {
-                // DTLS connection lost - clean up and optionally show reason
-                self.cleanup_voice_session(connection_id);
+                // DTLS connection lost - notify server and clean up
+                self.leave_voice_session(connection_id);
                 if let Some(reason) = reason {
                     self.add_active_tab_message(
                         connection_id,
@@ -212,8 +212,8 @@ impl NexusApp {
             }
 
             VoiceEvent::AudioError(error) => {
-                // Audio device error - clean up and show error
-                self.cleanup_voice_session(connection_id);
+                // Audio device error - notify server and clean up
+                self.leave_voice_session(connection_id);
                 self.add_active_tab_message(
                     connection_id,
                     ChatMessage::error(t_args("err-voice-audio", &[("error", &error)])),
@@ -239,7 +239,26 @@ impl NexusApp {
         }
     }
 
-    /// Clean up voice session state when disconnecting or on error
+    /// Leave voice session: notify server and clean up local state
+    ///
+    /// Sends VoiceLeave to the server (if still in a session) and cleans up
+    /// all local voice state. Safe to call multiple times - only sends once.
+    fn leave_voice_session(&mut self, connection_id: usize) {
+        // Send VoiceLeave to server if we still have an active session
+        if let Some(conn) = self.connections.get_mut(&connection_id)
+            && conn.voice_session.is_some()
+        {
+            let _ = conn.send(ClientMessage::VoiceLeave);
+        }
+
+        // Clean up local state
+        self.cleanup_voice_session(connection_id);
+    }
+
+    /// Clean up voice session state (local only, does not notify server)
+    ///
+    /// Used when the server already knows we're leaving (e.g., VoiceLeaveResponse,
+    /// VoiceUserLeft for self, or TCP disconnect).
     pub fn cleanup_voice_session(&mut self, connection_id: usize) {
         // Clear voice session from connection
         if let Some(conn) = self.connections.get_mut(&connection_id) {
