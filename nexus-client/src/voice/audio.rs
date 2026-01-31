@@ -998,31 +998,38 @@ where
                     }
                 }
 
-                // Resample if needed and write to output
-                let output_samples = if let Some(ref resampler) = resampler {
+                // Resample if needed, or write directly to output buffer
+                if let Some(ref resampler) = resampler {
                     if let Ok(mut r) = resampler.lock() {
                         match r.process(&mixed_48k) {
-                            Ok(resampled) => resampled,
+                            Ok(resampled) => {
+                                // Write resampled output to buffer
+                                for (i, dst) in data.iter_mut().enumerate() {
+                                    let sample = resampled.get(i).copied().unwrap_or(0.0);
+                                    *dst = T::from_sample(sample);
+                                }
+                            }
                             Err(e) => {
                                 let _ = callback_error_tx.send(e);
                                 // Output silence on error
                                 for sample in data.iter_mut() {
                                     *sample = T::from_sample(0.0f32);
                                 }
-                                return;
                             }
                         }
                     } else {
-                        mixed_48k
+                        // Mutex poisoned - write mixed_48k directly
+                        for (i, dst) in data.iter_mut().enumerate() {
+                            let sample = mixed_48k.get(i).copied().unwrap_or(0.0);
+                            *dst = T::from_sample(sample);
+                        }
                     }
                 } else {
-                    mixed_48k
-                };
-
-                // Write to output buffer
-                for (i, dst) in data.iter_mut().enumerate() {
-                    let sample = output_samples.get(i).copied().unwrap_or(0.0);
-                    *dst = T::from_sample(sample);
+                    // No resampling needed - write mixed_48k directly (no extra allocation)
+                    for (i, dst) in data.iter_mut().enumerate() {
+                        let sample = mixed_48k.get(i).copied().unwrap_or(0.0);
+                        *dst = T::from_sample(sample);
+                    }
                 }
             },
             {
@@ -1116,33 +1123,42 @@ where
                     }
                 }
 
-                // Resample if needed (resampler handles stereo upmix internally)
-                let output_samples = if let Some(ref resampler) = resampler {
+                // Resample if needed, or write directly to output buffer
+                if let Some(ref resampler) = resampler {
                     if let Ok(mut r) = resampler.lock() {
                         match r.process(&mixed_48k) {
-                            Ok(resampled) => resampled,
+                            Ok(resampled) => {
+                                // Resampler outputs stereo, write to buffer
+                                for (i, dst) in data.iter_mut().enumerate() {
+                                    let sample = resampled.get(i).copied().unwrap_or(0.0);
+                                    *dst = T::from_sample(sample);
+                                }
+                            }
                             Err(e) => {
                                 let _ = callback_error_tx.send(e);
                                 // Output silence on error
                                 for sample in data.iter_mut() {
                                     *sample = T::from_sample(0.0f32);
                                 }
-                                return;
                             }
                         }
                     } else {
-                        // Fallback: manually upmix to stereo
-                        mixed_48k.iter().flat_map(|&s| [s, s]).collect()
+                        // Mutex poisoned - upmix directly to output (no allocation)
+                        for (i, chunk) in data.chunks_exact_mut(STEREO as usize).enumerate() {
+                            let sample = mixed_48k.get(i).copied().unwrap_or(0.0);
+                            let out = T::from_sample(sample);
+                            chunk[0] = out;
+                            chunk[1] = out;
+                        }
                     }
                 } else {
-                    // No resampling needed, just upmix mono to stereo
-                    mixed_48k.iter().flat_map(|&s| [s, s]).collect()
-                };
-
-                // Write to output buffer
-                for (i, dst) in data.iter_mut().enumerate() {
-                    let sample = output_samples.get(i).copied().unwrap_or(0.0);
-                    *dst = T::from_sample(sample);
+                    // No resampling needed - upmix mono to stereo directly (no allocation)
+                    for (i, chunk) in data.chunks_exact_mut(STEREO as usize).enumerate() {
+                        let sample = mixed_48k.get(i).copied().unwrap_or(0.0);
+                        let out = T::from_sample(sample);
+                        chunk[0] = out;
+                        chunk[1] = out;
+                    }
                 }
             },
             {
