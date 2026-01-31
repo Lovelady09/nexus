@@ -983,6 +983,7 @@ err-voice-connection-failed = La connexion vocale a échoué : { $error }
 err-voice-disconnected = Voix déconnectée : { $reason }
 err-voice-audio = Erreur audio : { $error }
 err-voice-ptt-failed = Échec de l'enregistrement de la touche appuyer-pour-parler : { $error }
+err-ptt-init-failed = Système PTT indisponible
 
 # Voice success messages
 msg-voice-joined = Rejoint le chat vocal dans { $target } ({ $count } autres)

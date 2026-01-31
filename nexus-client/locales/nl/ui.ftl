@@ -983,6 +983,7 @@ err-voice-connection-failed = Spraakchat-verbinding mislukt: { $error }
 err-voice-disconnected = Spraakchat verbroken: { $reason }
 err-voice-audio = Audiofout: { $error }
 err-voice-ptt-failed = Push-to-talk-toets kon niet worden geregistreerd: { $error }
+err-ptt-init-failed = PTT-systeem niet beschikbaar
 
 # Voice success messages
 msg-voice-joined = Spraakchat in { $target } gestart ({ $count } anderen)

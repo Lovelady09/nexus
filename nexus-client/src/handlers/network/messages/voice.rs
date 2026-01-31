@@ -17,7 +17,7 @@ use crate::events::{EventContext, emit_event};
 use crate::i18n::{t, t_args};
 use crate::types::{ChatMessage, Message, VoiceState};
 use crate::voice::manager::{VoiceSessionConfig, VoiceSessionHandle};
-use crate::voice::ptt::PttManager;
+
 use crate::voice::subscription::register_voice_receiver_sync;
 
 impl NexusApp {
@@ -131,23 +131,8 @@ impl NexusApp {
         // Must be synchronous to avoid race with subscription starting
         register_voice_receiver_sync(connection_id, event_rx);
 
-        // Initialize PTT manager if not already created
-        if self.ptt_manager.is_none() {
-            match PttManager::new() {
-                Ok(ptt) => {
-                    self.ptt_manager = Some(ptt);
-                }
-                Err(e) => {
-                    // PTT won't work, but voice chat still functions
-                    return self.add_active_tab_message(
-                        connection_id,
-                        ChatMessage::error(t_args("err-voice-ptt-failed", &[("error", &e)])),
-                    );
-                }
-            }
-        }
-
         // Register PTT hotkey and enable it for voice
+        // Note: PttManager is created at app startup (main thread) for Windows compatibility
         if let Some(ref mut ptt) = self.ptt_manager {
             // Set mode from settings
             ptt.set_mode(self.config.settings.audio.ptt_mode);
@@ -164,6 +149,15 @@ impl NexusApp {
 
             // Enable PTT for voice
             ptt.set_in_voice(true);
+        } else {
+            // PTT manager failed to initialize at startup
+            return self.add_active_tab_message(
+                connection_id,
+                ChatMessage::error(t_args(
+                    "err-voice-ptt-failed",
+                    &[("error", &t("err-ptt-init-failed"))],
+                )),
+            );
         }
 
         // Voice bar appearing provides visual feedback - no console message needed

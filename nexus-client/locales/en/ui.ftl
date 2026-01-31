@@ -1002,6 +1002,7 @@ err-voice-connection-failed = Voice connection failed: { $error }
 err-voice-disconnected = Voice disconnected: { $reason }
 err-voice-audio = Audio error: { $error }
 err-voice-ptt-failed = Push-to-talk hotkey failed to register: { $error }
+err-ptt-init-failed = PTT system unavailable
 
 # Voice success messages
 msg-voice-joined = Joined voice in { $target } ({ $count } others)

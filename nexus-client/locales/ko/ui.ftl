@@ -962,6 +962,7 @@ err-voice-connection-failed = 음성 연결 실패: { $error }
 err-voice-disconnected = 음성 연결 끊김: { $reason }
 err-voice-audio = 오디오 오류: { $error }
 err-voice-ptt-failed = 음성 송신 단축키 등록 실패: { $error }
+err-ptt-init-failed = PTT 시스템 사용 불가
 
 # Voice success messages
 msg-voice-joined = { $target }의 음성 채팅에 참여했습니다 ({ $count }명 참여 중)
