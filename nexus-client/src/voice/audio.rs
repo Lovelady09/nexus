@@ -714,7 +714,17 @@ struct MixerState {
     muted: std::collections::HashSet<String>,
     /// Whether all incoming audio is muted (deafened)
     deafened: bool,
+    /// Pre-allocated buffer for mixing 48kHz audio (avoids allocation per callback)
+    mix_buffer: Vec<f32>,
+    /// Accumulated resampled output waiting to be consumed by audio callback
+    resampled_output: Vec<f32>,
 }
+
+/// Maximum size for the mix buffer (enough for typical callback sizes with ratio headroom)
+const MAX_MIX_BUFFER_SAMPLES: usize = 2048;
+
+/// Maximum size for resampled output buffer (prevents unbounded growth)
+const MAX_RESAMPLED_OUTPUT_SAMPLES: usize = 4096;
 
 impl MixerState {
     fn new() -> Self {
@@ -722,7 +732,42 @@ impl MixerState {
             user_buffers: HashMap::new(),
             muted: std::collections::HashSet::new(),
             deafened: false,
+            mix_buffer: Vec::with_capacity(MAX_MIX_BUFFER_SAMPLES),
+            resampled_output: Vec::with_capacity(MAX_RESAMPLED_OUTPUT_SAMPLES),
         }
+    }
+
+    /// Mix user buffers into mix_buffer and drain consumed samples
+    ///
+    /// Returns true if any audio was mixed.
+    fn mix_and_drain(&mut self, samples_needed: usize) -> bool {
+        // Prepare mix buffer
+        self.mix_buffer.clear();
+        self.mix_buffer.resize(samples_needed, 0.0);
+
+        // Check if any user has audio
+        let has_audio = self.user_buffers.values().any(|b| !b.samples.is_empty());
+
+        if has_audio {
+            // Mix all user buffers together
+            for buffer in self.user_buffers.values() {
+                let available = buffer.samples.len().min(samples_needed);
+                for i in 0..available {
+                    self.mix_buffer[i] += buffer.samples[i];
+                }
+            }
+
+            // Drain consumed samples from all buffers
+            for buffer in self.user_buffers.values_mut() {
+                let drain_count = samples_needed.min(buffer.samples.len());
+                buffer.samples.drain(..drain_count);
+            }
+
+            // Remove empty buffers
+            self.user_buffers.retain(|_, b| !b.samples.is_empty());
+        }
+
+        has_audio
     }
 }
 
@@ -953,81 +998,78 @@ where
                     return;
                 };
 
-                // Calculate how many 48kHz samples we need
                 let output_samples_needed = data.len();
-                let input_samples_needed = if let Some(ref resampler) = resampler {
-                    if let Ok(r) = resampler.lock() {
-                        // Estimate input samples needed based on resampler ratio
-                        let ratio = VOICE_SAMPLE_RATE as f64 / r.device_rate() as f64;
-                        (output_samples_needed as f64 * ratio).ceil() as usize
-                    } else {
-                        output_samples_needed
-                    }
-                } else {
-                    output_samples_needed
-                };
 
-                // Mix all user buffers together at 48kHz
-                let mut mixed_48k = vec![0.0f32; input_samples_needed];
-                let mut has_audio = false;
-
-                for buffer in state.user_buffers.values_mut() {
-                    let available = buffer.samples.len().min(input_samples_needed);
-                    for (dst, src) in mixed_48k
-                        .iter_mut()
-                        .zip(buffer.samples.iter().take(available))
-                    {
-                        *dst += *src;
-                        has_audio = true;
-                    }
-                }
-
-                // Drain consumed samples from all buffers
-                for buffer in state.user_buffers.values_mut() {
-                    let drain_count = input_samples_needed.min(buffer.samples.len());
-                    buffer.samples.drain(..drain_count);
-                }
-
-                // Remove empty buffers
-                state.user_buffers.retain(|_, b| !b.samples.is_empty());
-
-                // Apply soft clipping if we have audio
-                if has_audio {
-                    for sample in &mut mixed_48k {
-                        *sample = soft_clip(*sample);
-                    }
-                }
-
-                // Resample if needed, or write directly to output buffer
+                // If resampling, use persistent buffer approach
                 if let Some(ref resampler) = resampler {
-                    if let Ok(mut r) = resampler.lock() {
-                        match r.process(&mixed_48k) {
-                            Ok(resampled) => {
-                                // Write resampled output to buffer
-                                for (i, dst) in data.iter_mut().enumerate() {
-                                    let sample = resampled.get(i).copied().unwrap_or(0.0);
-                                    *dst = T::from_sample(sample);
-                                }
-                            }
-                            Err(e) => {
-                                let _ = callback_error_tx.send(e);
-                                // Output silence on error
-                                for sample in data.iter_mut() {
-                                    *sample = T::from_sample(0.0f32);
-                                }
-                            }
+                    // Feed more audio to resampler while output buffer is low
+                    while state.resampled_output.len() < output_samples_needed {
+                        // Calculate how many 48kHz samples to mix
+                        let input_samples_needed = if let Ok(r) = resampler.lock() {
+                            let ratio = VOICE_SAMPLE_RATE as f64 / r.device_rate() as f64;
+                            // Request enough to produce ~10ms of output
+                            ((VOICE_SAMPLES_PER_FRAME as f64) * ratio).ceil() as usize
+                        } else {
+                            VOICE_SAMPLES_PER_FRAME as usize
+                        };
+
+                        // Mix user buffers into mix_buffer
+                        let has_audio = state.mix_and_drain(input_samples_needed);
+
+                        if !has_audio {
+                            // No audio available - stop trying to fill buffer
+                            break;
                         }
-                    } else {
-                        // Mutex poisoned - write mixed_48k directly
-                        for (i, dst) in data.iter_mut().enumerate() {
-                            let sample = mixed_48k.get(i).copied().unwrap_or(0.0);
-                            *dst = T::from_sample(sample);
+
+                        // Apply soft clipping
+                        for sample in &mut state.mix_buffer {
+                            *sample = soft_clip(*sample);
+                        }
+
+                        // Resample and accumulate output
+                        if let Ok(mut r) = resampler.lock() {
+                            match r.process(&state.mix_buffer) {
+                                Ok(resampled) => {
+                                    state.resampled_output.extend_from_slice(&resampled);
+                                    // Limit buffer size to prevent unbounded growth
+                                    if state.resampled_output.len() > MAX_RESAMPLED_OUTPUT_SAMPLES {
+                                        let excess = state.resampled_output.len()
+                                            - MAX_RESAMPLED_OUTPUT_SAMPLES;
+                                        state.resampled_output.drain(..excess);
+                                    }
+                                }
+                                Err(e) => {
+                                    let _ = callback_error_tx.send(e);
+                                    break;
+                                }
+                            }
+                        } else {
+                            break; // Mutex poisoned
                         }
                     }
-                } else {
-                    // No resampling needed - write mixed_48k directly (no extra allocation)
+
+                    // Write from resampled_output buffer to audio output
+                    let available = state.resampled_output.len().min(output_samples_needed);
                     for (i, dst) in data.iter_mut().enumerate() {
-                        let sample = mixed_48k.get(i).copied().unwrap_or(0.0);
+                        let sample = if i < available {
+                            state.resampled_output[i]
+                        } else {
+                            0.0 // Silence if buffer underrun
+                        };
+                        *dst = T::from_sample(sample);
+                    }
+                    // Drain consumed samples
+                    if available > 0 {
+                        state.resampled_output.drain(..available);
+                    }
+                } else {
+                    // No resampling needed - direct path (no persistent buffer needed)
+                    // Mix user buffers into mix_buffer
+                    state.mix_and_drain(output_samples_needed);
+
+                    // Apply soft clipping and write directly to output
+                    for (i, dst) in data.iter_mut().enumerate() {
+                        let sample = soft_clip(state.mix_buffer.get(i).copied().unwrap_or(0.0));
                         *dst = T::from_sample(sample);
                     }
                 }
@@ -1078,83 +1120,78 @@ where
 
                 // Stereo: data.len() is total samples, we need half that in mono frames
                 let stereo_frames_needed = data.len() / STEREO as usize;
+                let output_samples_needed = data.len(); // Total stereo samples
 
-                // Calculate how many 48kHz mono samples we need
-                let input_samples_needed = if let Some(ref resampler) = resampler {
-                    if let Ok(r) = resampler.lock() {
-                        // The resampler outputs stereo, so we need mono frames * ratio
-                        let ratio = VOICE_SAMPLE_RATE as f64 / r.device_rate() as f64;
-                        (stereo_frames_needed as f64 * ratio).ceil() as usize
-                    } else {
-                        stereo_frames_needed
-                    }
-                } else {
-                    stereo_frames_needed
-                };
-
-                // Mix all user buffers together at 48kHz (mono)
-                let mut mixed_48k = vec![0.0f32; input_samples_needed];
-                let mut has_audio = false;
-
-                for buffer in state.user_buffers.values_mut() {
-                    let available = buffer.samples.len().min(input_samples_needed);
-                    for (dst, src) in mixed_48k
-                        .iter_mut()
-                        .zip(buffer.samples.iter().take(available))
-                    {
-                        *dst += *src;
-                        has_audio = true;
-                    }
-                }
-
-                // Drain consumed samples from all buffers
-                for buffer in state.user_buffers.values_mut() {
-                    let drain_count = input_samples_needed.min(buffer.samples.len());
-                    buffer.samples.drain(..drain_count);
-                }
-
-                // Remove empty buffers
-                state.user_buffers.retain(|_, b| !b.samples.is_empty());
-
-                // Apply soft clipping if we have audio
-                if has_audio {
-                    for sample in &mut mixed_48k {
-                        *sample = soft_clip(*sample);
-                    }
-                }
-
-                // Resample if needed, or write directly to output buffer
+                // If resampling, use persistent buffer approach
                 if let Some(ref resampler) = resampler {
-                    if let Ok(mut r) = resampler.lock() {
-                        match r.process(&mixed_48k) {
-                            Ok(resampled) => {
-                                // Resampler outputs stereo, write to buffer
-                                for (i, dst) in data.iter_mut().enumerate() {
-                                    let sample = resampled.get(i).copied().unwrap_or(0.0);
-                                    *dst = T::from_sample(sample);
-                                }
-                            }
-                            Err(e) => {
-                                let _ = callback_error_tx.send(e);
-                                // Output silence on error
-                                for sample in data.iter_mut() {
-                                    *sample = T::from_sample(0.0f32);
-                                }
-                            }
+                    // Feed more audio to resampler while output buffer is low
+                    while state.resampled_output.len() < output_samples_needed {
+                        // Calculate how many 48kHz mono samples to mix
+                        let input_samples_needed = if let Ok(r) = resampler.lock() {
+                            let ratio = VOICE_SAMPLE_RATE as f64 / r.device_rate() as f64;
+                            // Request enough to produce ~10ms of output
+                            ((VOICE_SAMPLES_PER_FRAME as f64) * ratio).ceil() as usize
+                        } else {
+                            VOICE_SAMPLES_PER_FRAME as usize
+                        };
+
+                        // Mix user buffers into mix_buffer
+                        let has_audio = state.mix_and_drain(input_samples_needed);
+
+                        if !has_audio {
+                            // No audio available - stop trying to fill buffer
+                            break;
                         }
-                    } else {
-                        // Mutex poisoned - upmix directly to output (no allocation)
-                        for (i, chunk) in data.chunks_exact_mut(STEREO as usize).enumerate() {
-                            let sample = mixed_48k.get(i).copied().unwrap_or(0.0);
-                            let out = T::from_sample(sample);
-                            chunk[0] = out;
-                            chunk[1] = out;
+
+                        // Apply soft clipping
+                        for sample in &mut state.mix_buffer {
+                            *sample = soft_clip(*sample);
+                        }
+
+                        // Resample and accumulate output (resampler handles stereo upmix)
+                        if let Ok(mut r) = resampler.lock() {
+                            match r.process(&state.mix_buffer) {
+                                Ok(resampled) => {
+                                    state.resampled_output.extend_from_slice(&resampled);
+                                    // Limit buffer size to prevent unbounded growth
+                                    if state.resampled_output.len() > MAX_RESAMPLED_OUTPUT_SAMPLES {
+                                        let excess = state.resampled_output.len()
+                                            - MAX_RESAMPLED_OUTPUT_SAMPLES;
+                                        state.resampled_output.drain(..excess);
+                                    }
+                                }
+                                Err(e) => {
+                                    let _ = callback_error_tx.send(e);
+                                    break;
+                                }
+                            }
+                        } else {
+                            break; // Mutex poisoned
                         }
                     }
+
+                    // Write from resampled_output buffer to audio output
+                    let available = state.resampled_output.len().min(output_samples_needed);
+                    for (i, dst) in data.iter_mut().enumerate() {
+                        let sample = if i < available {
+                            state.resampled_output[i]
+                        } else {
+                            0.0 // Silence if buffer underrun
+                        };
+                        *dst = T::from_sample(sample);
+                    }
+                    // Drain consumed samples
+                    if available > 0 {
+                        state.resampled_output.drain(..available);
+                    }
                 } else {
-                    // No resampling needed - upmix mono to stereo directly (no allocation)
+                    // No resampling needed - direct path with stereo upmix
+                    // Mix user buffers into mix_buffer
+                    state.mix_and_drain(stereo_frames_needed);
+
+                    // Apply soft clipping and upmix mono to stereo directly
                     for (i, chunk) in data.chunks_exact_mut(STEREO as usize).enumerate() {
-                        let sample = mixed_48k.get(i).copied().unwrap_or(0.0);
+                        let sample = soft_clip(state.mix_buffer.get(i).copied().unwrap_or(0.0));
                         let out = T::from_sample(sample);
                         chunk[0] = out;
                         chunk[1] = out;
