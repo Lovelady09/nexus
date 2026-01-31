@@ -266,7 +266,7 @@ Clients should implement a jitter buffer to handle:
 - Network jitter smoothing
 - Packet loss concealment (PLC)
 
-Recommended buffer: 40ms (2 frames)
+Recommended adaptive buffer: 20-200ms (2-20 frames at 10ms per frame)
 
 ## Error Handling
 

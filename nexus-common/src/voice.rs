@@ -34,10 +34,10 @@ pub const VOICE_SESSION_TIMEOUT_SECS: u64 = 60;
 /// Sample rate for voice audio (48kHz, required by Opus)
 pub const VOICE_SAMPLE_RATE: u32 = 48000;
 
-/// Frame duration in milliseconds (10ms for low latency, matches WebRTC)
+/// Frame duration in milliseconds (10ms, required by WebRTC audio processing)
 pub const VOICE_FRAME_DURATION_MS: u32 = 10;
 
-/// Number of samples per frame at 48kHz with 10ms frames
+/// Number of samples per frame at 48kHz with 10ms frames (480 samples)
 pub const VOICE_SAMPLES_PER_FRAME: u32 = VOICE_SAMPLE_RATE * VOICE_FRAME_DURATION_MS / 1000;
 
 /// Number of audio channels for voice input (mono)
@@ -49,8 +49,8 @@ pub const MONO_CHANNELS: u16 = 1;
 /// Stereo channel count
 pub const STEREO_CHANNELS: u16 = 2;
 
-/// Jitter buffer size in milliseconds
-pub const JITTER_BUFFER_MS: u32 = 40;
+/// Minimum jitter buffer size in milliseconds
+pub const JITTER_BUFFER_MS: u32 = 20;
 
 /// Voice quality presets (Opus bitrate in bits per second)
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
