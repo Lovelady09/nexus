@@ -414,9 +414,10 @@ where
 
     // Get user info for ChatUserJoined broadcasts
     // We need this before the loop since user isn't in UserManager yet
+    // Use DB-canonical username (not client-provided) to ensure consistent casing
     let joining_user_nickname = validated_nickname
         .clone()
-        .unwrap_or_else(|| username.clone());
+        .unwrap_or_else(|| authenticated_account.username.clone());
     let joining_user_is_admin = authenticated_account.is_admin;
     let joining_user_is_shared = authenticated_account.is_shared;
 
@@ -555,7 +556,8 @@ where
     };
 
     // nickname is already set correctly: username for regular, validated_nickname for shared
-    let nickname = validated_nickname.unwrap_or_else(|| username.clone());
+    // Use DB-canonical username (not client-provided) to ensure consistent casing
+    let nickname = validated_nickname.unwrap_or_else(|| authenticated_account.username.clone());
 
     let response = ServerMessage::LoginResponse {
         success: true,
@@ -571,12 +573,16 @@ where
     ctx.send_message(&response).await?;
 
     if ctx.debug {
-        println!("User '{}' logged in from {}", username, ctx.peer_addr);
+        println!(
+            "User '{}' logged in from {}",
+            authenticated_account.username, ctx.peer_addr
+        );
     }
 
     // Notify other users about new connection
+    // Use DB-canonical username (not client-provided) to ensure consistent casing
     let user_info = UserInfo {
-        username,
+        username: authenticated_account.username.clone(),
         nickname,
         login_time: current_timestamp(),
         is_admin: authenticated_account.is_admin,

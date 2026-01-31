@@ -363,10 +363,13 @@ impl NexusApp {
 
         // Update all users with this account username (for shared accounts, there may be multiple)
         // Use previous_username to find users (in case username changed)
+        // Compare case-insensitively since online_users may have client-provided casing
+        // while previous_username comes from the database
+        let previous_username_lower = previous_username.to_lowercase();
         for existing_user in conn
             .online_users
             .iter_mut()
-            .filter(|u| u.username == previous_username)
+            .filter(|u| u.username.to_lowercase() == previous_username_lower)
         {
             // Get old nickname for cache invalidation
             let old_nickname = existing_user.nickname.clone();
