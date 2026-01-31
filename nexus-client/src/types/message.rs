@@ -585,6 +585,9 @@ pub enum Message {
     /// Audio: Microphone level update (0.0 - 1.0)
     #[allow(dead_code)] // Will be emitted by mic test subscription
     AudioMicLevel(f32),
+    /// Audio: Microphone test error
+    #[allow(dead_code)] // Will be emitted by mic test subscription
+    AudioMicError(String),
     /// Audio: Toggle noise suppression
     AudioNoiseSuppression(bool),
     /// Audio: Toggle echo cancellation

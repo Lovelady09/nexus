@@ -21,6 +21,18 @@ use super::audio::AudioCapture;
 use crate::types::Message;
 
 // =============================================================================
+// Types
+// =============================================================================
+
+/// Result from mic test thread - either a level update or an error
+enum MicTestResult {
+    /// Microphone level (0.0 - 1.0)
+    Level(f32),
+    /// Error message
+    Error(String),
+}
+
+// =============================================================================
 // Constants
 // =============================================================================
 
@@ -40,22 +52,28 @@ const STREAM_CHANNEL_SIZE: usize = 10;
 /// cpal's Stream type is not Send-safe.
 fn run_mic_test_thread(
     input_device: String,
-    level_tx: mpsc::UnboundedSender<f32>,
+    result_tx: mpsc::UnboundedSender<MicTestResult>,
     running: Arc<AtomicBool>,
 ) {
     // Create audio capture
     let capture = match AudioCapture::new(&input_device) {
         Ok(c) => c,
-        Err(_) => {
-            // Send 0 level to indicate error
-            let _ = level_tx.send(0.0);
+        Err(e) => {
+            // Send error to UI
+            let _ = result_tx.send(MicTestResult::Error(format!(
+                "Failed to open input device: {}",
+                e
+            )));
             return;
         }
     };
 
     // Start capturing
-    if capture.start().is_err() {
-        let _ = level_tx.send(0.0);
+    if let Err(e) = capture.start() {
+        let _ = result_tx.send(MicTestResult::Error(format!(
+            "Failed to start capture: {}",
+            e
+        )));
         return;
     }
 
@@ -68,11 +86,17 @@ fn run_mic_test_thread(
             break;
         }
 
+        // Check for capture errors
+        if let Some(err) = capture.check_error() {
+            let _ = result_tx.send(MicTestResult::Error(format!("Capture error: {}", err)));
+            break;
+        }
+
         // Get current input level
         let level = capture.get_input_level();
 
         // Send level update
-        if level_tx.send(level).is_err() {
+        if result_tx.send(MicTestResult::Level(level)).is_err() {
             // Receiver dropped, stop the test
             break;
         }
@@ -106,8 +130,8 @@ pub fn mic_test_stream(input_device: &String) -> Pin<Box<dyn Stream<Item = Messa
     Box::pin(stream::channel(
         STREAM_CHANNEL_SIZE,
         move |mut output: iced::futures::channel::mpsc::Sender<Message>| async move {
-            // Create channel for level updates from the audio thread
-            let (level_tx, mut level_rx) = mpsc::unbounded_channel::<f32>();
+            // Create channel for results from the audio thread
+            let (result_tx, mut result_rx) = mpsc::unbounded_channel::<MicTestResult>();
 
             // Flag to signal the thread to stop
             let running = Arc::new(AtomicBool::new(true));
@@ -115,12 +139,16 @@ pub fn mic_test_stream(input_device: &String) -> Pin<Box<dyn Stream<Item = Messa
 
             // Spawn dedicated thread for audio capture
             let _handle: JoinHandle<()> = thread::spawn(move || {
-                run_mic_test_thread(input_device, level_tx, running_clone);
+                run_mic_test_thread(input_device, result_tx, running_clone);
             });
 
-            // Receive level updates and forward to Iced
-            while let Some(level) = level_rx.recv().await {
-                if output.send(Message::AudioMicLevel(level)).await.is_err() {
+            // Receive results and forward to Iced
+            while let Some(result) = result_rx.recv().await {
+                let message = match result {
+                    MicTestResult::Level(level) => Message::AudioMicLevel(level),
+                    MicTestResult::Error(err) => Message::AudioMicError(err),
+                };
+                if output.send(message).await.is_err() {
                     // Channel closed, signal thread to stop
                     running.store(false, Ordering::SeqCst);
                     break;

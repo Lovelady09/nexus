@@ -927,6 +927,7 @@ impl NexusApp {
             Message::AudioTestMicStart => self.handle_audio_test_mic_start(),
             Message::AudioTestMicStop => self.handle_audio_test_mic_stop(),
             Message::AudioMicLevel(level) => self.handle_audio_mic_level(level),
+            Message::AudioMicError(error) => self.handle_audio_mic_error(error),
             Message::AudioNoiseSuppression(enabled) => {
                 self.config.settings.audio.noise_suppression = enabled;
                 let _ = self.config.save();
@@ -1130,11 +1131,11 @@ impl NexusApp {
 
         // Build view configuration
         // Get audio state from settings form (for PTT capture, mic test) or defaults
-        let (ptt_capturing, mic_testing) = self
+        let (ptt_capturing, mic_testing, mic_error) = self
             .settings_form
             .as_ref()
-            .map(|f| (f.ptt_capturing, f.mic_testing))
-            .unwrap_or((false, false));
+            .map(|f| (f.ptt_capturing, f.mic_testing, f.mic_error.as_deref()))
+            .unwrap_or((false, false, None));
 
         // Get mic level: prefer voice session atomic (when in voice), fallback to settings form (mic test)
         let mic_level = if self.is_local_speaking {
@@ -1219,6 +1220,7 @@ impl NexusApp {
             ptt_mode: self.config.settings.audio.ptt_mode,
             mic_testing,
             mic_level,
+            mic_error,
             noise_suppression: self.config.settings.audio.noise_suppression,
             echo_cancellation: self.config.settings.audio.echo_cancellation,
             agc: self.config.settings.audio.agc,

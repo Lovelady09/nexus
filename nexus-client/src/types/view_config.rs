@@ -158,6 +158,9 @@ pub struct ViewConfig<'a> {
     /// Current microphone input level (0.0 - 1.0)
     pub mic_level: f32,
 
+    /// Error message from microphone test (e.g., device not found)
+    pub mic_error: Option<&'a str>,
+
     /// Enable noise suppression
     pub noise_suppression: bool,
 

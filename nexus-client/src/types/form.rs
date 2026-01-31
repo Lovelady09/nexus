@@ -1285,6 +1285,8 @@ pub struct SettingsFormState {
     pub mic_testing: bool,
     /// Current microphone input level (0.0 - 1.0)
     pub mic_level: f32,
+    /// Microphone test error message (e.g., device initialization failure)
+    pub mic_error: Option<String>,
     /// Cached output audio devices (populated once when settings opens)
     pub output_devices: Vec<crate::voice::audio::AudioDevice>,
     /// Cached input audio devices (populated once when settings opens)
@@ -1306,6 +1308,7 @@ impl std::fmt::Debug for SettingsFormState {
             .field("ptt_capturing", &self.ptt_capturing)
             .field("mic_testing", &self.mic_testing)
             .field("mic_level", &self.mic_level)
+            .field("mic_error", &self.mic_error)
             .field("output_devices", &self.output_devices.len())
             .field("input_devices", &self.input_devices.len())
             .finish()
@@ -1476,6 +1479,7 @@ impl SettingsFormState {
             ptt_capturing: false,
             mic_testing: false,
             mic_level: 0.0,
+            mic_error: None,
             output_devices,
             input_devices,
         }

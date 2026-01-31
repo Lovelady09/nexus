@@ -749,6 +749,7 @@ impl NexusApp {
         if let Some(form) = &mut self.settings_form {
             form.mic_testing = true;
             form.mic_level = 0.0;
+            form.mic_error = None; // Clear any previous error
         }
         Task::none()
     }
@@ -771,6 +772,19 @@ impl NexusApp {
             && form.mic_testing
         {
             form.mic_level = level.clamp(0.0, 1.0);
+        }
+        Task::none()
+    }
+
+    /// Handle microphone test error
+    ///
+    /// Displays the error message and stops the mic test.
+    pub fn handle_audio_mic_error(&mut self, error: String) -> Task<Message> {
+        // Stop the mic test
+        if let Some(form) = &mut self.settings_form {
+            form.mic_testing = false;
+            form.mic_level = 0.0;
+            form.mic_error = Some(error);
         }
         Task::none()
     }

@@ -54,6 +54,8 @@ pub struct AudioTabData<'a> {
     pub mic_testing: bool,
     /// Current microphone input level (0.0 - 1.0)
     pub mic_level: f32,
+    /// Error message from microphone test (e.g., device not found)
+    pub mic_error: Option<&'a str>,
     /// Enable noise suppression
     pub noise_suppression: bool,
     /// Enable echo cancellation
@@ -131,6 +133,8 @@ pub struct SettingsViewData<'a> {
     pub mic_testing: bool,
     /// Current microphone input level (0.0 - 1.0)
     pub mic_level: f32,
+    /// Error message from microphone test (e.g., device not found)
+    pub mic_error: Option<&'a str>,
     /// Enable noise suppression
     pub noise_suppression: bool,
     /// Enable echo cancellation
@@ -213,6 +217,7 @@ pub fn settings_view<'a>(data: SettingsViewData<'a>) -> Element<'a, Message> {
         ptt_mode: data.ptt_mode,
         mic_testing: data.mic_testing,
         mic_level: data.mic_level,
+        mic_error: data.mic_error,
         noise_suppression: data.noise_suppression,
         echo_cancellation: data.echo_cancellation,
         agc: data.agc,
@@ -819,6 +824,16 @@ fn audio_tab_content(data: AudioTabData<'_>) -> Element<'_, Message> {
     .align_y(iced::Alignment::Center)
     .spacing(ELEMENT_SPACING);
     items.push(mic_test_row.into());
+
+    // Show mic error if present
+    if let Some(error) = data.mic_error {
+        items.push(
+            shaped_text_wrapped(error)
+                .size(TEXT_SIZE)
+                .style(error_text_style)
+                .into(),
+        );
+    }
 
     items.push(Space::new().height(SPACER_SIZE_MEDIUM).into());
 
