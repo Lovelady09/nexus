@@ -132,11 +132,19 @@ impl NexusApp {
         register_voice_receiver_sync(connection_id, event_rx);
 
         // Initialize PTT manager if not already created
-        // If PTT manager fails to initialize, voice still works but PTT won't function
-        if self.ptt_manager.is_none()
-            && let Ok(ptt) = PttManager::new()
-        {
-            self.ptt_manager = Some(ptt);
+        if self.ptt_manager.is_none() {
+            match PttManager::new() {
+                Ok(ptt) => {
+                    self.ptt_manager = Some(ptt);
+                }
+                Err(e) => {
+                    // PTT won't work, but voice chat still functions
+                    return self.add_active_tab_message(
+                        connection_id,
+                        ChatMessage::error(t_args("err-voice-ptt-failed", &[("error", &e)])),
+                    );
+                }
+            }
         }
 
         // Register PTT hotkey and enable it for voice
