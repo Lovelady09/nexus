@@ -160,7 +160,8 @@ impl InputResampler {
 pub struct OutputResampler {
     /// The rubato resampler instance
     resampler: Fft<f32>,
-    /// Device sample rate
+    /// Device sample rate (stored for potential future use)
+    #[allow(dead_code)]
     device_rate: u32,
     /// Number of output channels
     channels: usize,
@@ -212,6 +213,7 @@ impl OutputResampler {
     }
 
     /// Get the device sample rate this resampler was created for
+    #[allow(dead_code)]
     pub fn device_rate(&self) -> u32 {
         self.device_rate
     }

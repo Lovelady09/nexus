@@ -715,25 +715,83 @@ struct MixerState {
     /// Whether all incoming audio is muted (deafened)
     deafened: bool,
     /// Pre-allocated buffer for mixing 48kHz audio (avoids allocation per callback)
+    /// Always sized to MAX_MIX_BUFFER_SAMPLES, we just use a slice of it
     mix_buffer: Vec<f32>,
-    /// Accumulated resampled output waiting to be consumed by audio callback
-    resampled_output: Vec<f32>,
+    /// Ring buffer for resampled output (avoids O(n) drain operations)
+    resampled_ring: RingBuffer,
+    /// Cached resampler ratio (48kHz / device_rate), 0.0 if no resampling
+    resampler_ratio: f64,
 }
 
 /// Maximum size for the mix buffer (enough for typical callback sizes with ratio headroom)
 const MAX_MIX_BUFFER_SAMPLES: usize = 2048;
 
-/// Maximum size for resampled output buffer (prevents unbounded growth)
+/// Maximum size for resampled output ring buffer (prevents unbounded growth)
 const MAX_RESAMPLED_OUTPUT_SAMPLES: usize = 4096;
 
+/// Simple ring buffer for O(1) push and pop operations
+struct RingBuffer {
+    /// Pre-allocated storage
+    data: Vec<f32>,
+    /// Read index (where to consume from)
+    read_idx: usize,
+    /// Number of samples currently in buffer
+    len: usize,
+}
+
+impl RingBuffer {
+    fn new(capacity: usize) -> Self {
+        Self {
+            data: vec![0.0; capacity],
+            read_idx: 0,
+            len: 0,
+        }
+    }
+
+    /// Number of samples available to read
+    fn len(&self) -> usize {
+        self.len
+    }
+
+    /// Push samples to the buffer, dropping oldest if full
+    fn push(&mut self, samples: &[f32]) {
+        let capacity = self.data.len();
+        for &sample in samples {
+            if self.len < capacity {
+                // Buffer not full - write at end
+                let write_idx = (self.read_idx + self.len) % capacity;
+                self.data[write_idx] = sample;
+                self.len += 1;
+            } else {
+                // Buffer full - overwrite oldest (advance read_idx)
+                self.data[self.read_idx] = sample;
+                self.read_idx = (self.read_idx + 1) % capacity;
+            }
+        }
+    }
+
+    /// Read a single sample from the buffer, returns 0.0 if empty
+    fn read_sample(&mut self) -> f32 {
+        if self.len == 0 {
+            return 0.0;
+        }
+        let sample = self.data[self.read_idx];
+        self.read_idx = (self.read_idx + 1) % self.data.len();
+        self.len -= 1;
+        sample
+    }
+}
+
 impl MixerState {
-    fn new() -> Self {
+    fn new(resampler_ratio: f64) -> Self {
         Self {
             user_buffers: HashMap::new(),
             muted: std::collections::HashSet::new(),
             deafened: false,
-            mix_buffer: Vec::with_capacity(MAX_MIX_BUFFER_SAMPLES),
-            resampled_output: Vec::with_capacity(MAX_RESAMPLED_OUTPUT_SAMPLES),
+            // Pre-allocate to exact max size - we'll use fill() instead of resize()
+            mix_buffer: vec![0.0; MAX_MIX_BUFFER_SAMPLES],
+            resampled_ring: RingBuffer::new(MAX_RESAMPLED_OUTPUT_SAMPLES),
+            resampler_ratio,
         }
     }
 
@@ -741,9 +799,9 @@ impl MixerState {
     ///
     /// Returns true if any audio was mixed.
     fn mix_and_drain(&mut self, samples_needed: usize) -> bool {
-        // Prepare mix buffer
-        self.mix_buffer.clear();
-        self.mix_buffer.resize(samples_needed, 0.0);
+        // Zero the portion of mix_buffer we'll use (no resize, buffer is pre-allocated)
+        let samples_needed = samples_needed.min(MAX_MIX_BUFFER_SAMPLES);
+        self.mix_buffer[..samples_needed].fill(0.0);
 
         // Check if any user has audio
         let has_audio = self.user_buffers.values().any(|b| !b.samples.is_empty());
@@ -762,8 +820,9 @@ impl MixerState {
                 let drain_count = samples_needed.min(buffer.samples.len());
                 buffer.samples.drain(..drain_count);
             }
-
-            // Remove empty buffers
+        } else {
+            // No audio playing - good time to clean up stale empty buffers
+            // This is opportunistic: zero cost during active audio, cleanup during silence
             self.user_buffers.retain(|_, b| !b.samples.is_empty());
         }
 
@@ -795,16 +854,23 @@ impl AudioMixer {
         let device =
             find_output_device(device_name).ok_or_else(|| "Output device not found".to_string())?;
 
-        let state = Arc::new(Mutex::new(MixerState::new()));
+        // Find best configuration for this device
+        let audio_config = find_best_output_config(&device)?;
+
+        // Calculate resampler ratio once at setup (0.0 means no resampling)
+        let resampler_ratio = if needs_resampling(audio_config.sample_rate) {
+            VOICE_SAMPLE_RATE as f64 / audio_config.sample_rate as f64
+        } else {
+            0.0
+        };
+
+        let state = Arc::new(Mutex::new(MixerState::new(resampler_ratio)));
         let state_clone = state.clone();
         let active = Arc::new(AtomicBool::new(false));
         let active_clone = active.clone();
 
         // Create channel for error reporting from audio callback
         let (error_tx, error_rx) = std_mpsc::channel();
-
-        // Find best configuration for this device
-        let audio_config = find_best_output_config(&device)?;
 
         let config = StreamConfig {
             channels: audio_config.channels,
@@ -1002,17 +1068,21 @@ where
 
                 // If resampling, use persistent buffer approach
                 if let Some(ref resampler) = resampler {
-                    // Feed more audio to resampler while output buffer is low
-                    while state.resampled_output.len() < output_samples_needed {
-                        // Calculate how many 48kHz samples to mix
-                        let input_samples_needed = if let Ok(r) = resampler.lock() {
-                            let ratio = VOICE_SAMPLE_RATE as f64 / r.device_rate() as f64;
-                            // Request enough to produce ~10ms of output
-                            ((VOICE_SAMPLES_PER_FRAME as f64) * ratio).ceil() as usize
-                        } else {
-                            VOICE_SAMPLES_PER_FRAME as usize
-                        };
+                    // Lock resampler once for the entire callback (avoid repeated locking)
+                    let Ok(mut resampler_guard) = resampler.lock() else {
+                        // Mutex poisoned - output silence
+                        for sample in data.iter_mut() {
+                            *sample = T::from_sample(0.0f32);
+                        }
+                        return;
+                    };
 
+                    // Use cached ratio from state (computed once at setup)
+                    let input_samples_needed =
+                        ((VOICE_SAMPLES_PER_FRAME as f64) * state.resampler_ratio).ceil() as usize;
+
+                    // Feed more audio to resampler while ring buffer is low
+                    while state.resampled_ring.len() < output_samples_needed {
                         // Mix user buffers into mix_buffer
                         let has_audio = state.mix_and_drain(input_samples_needed);
 
@@ -1022,45 +1092,26 @@ where
                         }
 
                         // Apply soft clipping
-                        for sample in &mut state.mix_buffer {
-                            *sample = soft_clip(*sample);
+                        for i in 0..input_samples_needed.min(state.mix_buffer.len()) {
+                            state.mix_buffer[i] = soft_clip(state.mix_buffer[i]);
                         }
 
-                        // Resample and accumulate output
-                        if let Ok(mut r) = resampler.lock() {
-                            match r.process(&state.mix_buffer) {
-                                Ok(resampled) => {
-                                    state.resampled_output.extend_from_slice(&resampled);
-                                    // Limit buffer size to prevent unbounded growth
-                                    if state.resampled_output.len() > MAX_RESAMPLED_OUTPUT_SAMPLES {
-                                        let excess = state.resampled_output.len()
-                                            - MAX_RESAMPLED_OUTPUT_SAMPLES;
-                                        state.resampled_output.drain(..excess);
-                                    }
-                                }
-                                Err(e) => {
-                                    let _ = callback_error_tx.send(e);
-                                    break;
-                                }
+                        // Resample and accumulate output in ring buffer
+                        match resampler_guard.process(&state.mix_buffer[..input_samples_needed]) {
+                            Ok(resampled) => {
+                                // Ring buffer handles overflow by dropping oldest samples
+                                state.resampled_ring.push(&resampled);
                             }
-                        } else {
-                            break; // Mutex poisoned
+                            Err(e) => {
+                                let _ = callback_error_tx.send(e);
+                                break;
+                            }
                         }
                     }
 
-                    // Write from resampled_output buffer to audio output
-                    let available = state.resampled_output.len().min(output_samples_needed);
-                    for (i, dst) in data.iter_mut().enumerate() {
-                        let sample = if i < available {
-                            state.resampled_output[i]
-                        } else {
-                            0.0 // Silence if buffer underrun
-                        };
-                        *dst = T::from_sample(sample);
-                    }
-                    // Drain consumed samples
-                    if available > 0 {
-                        state.resampled_output.drain(..available);
+                    // Write from ring buffer directly to audio output (O(1) per sample)
+                    for dst in data.iter_mut() {
+                        *dst = T::from_sample(state.resampled_ring.read_sample());
                     }
                 } else {
                     // No resampling needed - direct path (no persistent buffer needed)
@@ -1124,17 +1175,21 @@ where
 
                 // If resampling, use persistent buffer approach
                 if let Some(ref resampler) = resampler {
-                    // Feed more audio to resampler while output buffer is low
-                    while state.resampled_output.len() < output_samples_needed {
-                        // Calculate how many 48kHz mono samples to mix
-                        let input_samples_needed = if let Ok(r) = resampler.lock() {
-                            let ratio = VOICE_SAMPLE_RATE as f64 / r.device_rate() as f64;
-                            // Request enough to produce ~10ms of output
-                            ((VOICE_SAMPLES_PER_FRAME as f64) * ratio).ceil() as usize
-                        } else {
-                            VOICE_SAMPLES_PER_FRAME as usize
-                        };
+                    // Lock resampler once for the entire callback (avoid repeated locking)
+                    let Ok(mut resampler_guard) = resampler.lock() else {
+                        // Mutex poisoned - output silence
+                        for sample in data.iter_mut() {
+                            *sample = T::from_sample(0.0f32);
+                        }
+                        return;
+                    };
 
+                    // Use cached ratio from state (computed once at setup)
+                    let input_samples_needed =
+                        ((VOICE_SAMPLES_PER_FRAME as f64) * state.resampler_ratio).ceil() as usize;
+
+                    // Feed more audio to resampler while ring buffer is low
+                    while state.resampled_ring.len() < output_samples_needed {
                         // Mix user buffers into mix_buffer
                         let has_audio = state.mix_and_drain(input_samples_needed);
 
@@ -1144,45 +1199,26 @@ where
                         }
 
                         // Apply soft clipping
-                        for sample in &mut state.mix_buffer {
-                            *sample = soft_clip(*sample);
+                        for i in 0..input_samples_needed.min(state.mix_buffer.len()) {
+                            state.mix_buffer[i] = soft_clip(state.mix_buffer[i]);
                         }
 
-                        // Resample and accumulate output (resampler handles stereo upmix)
-                        if let Ok(mut r) = resampler.lock() {
-                            match r.process(&state.mix_buffer) {
-                                Ok(resampled) => {
-                                    state.resampled_output.extend_from_slice(&resampled);
-                                    // Limit buffer size to prevent unbounded growth
-                                    if state.resampled_output.len() > MAX_RESAMPLED_OUTPUT_SAMPLES {
-                                        let excess = state.resampled_output.len()
-                                            - MAX_RESAMPLED_OUTPUT_SAMPLES;
-                                        state.resampled_output.drain(..excess);
-                                    }
-                                }
-                                Err(e) => {
-                                    let _ = callback_error_tx.send(e);
-                                    break;
-                                }
+                        // Resample and accumulate output in ring buffer (resampler handles stereo upmix)
+                        match resampler_guard.process(&state.mix_buffer[..input_samples_needed]) {
+                            Ok(resampled) => {
+                                // Ring buffer handles overflow by dropping oldest samples
+                                state.resampled_ring.push(&resampled);
                             }
-                        } else {
-                            break; // Mutex poisoned
+                            Err(e) => {
+                                let _ = callback_error_tx.send(e);
+                                break;
+                            }
                         }
                     }
 
-                    // Write from resampled_output buffer to audio output
-                    let available = state.resampled_output.len().min(output_samples_needed);
-                    for (i, dst) in data.iter_mut().enumerate() {
-                        let sample = if i < available {
-                            state.resampled_output[i]
-                        } else {
-                            0.0 // Silence if buffer underrun
-                        };
-                        *dst = T::from_sample(sample);
-                    }
-                    // Drain consumed samples
-                    if available > 0 {
-                        state.resampled_output.drain(..available);
+                    // Write from ring buffer directly to audio output (O(1) per sample)
+                    for dst in data.iter_mut() {
+                        *dst = T::from_sample(state.resampled_ring.read_sample());
                     }
                 } else {
                     // No resampling needed - direct path with stereo upmix
@@ -1285,5 +1321,100 @@ mod tests {
         let output_neg = soft_clip(-2.0);
         assert!(output_neg > -1.5);
         assert!(output_neg < 0.0);
+    }
+
+    // =========================================================================
+    // RingBuffer Tests
+    // =========================================================================
+
+    #[test]
+    fn test_ring_buffer_new() {
+        let rb = RingBuffer::new(10);
+        assert_eq!(rb.len(), 0);
+        assert_eq!(rb.data.len(), 10);
+    }
+
+    #[test]
+    fn test_ring_buffer_push_and_read() {
+        let mut rb = RingBuffer::new(10);
+
+        // Push some samples
+        rb.push(&[1.0, 2.0, 3.0]);
+        assert_eq!(rb.len(), 3);
+
+        // Read them back
+        assert_eq!(rb.read_sample(), 1.0);
+        assert_eq!(rb.read_sample(), 2.0);
+        assert_eq!(rb.read_sample(), 3.0);
+        assert_eq!(rb.len(), 0);
+    }
+
+    #[test]
+    fn test_ring_buffer_read_empty_returns_silence() {
+        let mut rb = RingBuffer::new(10);
+
+        // Reading from empty buffer should return 0.0 (silence)
+        assert_eq!(rb.read_sample(), 0.0);
+        assert_eq!(rb.read_sample(), 0.0);
+        assert_eq!(rb.len(), 0);
+    }
+
+    #[test]
+    fn test_ring_buffer_wrap_around() {
+        let mut rb = RingBuffer::new(4);
+
+        // Fill buffer
+        rb.push(&[1.0, 2.0, 3.0, 4.0]);
+        assert_eq!(rb.len(), 4);
+
+        // Read two samples (advances read_idx to 2)
+        assert_eq!(rb.read_sample(), 1.0);
+        assert_eq!(rb.read_sample(), 2.0);
+        assert_eq!(rb.len(), 2);
+
+        // Push two more (should wrap around)
+        rb.push(&[5.0, 6.0]);
+        assert_eq!(rb.len(), 4);
+
+        // Read all - should get 3, 4, 5, 6 in order
+        assert_eq!(rb.read_sample(), 3.0);
+        assert_eq!(rb.read_sample(), 4.0);
+        assert_eq!(rb.read_sample(), 5.0);
+        assert_eq!(rb.read_sample(), 6.0);
+        assert_eq!(rb.len(), 0);
+    }
+
+    #[test]
+    fn test_ring_buffer_overflow_drops_oldest() {
+        let mut rb = RingBuffer::new(4);
+
+        // Fill buffer
+        rb.push(&[1.0, 2.0, 3.0, 4.0]);
+        assert_eq!(rb.len(), 4);
+
+        // Push more - should drop oldest
+        rb.push(&[5.0, 6.0]);
+        assert_eq!(rb.len(), 4); // Still at capacity
+
+        // Should read 3, 4, 5, 6 (1 and 2 were dropped)
+        assert_eq!(rb.read_sample(), 3.0);
+        assert_eq!(rb.read_sample(), 4.0);
+        assert_eq!(rb.read_sample(), 5.0);
+        assert_eq!(rb.read_sample(), 6.0);
+    }
+
+    #[test]
+    fn test_ring_buffer_large_overflow() {
+        let mut rb = RingBuffer::new(4);
+
+        // Push way more than capacity
+        rb.push(&[1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0]);
+        assert_eq!(rb.len(), 4);
+
+        // Should only have the last 4 samples
+        assert_eq!(rb.read_sample(), 5.0);
+        assert_eq!(rb.read_sample(), 6.0);
+        assert_eq!(rb.read_sample(), 7.0);
+        assert_eq!(rb.read_sample(), 8.0);
     }
 }
