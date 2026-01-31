@@ -302,6 +302,11 @@ impl NexusApp {
                 ptt.unregister_hotkey();
             }
 
+            // Recreate the PttManager to force the X11 connection to close,
+            // which releases all key grabs. This works around a bug in the
+            // global-hotkey crate where ungrab_key doesn't reliably release grabs.
+            self.ptt_manager = crate::voice::ptt::PttManager::new().ok();
+
             // Clear local speaking and deafened state
             self.is_local_speaking = false;
             self.is_deafened = false;
