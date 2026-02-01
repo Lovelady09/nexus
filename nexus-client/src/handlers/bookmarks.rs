@@ -108,9 +108,30 @@ impl NexusApp {
     }
 
     /// Show the add bookmark dialog
+    ///
+    /// If there's an active connection, pre-fills the form with connection data.
+    /// Otherwise, shows an empty form.
     pub fn handle_show_add_bookmark(&mut self) -> Task<Message> {
         self.bookmark_edit = BookmarkEditState::default();
         self.bookmark_edit.mode = BookmarkEditMode::Add;
+
+        // Pre-fill from active connection if available
+        if let Some(conn_id) = self.active_connection
+            && let Some(conn) = self.connections.get(&conn_id)
+        {
+            self.bookmark_edit.bookmark.name = conn
+                .server_name
+                .clone()
+                .unwrap_or_else(|| conn.display_name.clone());
+            self.bookmark_edit.bookmark.address = conn.connection_info.address.clone();
+            self.bookmark_edit.bookmark.port = conn.connection_info.port;
+            self.bookmark_edit.bookmark.username = conn.connection_info.username.clone();
+            self.bookmark_edit.bookmark.password = conn.connection_info.password.clone();
+            self.bookmark_edit.bookmark.nickname = conn.connection_info.nickname.clone();
+            self.bookmark_edit.bookmark.certificate_fingerprint =
+                Some(conn.connection_info.certificate_fingerprint.clone());
+        }
+
         self.focused_field = InputId::BookmarkName;
         operation::focus(Id::from(InputId::BookmarkName))
     }
