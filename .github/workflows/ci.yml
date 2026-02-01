@@ -218,13 +218,13 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: macos-client-arm64-binary
-          path: target/release/Nexus
+          path: nexus-client/target/release/Nexus
 
       - name: Upload app bundle
         uses: actions/upload-artifact@v4
         with:
           name: macos-client-app-bundle
-          path: target/release/bundle/osx/Nexus BBS.app
+          path: nexus-client/target/release/bundle/osx/Nexus BBS.app
 
   # Test macOS client build (x64) - cross-compile on arm runner
   bundle-macos-x64:

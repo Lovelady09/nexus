@@ -79,16 +79,18 @@ jobs:
         run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
 
       - name: Build deb package
-        run: cargo bundle --release --format deb -p nexus-client
+        working-directory: nexus-client
+        run: cargo bundle --release --format deb
 
       - name: Build appimage package
-        run: cargo bundle --release --format appimage -p nexus-client
+        working-directory: nexus-client
+        run: cargo bundle --release --format appimage
 
       - name: Collect artifacts
         run: |
           mkdir -p dist
-          mv target/release/bundle/deb/nexus_${{ steps.version.outputs.VERSION }}_*.deb dist/nexus-client-${{ steps.version.outputs.VERSION }}-linux-${{ matrix.arch }}.deb
-          mv target/release/bundle/appimage/nexus_${{ steps.version.outputs.VERSION }}_*.AppImage dist/nexus-client-${{ steps.version.outputs.VERSION }}-linux-${{ matrix.arch }}.AppImage
+          mv nexus-client/target/release/bundle/deb/nexus_${{ steps.version.outputs.VERSION }}_*.deb dist/nexus-client-${{ steps.version.outputs.VERSION }}-linux-${{ matrix.arch }}.deb
+          mv nexus-client/target/release/bundle/appimage/nexus_${{ steps.version.outputs.VERSION }}_*.AppImage dist/nexus-client-${{ steps.version.outputs.VERSION }}-linux-${{ matrix.arch }}.AppImage
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
@@ -219,24 +221,25 @@ jobs:
           sed -i '' 's/name = "nexus"/name = "Nexus"/' Cargo.toml
 
       - name: Build app bundle
-        run: cargo bundle --release -p nexus-client
+        working-directory: nexus-client
+        run: cargo bundle --release
 
       - name: Add microphone permission to Info.plist
         run: |
           /usr/libexec/PlistBuddy -c "Add :NSMicrophoneUsageDescription string 'Nexus BBS needs microphone access for voice chat.'" \
-            "target/release/bundle/osx/Nexus BBS.app/Contents/Info.plist"
+            "nexus-client/target/release/bundle/osx/Nexus BBS.app/Contents/Info.plist"
 
       - name: Upload binary
         uses: actions/upload-artifact@v4
         with:
           name: macos-client-arm64-binary
-          path: target/release/Nexus
+          path: nexus-client/target/release/Nexus
 
       - name: Upload app bundle
         uses: actions/upload-artifact@v4
         with:
           name: macos-client-app-bundle
-          path: target/release/bundle/osx/Nexus BBS.app
+          path: nexus-client/target/release/bundle/osx/Nexus BBS.app
 
   # Build macOS client (x64) - cross-compile on arm runner
   build-macos-client-x64:
@@ -492,13 +495,14 @@ jobs:
 
       - name: Create MSI installer
         shell: pwsh
-        run: cargo bundle --format wxsmsi --release -p nexus-client
+        working-directory: nexus-client
+        run: cargo bundle --format wxsmsi --release
 
       - name: Collect client artifact
         shell: bash
         run: |
           mkdir -p dist
-          mv target/release/bundle/wxsmsi/bin/Release/*.msi \
+          mv nexus-client/target/release/bundle/wxsmsi/bin/Release/*.msi \
              dist/nexus-client-${{ steps.version.outputs.VERSION }}-windows-x64.msi
 
       - name: Upload artifacts
