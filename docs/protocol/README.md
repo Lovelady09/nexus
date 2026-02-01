@@ -169,6 +169,7 @@ Current version: `0.5.10`
 | [13-connection-monitor.md](13-connection-monitor.md) | Connection monitor (active sessions) |
 | [14-voice.md](14-voice.md) | Voice chat (signaling and UDP audio) |
 | [15-keepalive.md](15-keepalive.md) | Ping/pong keepalive for NAT timeout prevention |
+| [16-uri-scheme.md](16-uri-scheme.md) | `nexus://` URI scheme for deep linking |
 
 ## ServerInfo Fields
 
