@@ -24,17 +24,19 @@ This will generate the PNG and ICNS icons from the SVG source.
 ## Requirements
 
 - ImageMagick (`magick` or `convert` command)
-- libicns (`png2icns` command) - optional, for ICNS generation
+- ICNS generation (one of):
+  - macOS: `iconutil` (built-in, no installation needed)
+  - Linux: `png2icns` from libicns
 
 **Install on macOS:**
 ```bash
-brew install imagemagick libicns
+brew install imagemagick
 ```
 
 **Install on Linux:**
 - Arch: `pacman -S imagemagick libicns`
 - Debian/Ubuntu: `apt install imagemagick icnsutils`
-- Fedora: `dnf install imagemagick libicns`
+- Fedora: `dnf install imagemagick libicns-utils`
 
 ## Building App Bundle
 
