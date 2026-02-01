@@ -138,6 +138,8 @@ Nexus registers as a handler for the `nexus://` scheme via cargo-bundle metadata
 | macOS | `osx_url_schemes = ["nexus"]` | ✅ |
 | Windows | Registry entries in MSI | ❌ TODO |
 
+**Windows TODO:** `cargo-bundle` doesn't support `windows_url_schemes`. Need to either fork cargo-bundle to add support, or add registry entries directly in the MSI build workflow.
+
 ### Desktop File (Linux)
 
 The `.desktop` file includes:

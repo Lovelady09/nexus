@@ -17,16 +17,27 @@ use webrtc_audio_processing::{
 // =============================================================================
 
 /// Settings for audio processing features
+///
+/// Default values are tuned for the common case of headphone users:
+/// - Noise suppression ON: Removes background noise with minimal latency cost
+/// - Echo cancellation OFF: Most users wear headphones; AEC adds latency and CPU overhead
+/// - AGC ON: Normalizes volume levels across different microphones
+/// - Transient suppression OFF: Can occasionally clip word beginnings; enable if typing while talking
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct AudioProcessorSettings {
     /// Enable noise suppression (default: true)
+    /// Removes steady-state background noise (fans, AC, etc.)
     pub noise_suppression: bool,
-    /// Enable echo cancellation (default: false, for headphone users)
+    /// Enable echo cancellation (default: false)
+    /// Only needed when using speakers instead of headphones.
+    /// Adds latency and CPU overhead, so disabled by default.
     pub echo_cancellation: bool,
     /// Enable automatic gain control (default: true)
+    /// Normalizes microphone volume to consistent levels.
     pub agc: bool,
     /// Enable transient suppression (default: false)
-    /// Reduces keyboard clicks, mouse clicks, and other sudden noises
+    /// Reduces keyboard clicks, mouse clicks, and other sudden noises.
+    /// Can occasionally clip the start of words, so disabled by default.
     pub transient_suppression: bool,
 }
 

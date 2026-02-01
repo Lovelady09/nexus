@@ -89,10 +89,40 @@ See [Docker Documentation](docs/server/03-docker.md) for details.
 | `nexus-server` | Server daemon (`nexusd`) |
 | `nexus-client` | GUI client (`nexus`) |
 
-## Requirements
+## Build Requirements
 
-- Rust 2024 edition (1.91+)
-- Linux, macOS, or Windows
+### All Platforms
+
+- Rust 2024 edition (1.85+)
+
+### Linux
+
+Voice chat requires ALSA and WebRTC audio processing build tools:
+
+**Debian/Ubuntu:**
+```bash
+sudo apt install build-essential autoconf automake libtool pkg-config clang libasound2-dev
+```
+
+**Arch Linux:**
+```bash
+sudo pacman -S base-devel autoconf automake libtool pkg-config clang alsa-lib
+```
+
+**Fedora:**
+```bash
+sudo dnf install @development-tools autoconf automake libtool pkg-config clang alsa-lib-devel
+```
+
+### macOS
+
+```bash
+brew install autoconf automake libtool pkg-config
+```
+
+### Windows
+
+Visual Studio Build Tools with C++ workload. The WebRTC audio processing library builds automatically via the `bundled` feature.
 
 ## Development
 
