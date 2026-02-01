@@ -212,19 +212,19 @@ jobs:
       - name: Add microphone permission to Info.plist
         run: |
           /usr/libexec/PlistBuddy -c "Add :NSMicrophoneUsageDescription string 'Nexus BBS needs microphone access for voice chat.'" \
-            "nexus-client/target/release/bundle/osx/Nexus BBS.app/Contents/Info.plist"
+            "target/release/bundle/osx/Nexus BBS.app/Contents/Info.plist"
 
       - name: Upload binary
         uses: actions/upload-artifact@v4
         with:
           name: macos-client-arm64-binary
-          path: nexus-client/target/release/Nexus
+          path: target/release/Nexus
 
       - name: Upload app bundle
         uses: actions/upload-artifact@v4
         with:
           name: macos-client-app-bundle
-          path: nexus-client/target/release/bundle/osx/Nexus BBS.app
+          path: target/release/bundle/osx/Nexus BBS.app
 
   # Test macOS client build (x64) - cross-compile on arm runner
   bundle-macos-x64:

@@ -89,8 +89,8 @@ jobs:
       - name: Collect artifacts
         run: |
           mkdir -p dist
-          mv nexus-client/target/release/bundle/deb/nexus_${{ steps.version.outputs.VERSION }}_*.deb dist/nexus-client-${{ steps.version.outputs.VERSION }}-linux-${{ matrix.arch }}.deb
-          mv nexus-client/target/release/bundle/appimage/nexus_${{ steps.version.outputs.VERSION }}_*.AppImage dist/nexus-client-${{ steps.version.outputs.VERSION }}-linux-${{ matrix.arch }}.AppImage
+          mv target/release/bundle/deb/nexus_${{ steps.version.outputs.VERSION }}_*.deb dist/nexus-client-${{ steps.version.outputs.VERSION }}-linux-${{ matrix.arch }}.deb
+          mv target/release/bundle/appimage/nexus_${{ steps.version.outputs.VERSION }}_*.AppImage dist/nexus-client-${{ steps.version.outputs.VERSION }}-linux-${{ matrix.arch }}.AppImage
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
@@ -227,19 +227,19 @@ jobs:
       - name: Add microphone permission to Info.plist
         run: |
           /usr/libexec/PlistBuddy -c "Add :NSMicrophoneUsageDescription string 'Nexus BBS needs microphone access for voice chat.'" \
-            "nexus-client/target/release/bundle/osx/Nexus BBS.app/Contents/Info.plist"
+            "target/release/bundle/osx/Nexus BBS.app/Contents/Info.plist"
 
       - name: Upload binary
         uses: actions/upload-artifact@v4
         with:
           name: macos-client-arm64-binary
-          path: nexus-client/target/release/Nexus
+          path: target/release/Nexus
 
       - name: Upload app bundle
         uses: actions/upload-artifact@v4
         with:
           name: macos-client-app-bundle
-          path: nexus-client/target/release/bundle/osx/Nexus BBS.app
+          path: target/release/bundle/osx/Nexus BBS.app
 
   # Build macOS client (x64) - cross-compile on arm runner
   build-macos-client-x64:
@@ -502,7 +502,7 @@ jobs:
         shell: bash
         run: |
           mkdir -p dist
-          mv nexus-client/target/release/bundle/wxsmsi/bin/Release/*.msi \
+          mv target/release/bundle/wxsmsi/bin/Release/*.msi \
              dist/nexus-client-${{ steps.version.outputs.VERSION }}-windows-x64.msi
 
       - name: Upload artifacts
