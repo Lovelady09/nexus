@@ -382,27 +382,14 @@ mod tests {
     use super::*;
     use crate::db::Permission;
     use crate::handlers::testing::{
-        TestContext, create_test_context, login_user, read_server_message,
+        create_test_context, login_user, read_server_message, setup_file_area_basic,
     };
     use std::fs;
-    use std::path::Path;
-    use tempfile::TempDir;
-
-    fn setup_file_area(test_ctx: &mut TestContext) -> TempDir {
-        let temp_dir = TempDir::new().unwrap();
-        let file_root: &'static Path = Box::leak(temp_dir.path().to_path_buf().into_boxed_path());
-        test_ctx.file_root = Some(file_root);
-
-        // Create shared directory
-        fs::create_dir_all(temp_dir.path().join("shared")).unwrap();
-
-        temp_dir
-    }
 
     #[tokio::test]
     async fn test_copy_requires_auth() {
         let mut test_ctx = create_test_context().await;
-        let _temp_dir = setup_file_area(&mut test_ctx);
+        let _temp_dir = setup_file_area_basic(&mut test_ctx);
 
         let mut ctx = test_ctx.handler_context();
         handle_file_copy(
@@ -419,9 +406,9 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_copy_requires_permission() {
+    async fn test_copy_admin_has_permission() {
         let mut test_ctx = create_test_context().await;
-        let _temp_dir = setup_file_area(&mut test_ctx);
+        let _temp_dir = setup_file_area_basic(&mut test_ctx);
 
         // Login without FileCopy permission
         let session_id = login_user(&mut test_ctx, "alice", "password", &[], false).await;
@@ -456,7 +443,7 @@ mod tests {
     #[tokio::test]
     async fn test_copy_file_success() {
         let mut test_ctx = create_test_context().await;
-        let temp_dir = setup_file_area(&mut test_ctx);
+        let temp_dir = setup_file_area_basic(&mut test_ctx);
 
         // Create source file and destination directory
         let shared_dir = temp_dir.path().join("shared");
@@ -505,7 +492,7 @@ mod tests {
     #[tokio::test]
     async fn test_copy_directory_success() {
         let mut test_ctx = create_test_context().await;
-        let temp_dir = setup_file_area(&mut test_ctx);
+        let temp_dir = setup_file_area_basic(&mut test_ctx);
 
         // Create source directory with contents and destination directory
         let shared_dir = temp_dir.path().join("shared");
@@ -553,7 +540,7 @@ mod tests {
     #[tokio::test]
     async fn test_copy_source_not_found() {
         let mut test_ctx = create_test_context().await;
-        let temp_dir = setup_file_area(&mut test_ctx);
+        let temp_dir = setup_file_area_basic(&mut test_ctx);
 
         // Create destination directory but not source
         let shared_dir = temp_dir.path().join("shared");
@@ -598,7 +585,7 @@ mod tests {
     #[tokio::test]
     async fn test_copy_destination_exists_no_overwrite() {
         let mut test_ctx = create_test_context().await;
-        let temp_dir = setup_file_area(&mut test_ctx);
+        let temp_dir = setup_file_area_basic(&mut test_ctx);
 
         // Create source and destination with existing file
         let shared_dir = temp_dir.path().join("shared");
@@ -653,9 +640,9 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_copy_destination_exists_with_overwrite() {
+    async fn test_copy_dest_exists_with_overwrite() {
         let mut test_ctx = create_test_context().await;
-        let temp_dir = setup_file_area(&mut test_ctx);
+        let temp_dir = setup_file_area_basic(&mut test_ctx);
 
         // Create source and destination with existing file
         let shared_dir = temp_dir.path().join("shared");
@@ -704,7 +691,7 @@ mod tests {
     #[tokio::test]
     async fn test_copy_overwrite_requires_delete_permission() {
         let mut test_ctx = create_test_context().await;
-        let temp_dir = setup_file_area(&mut test_ctx);
+        let temp_dir = setup_file_area_basic(&mut test_ctx);
 
         // Create source and destination with existing file
         let shared_dir = temp_dir.path().join("shared");
@@ -750,9 +737,9 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_copy_path_traversal_blocked() {
+    async fn test_copy_path_traversal_dest() {
         let mut test_ctx = create_test_context().await;
-        let temp_dir = setup_file_area(&mut test_ctx);
+        let temp_dir = setup_file_area_basic(&mut test_ctx);
 
         // Create test file
         let shared_dir = temp_dir.path().join("shared");
@@ -798,7 +785,7 @@ mod tests {
     #[tokio::test]
     async fn test_copy_cannot_copy_into_itself() {
         let mut test_ctx = create_test_context().await;
-        let temp_dir = setup_file_area(&mut test_ctx);
+        let temp_dir = setup_file_area_basic(&mut test_ctx);
 
         // Create source directory with subdirectory
         let shared_dir = temp_dir.path().join("shared");
@@ -843,9 +830,9 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_copy_root_requires_permission() {
+    async fn test_copy_root_mode_requires_permission() {
         let mut test_ctx = create_test_context().await;
-        let temp_dir = setup_file_area(&mut test_ctx);
+        let temp_dir = setup_file_area_basic(&mut test_ctx);
 
         // Create test file
         let shared_dir = temp_dir.path().join("shared");
@@ -892,7 +879,7 @@ mod tests {
     #[tokio::test]
     async fn test_copy_root_mode_success() {
         let mut test_ctx = create_test_context().await;
-        let temp_dir = setup_file_area(&mut test_ctx);
+        let temp_dir = setup_file_area_basic(&mut test_ctx);
 
         // Create test file in shared area
         let shared_dir = temp_dir.path().join("shared");
@@ -935,9 +922,9 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_copy_cross_area() {
+    async fn test_copy_user_area() {
         let mut test_ctx = create_test_context().await;
-        let temp_dir = setup_file_area(&mut test_ctx);
+        let temp_dir = setup_file_area_basic(&mut test_ctx);
 
         // Create source in shared, destination in users
         let shared_dir = temp_dir.path().join("shared");
@@ -984,7 +971,7 @@ mod tests {
     #[tokio::test]
     async fn test_copy_unicode_filename() {
         let mut test_ctx = create_test_context().await;
-        let temp_dir = setup_file_area(&mut test_ctx);
+        let temp_dir = setup_file_area_basic(&mut test_ctx);
 
         // Create source file with unicode name
         let shared_dir = temp_dir.path().join("shared");
@@ -1028,9 +1015,9 @@ mod tests {
 
     #[cfg(unix)]
     #[tokio::test]
-    async fn test_copy_symlink() {
+    async fn test_copy_symlink_file() {
         let mut test_ctx = create_test_context().await;
-        let temp_dir = setup_file_area(&mut test_ctx);
+        let temp_dir = setup_file_area_basic(&mut test_ctx);
 
         // Create a symlink
         let shared_dir = temp_dir.path().join("shared");
@@ -1078,7 +1065,7 @@ mod tests {
     #[tokio::test]
     async fn test_copy_in_user_personal_area() {
         let mut test_ctx = create_test_context().await;
-        let temp_dir = setup_file_area(&mut test_ctx);
+        let temp_dir = setup_file_area_basic(&mut test_ctx);
 
         // Create user's personal area
         let users_dir = temp_dir.path().join("users");
@@ -1125,7 +1112,7 @@ mod tests {
     #[tokio::test]
     async fn test_copy_cannot_copy_area_root() {
         let mut test_ctx = create_test_context().await;
-        let temp_dir = setup_file_area(&mut test_ctx);
+        let temp_dir = setup_file_area_basic(&mut test_ctx);
 
         // Create destination
         let shared_dir = temp_dir.path().join("shared");
@@ -1171,7 +1158,7 @@ mod tests {
     #[tokio::test]
     async fn test_copy_destination_is_file_not_directory() {
         let mut test_ctx = create_test_context().await;
-        let temp_dir = setup_file_area(&mut test_ctx);
+        let temp_dir = setup_file_area_basic(&mut test_ctx);
 
         // Create source file and a file (not directory) as destination
         let shared_dir = temp_dir.path().join("shared");
@@ -1219,9 +1206,9 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_copy_to_same_directory() {
+    async fn test_copy_nested_directory() {
         let mut test_ctx = create_test_context().await;
-        let temp_dir = setup_file_area(&mut test_ctx);
+        let temp_dir = setup_file_area_basic(&mut test_ctx);
 
         // Create source file
         let shared_dir = temp_dir.path().join("shared");
@@ -1270,9 +1257,9 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_copy_destination_not_found() {
+    async fn test_copy_dest_not_found() {
         let mut test_ctx = create_test_context().await;
-        let temp_dir = setup_file_area(&mut test_ctx);
+        let temp_dir = setup_file_area_basic(&mut test_ctx);
 
         // Create source file but not destination directory
         let shared_dir = temp_dir.path().join("shared");

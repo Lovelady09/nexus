@@ -432,23 +432,7 @@ mod tests {
         assert!(trust.expires_at.is_some());
     }
 
-    #[test]
-    fn test_parse_duration() {
-        // Permanent (no duration)
-        assert_eq!(parse_duration(&None), Ok(None));
-        assert_eq!(parse_duration(&Some("".to_string())), Ok(None));
-        assert_eq!(parse_duration(&Some("0".to_string())), Ok(None));
-
-        // Valid durations
-        assert!(parse_duration(&Some("10m".to_string())).is_ok());
-        assert!(parse_duration(&Some("1h".to_string())).is_ok());
-        assert!(parse_duration(&Some("7d".to_string())).is_ok());
-
-        // Invalid durations
-        assert!(parse_duration(&Some("invalid".to_string())).is_err());
-        assert!(parse_duration(&Some("10x".to_string())).is_err());
-        assert!(parse_duration(&Some("m".to_string())).is_err());
-    }
+    // Note: parse_duration is tested in duration.rs
 
     #[tokio::test]
     async fn test_trustcreate_target_too_long() {

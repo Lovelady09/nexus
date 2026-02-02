@@ -345,18 +345,11 @@ mod tests {
     use std::fs;
     use std::io::Write;
 
-    use tempfile::TempDir;
-
     use super::*;
     use crate::db::Permission;
-    use crate::handlers::testing::{create_test_context, login_user, read_server_message};
-
-    fn setup_file_area() -> TempDir {
-        let temp_dir = TempDir::new().expect("Failed to create temp dir");
-        fs::create_dir_all(temp_dir.path().join("shared")).expect("Failed to create shared");
-        fs::create_dir_all(temp_dir.path().join("users")).expect("Failed to create users dir");
-        temp_dir
-    }
+    use crate::handlers::testing::{
+        create_test_context, login_user, read_server_message, setup_file_area_basic,
+    };
 
     #[tokio::test]
     async fn test_file_info_requires_login() {
@@ -375,9 +368,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_file_info_requires_permission() {
-        let file_area = setup_file_area();
         let mut test_ctx = create_test_context().await;
-        test_ctx.file_root = Some(Box::leak(file_area.path().to_path_buf().into_boxed_path()));
+        let _file_area = setup_file_area_basic(&mut test_ctx);
 
         // User without file_list permission
         let session_id = login_user(&mut test_ctx, "testuser", "pass", &[], false).await;
@@ -403,16 +395,14 @@ mod tests {
 
     #[tokio::test]
     async fn test_file_info_file_success() {
-        let file_area = setup_file_area();
+        let mut test_ctx = create_test_context().await;
+        let file_area = setup_file_area_basic(&mut test_ctx);
 
         // Create a test file
         let shared_dir = file_area.path().join("shared");
         let test_file = shared_dir.join("test.txt");
         let mut file = fs::File::create(&test_file).unwrap();
         file.write_all(b"Hello, world!").unwrap();
-
-        let mut test_ctx = create_test_context().await;
-        test_ctx.file_root = Some(Box::leak(file_area.path().to_path_buf().into_boxed_path()));
 
         let session_id = login_user(
             &mut test_ctx,
@@ -460,7 +450,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_file_info_directory_success() {
-        let file_area = setup_file_area();
+        let mut test_ctx = create_test_context().await;
+        let file_area = setup_file_area_basic(&mut test_ctx);
 
         // Create a test directory with some files
         let shared_dir = file_area.path().join("shared");
@@ -469,9 +460,6 @@ mod tests {
         fs::File::create(test_dir.join("file1.txt")).unwrap();
         fs::File::create(test_dir.join("file2.txt")).unwrap();
         fs::create_dir(test_dir.join("subdir")).unwrap();
-
-        let mut test_ctx = create_test_context().await;
-        test_ctx.file_root = Some(Box::leak(file_area.path().to_path_buf().into_boxed_path()));
 
         let session_id = login_user(
             &mut test_ctx,
@@ -515,9 +503,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_file_info_not_found() {
-        let file_area = setup_file_area();
         let mut test_ctx = create_test_context().await;
-        test_ctx.file_root = Some(Box::leak(file_area.path().to_path_buf().into_boxed_path()));
+        let _file_area = setup_file_area_basic(&mut test_ctx);
 
         let session_id = login_user(
             &mut test_ctx,
@@ -549,9 +536,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_file_info_path_traversal_blocked() {
-        let file_area = setup_file_area();
         let mut test_ctx = create_test_context().await;
-        test_ctx.file_root = Some(Box::leak(file_area.path().to_path_buf().into_boxed_path()));
+        let _file_area = setup_file_area_basic(&mut test_ctx);
 
         let session_id = login_user(
             &mut test_ctx,
@@ -583,15 +569,13 @@ mod tests {
 
     #[tokio::test]
     async fn test_file_info_admin_has_permission() {
-        let file_area = setup_file_area();
+        let mut test_ctx = create_test_context().await;
+        let file_area = setup_file_area_basic(&mut test_ctx);
 
         // Create a test file
         let shared_dir = file_area.path().join("shared");
         let test_file = shared_dir.join("admin_test.txt");
         fs::File::create(&test_file).unwrap();
-
-        let mut test_ctx = create_test_context().await;
-        test_ctx.file_root = Some(Box::leak(file_area.path().to_path_buf().into_boxed_path()));
 
         // Admin has all permissions implicitly
         let session_id = login_user(&mut test_ctx, "admin", "pass", &[], true).await;
@@ -616,9 +600,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_file_info_root_requires_permission() {
-        let file_area = setup_file_area();
         let mut test_ctx = create_test_context().await;
-        test_ctx.file_root = Some(Box::leak(file_area.path().to_path_buf().into_boxed_path()));
+        let _file_area = setup_file_area_basic(&mut test_ctx);
 
         // User with file_list but not file_root
         let session_id = login_user(
@@ -652,9 +635,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_file_info_root_with_permission() {
-        let file_area = setup_file_area();
         let mut test_ctx = create_test_context().await;
-        test_ctx.file_root = Some(Box::leak(file_area.path().to_path_buf().into_boxed_path()));
+        let _file_area = setup_file_area_basic(&mut test_ctx);
 
         // User with both file_info and file_root
         let session_id = login_user(
@@ -692,7 +674,8 @@ mod tests {
     async fn test_file_info_symlink_detected() {
         use std::os::unix::fs::symlink;
 
-        let file_area = setup_file_area();
+        let mut test_ctx = create_test_context().await;
+        let file_area = setup_file_area_basic(&mut test_ctx);
 
         // Create a test file and a symlink to it
         let shared_dir = file_area.path().join("shared");
@@ -702,9 +685,6 @@ mod tests {
 
         let symlink_path = shared_dir.join("link.txt");
         symlink(&test_file, &symlink_path).unwrap();
-
-        let mut test_ctx = create_test_context().await;
-        test_ctx.file_root = Some(Box::leak(file_area.path().to_path_buf().into_boxed_path()));
 
         let session_id = login_user(
             &mut test_ctx,
@@ -741,16 +721,14 @@ mod tests {
 
     #[tokio::test]
     async fn test_file_info_mime_type_detection() {
-        let file_area = setup_file_area();
+        let mut test_ctx = create_test_context().await;
+        let file_area = setup_file_area_basic(&mut test_ctx);
         let shared_dir = file_area.path().join("shared");
 
         // Create a text file
         let file_path = shared_dir.join("test.txt");
         let mut file = fs::File::create(&file_path).unwrap();
         file.write_all(b"Hello world").unwrap();
-
-        let mut test_ctx = create_test_context().await;
-        test_ctx.file_root = Some(Box::leak(file_area.path().to_path_buf().into_boxed_path()));
 
         let session_id = login_user(
             &mut test_ctx,
@@ -783,7 +761,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_file_info_personal_area() {
-        let file_area = setup_file_area();
+        let mut test_ctx = create_test_context().await;
+        let file_area = setup_file_area_basic(&mut test_ctx);
 
         // Create user's personal area with a file
         let user_dir = file_area.path().join("users").join("testuser");
@@ -791,9 +770,6 @@ mod tests {
         let test_file = user_dir.join("myfile.txt");
         let mut file = fs::File::create(&test_file).unwrap();
         file.write_all(b"My personal file").unwrap();
-
-        let mut test_ctx = create_test_context().await;
-        test_ctx.file_root = Some(Box::leak(file_area.path().to_path_buf().into_boxed_path()));
 
         let session_id = login_user(
             &mut test_ctx,

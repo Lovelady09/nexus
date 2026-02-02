@@ -134,30 +134,30 @@ pub fn build_and_validate_candidate_path(
     client_path: &str,
 ) -> Result<PathBuf, PathError> {
     validate_client_path(client_path)?;
-    
+
     // Normalize the client path
     let normalized = client_path
         .trim_start_matches(['/', '\\'])
         .replace('\\', "/");
-    
+
     // Empty path means area root itself
     if normalized.is_empty() {
         return Ok(area_root.to_path_buf());
     }
-    
+
     // Split into segments and resolve each one with suffix matching
     let segments: Vec<&str> = normalized.split('/').filter(|s| !s.is_empty()).collect();
-    
+
     let mut current_path = area_root.to_path_buf();
-    
+
     for (i, segment) in segments.iter().enumerate() {
         // Skip current directory references
         if *segment == "." {
             continue;
         }
-        
+
         let is_last_segment = i == segments.len() - 1;
-        
+
         // Try to resolve this segment with suffix matching
         match resolve_segment_in_dir(&current_path, segment) {
             Some(resolved_name) => {
@@ -177,7 +177,7 @@ pub fn build_and_validate_candidate_path(
             }
         }
     }
-    
+
     Ok(current_path)
 }
 
@@ -734,10 +734,7 @@ mod tests {
     #[test]
     fn test_strip_folder_suffix_user_dropbox() {
         assert_eq!(strip_folder_suffix("inbox [NEXUS-DB-alice]"), "inbox");
-        assert_eq!(
-            strip_folder_suffix("For Bob [NEXUS-DB-bob]"),
-            "For Bob"
-        );
+        assert_eq!(strip_folder_suffix("For Bob [NEXUS-DB-bob]"), "For Bob");
     }
 
     #[test]
@@ -767,8 +764,14 @@ mod tests {
         assert_eq!(strip_folder_suffix("folder [NEXUS-"), "folder [NEXUS-");
         assert_eq!(strip_folder_suffix("folder [NEXUS-UL"), "folder [NEXUS-UL");
         assert_eq!(strip_folder_suffix("folder [NEXUS-DB"), "folder [NEXUS-DB");
-        assert_eq!(strip_folder_suffix("folder [NEXUS-DB-"), "folder [NEXUS-DB-");
-        assert_eq!(strip_folder_suffix("folder [NEXUS-DB-user"), "folder [NEXUS-DB-user");
+        assert_eq!(
+            strip_folder_suffix("folder [NEXUS-DB-"),
+            "folder [NEXUS-DB-"
+        );
+        assert_eq!(
+            strip_folder_suffix("folder [NEXUS-DB-user"),
+            "folder [NEXUS-DB-user"
+        );
     }
 
     // ==========================================================================
@@ -837,10 +840,7 @@ mod tests {
         // "uploads/subdir/nested.txt"
         let resolved =
             resolve_path_with_suffix_matching(root, "uploads/subdir/nested.txt").unwrap();
-        assert_eq!(
-            resolved,
-            root.join("uploads [NEXUS-UL]/subdir/nested.txt")
-        );
+        assert_eq!(resolved, root.join("uploads [NEXUS-UL]/subdir/nested.txt"));
     }
 
     #[test]
@@ -956,10 +956,7 @@ mod tests {
         // New file in nested directory
         let resolved =
             resolve_new_path_with_suffix_matching(root, "uploads/subdir/newfile.txt").unwrap();
-        assert_eq!(
-            resolved,
-            root.join("uploads [NEXUS-UL]/subdir/newfile.txt")
-        );
+        assert_eq!(resolved, root.join("uploads [NEXUS-UL]/subdir/newfile.txt"));
     }
 
     #[test]

@@ -256,20 +256,12 @@ where
 mod tests {
     use std::fs;
 
-    use tempfile::TempDir;
-
     use super::*;
     use crate::db::Permission;
     use crate::handlers::testing::{
         DEFAULT_TEST_LOCALE, create_test_context, login_user, read_server_message,
+        setup_file_area_basic,
     };
-
-    fn setup_file_area() -> TempDir {
-        let temp_dir = TempDir::new().expect("Failed to create temp dir");
-        fs::create_dir_all(temp_dir.path().join("shared")).expect("Failed to create shared");
-        fs::create_dir_all(temp_dir.path().join("users")).expect("Failed to create users dir");
-        temp_dir
-    }
 
     #[tokio::test]
     async fn test_rename_requires_auth() {
@@ -289,9 +281,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_rename_requires_permission() {
-        let file_area = setup_file_area();
         let mut test_ctx = create_test_context().await;
-        test_ctx.file_root = Some(Box::leak(file_area.path().to_path_buf().into_boxed_path()));
+        let file_area = setup_file_area_basic(&mut test_ctx);
 
         // Create a file to rename
         fs::write(file_area.path().join("shared/test.txt"), "content")
@@ -332,14 +323,13 @@ mod tests {
 
     #[tokio::test]
     async fn test_rename_file_success() {
-        let file_area = setup_file_area();
         let mut test_ctx = create_test_context().await;
-        let file_root = Box::leak(file_area.path().to_path_buf().into_boxed_path());
-        test_ctx.file_root = Some(file_root);
+        let file_area = setup_file_area_basic(&mut test_ctx);
 
         // Create a file to rename
-        fs::write(file_root.join("shared/original.txt"), "content").expect("Failed to create file");
-        assert!(file_root.join("shared/original.txt").exists());
+        fs::write(file_area.path().join("shared/original.txt"), "content")
+            .expect("Failed to create file");
+        assert!(file_area.path().join("shared/original.txt").exists());
 
         let session_id = login_user(
             &mut test_ctx,
@@ -370,19 +360,17 @@ mod tests {
         }
 
         // Verify file was renamed
-        assert!(!file_root.join("shared/original.txt").exists());
-        assert!(file_root.join("shared/renamed.txt").exists());
+        assert!(!file_area.path().join("shared/original.txt").exists());
+        assert!(file_area.path().join("shared/renamed.txt").exists());
     }
 
     #[tokio::test]
     async fn test_rename_directory_success() {
-        let file_area = setup_file_area();
         let mut test_ctx = create_test_context().await;
-        let file_root = Box::leak(file_area.path().to_path_buf().into_boxed_path());
-        test_ctx.file_root = Some(file_root);
+        let file_area = setup_file_area_basic(&mut test_ctx);
 
         // Create a directory to rename
-        fs::create_dir(file_root.join("shared/original_dir")).expect("Failed to create dir");
+        fs::create_dir(file_area.path().join("shared/original_dir")).expect("Failed to create dir");
 
         let session_id = login_user(
             &mut test_ctx,
@@ -413,20 +401,18 @@ mod tests {
         }
 
         // Verify directory was renamed
-        assert!(!file_root.join("shared/original_dir").exists());
-        assert!(file_root.join("shared/renamed_dir").exists());
+        assert!(!file_area.path().join("shared/original_dir").exists());
+        assert!(file_area.path().join("shared/renamed_dir").exists());
     }
 
     #[tokio::test]
     async fn test_rename_target_exists() {
-        let file_area = setup_file_area();
         let mut test_ctx = create_test_context().await;
-        let file_root = Box::leak(file_area.path().to_path_buf().into_boxed_path());
-        test_ctx.file_root = Some(file_root);
+        let file_area = setup_file_area_basic(&mut test_ctx);
 
         // Create two files
-        fs::write(file_root.join("shared/file1.txt"), "content1").unwrap();
-        fs::write(file_root.join("shared/file2.txt"), "content2").unwrap();
+        fs::write(file_area.path().join("shared/file1.txt"), "content1").unwrap();
+        fs::write(file_area.path().join("shared/file2.txt"), "content2").unwrap();
 
         let session_id = login_user(
             &mut test_ctx,
@@ -460,9 +446,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_rename_not_found() {
-        let file_area = setup_file_area();
         let mut test_ctx = create_test_context().await;
-        test_ctx.file_root = Some(Box::leak(file_area.path().to_path_buf().into_boxed_path()));
+        let _file_area = setup_file_area_basic(&mut test_ctx);
 
         let session_id = login_user(
             &mut test_ctx,
@@ -495,9 +480,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_rename_path_traversal_blocked() {
-        let file_area = setup_file_area();
         let mut test_ctx = create_test_context().await;
-        test_ctx.file_root = Some(Box::leak(file_area.path().to_path_buf().into_boxed_path()));
+        let _file_area = setup_file_area_basic(&mut test_ctx);
 
         let session_id = login_user(
             &mut test_ctx,
@@ -529,12 +513,10 @@ mod tests {
 
     #[tokio::test]
     async fn test_rename_new_name_with_path_separator_blocked() {
-        let file_area = setup_file_area();
         let mut test_ctx = create_test_context().await;
-        let file_root = Box::leak(file_area.path().to_path_buf().into_boxed_path());
-        test_ctx.file_root = Some(file_root);
+        let file_area = setup_file_area_basic(&mut test_ctx);
 
-        fs::write(file_root.join("shared/test.txt"), "content").unwrap();
+        fs::write(file_area.path().join("shared/test.txt"), "content").unwrap();
 
         let session_id = login_user(
             &mut test_ctx,
@@ -566,12 +548,10 @@ mod tests {
 
     #[tokio::test]
     async fn test_rename_new_name_with_parent_ref_blocked() {
-        let file_area = setup_file_area();
         let mut test_ctx = create_test_context().await;
-        let file_root = Box::leak(file_area.path().to_path_buf().into_boxed_path());
-        test_ctx.file_root = Some(file_root);
+        let file_area = setup_file_area_basic(&mut test_ctx);
 
-        fs::write(file_root.join("shared/test.txt"), "content").unwrap();
+        fs::write(file_area.path().join("shared/test.txt"), "content").unwrap();
 
         let session_id = login_user(
             &mut test_ctx,
@@ -603,12 +583,10 @@ mod tests {
 
     #[tokio::test]
     async fn test_rename_empty_new_name() {
-        let file_area = setup_file_area();
         let mut test_ctx = create_test_context().await;
-        let file_root = Box::leak(file_area.path().to_path_buf().into_boxed_path());
-        test_ctx.file_root = Some(file_root);
+        let file_area = setup_file_area_basic(&mut test_ctx);
 
-        fs::write(file_root.join("shared/test.txt"), "content").unwrap();
+        fs::write(file_area.path().join("shared/test.txt"), "content").unwrap();
 
         let session_id = login_user(
             &mut test_ctx,
@@ -638,18 +616,16 @@ mod tests {
         }
 
         // File should still exist with original name
-        assert!(file_root.join("shared/test.txt").exists());
+        assert!(file_area.path().join("shared/test.txt").exists());
     }
 
     #[tokio::test]
     async fn test_rename_unicode_filename() {
-        let file_area = setup_file_area();
         let mut test_ctx = create_test_context().await;
-        let file_root = Box::leak(file_area.path().to_path_buf().into_boxed_path());
-        test_ctx.file_root = Some(file_root);
+        let file_area = setup_file_area_basic(&mut test_ctx);
 
         // Create a file with unicode name
-        fs::write(file_root.join("shared/文件.txt"), "content").unwrap();
+        fs::write(file_area.path().join("shared/文件.txt"), "content").unwrap();
 
         let session_id = login_user(
             &mut test_ctx,
@@ -680,19 +656,18 @@ mod tests {
         }
 
         // Verify file was renamed
-        assert!(!file_root.join("shared/文件.txt").exists());
-        assert!(file_root.join("shared/新文件.txt").exists());
+        assert!(!file_area.path().join("shared/文件.txt").exists());
+        assert!(file_area.path().join("shared/新文件.txt").exists());
     }
 
     #[tokio::test]
     async fn test_rename_root_requires_permission() {
-        let file_area = setup_file_area();
         let mut test_ctx = create_test_context().await;
-        let file_root = Box::leak(file_area.path().to_path_buf().into_boxed_path());
-        test_ctx.file_root = Some(file_root);
+        let file_area = setup_file_area_basic(&mut test_ctx);
 
         // Create a file in shared
-        fs::write(file_root.join("shared/test.txt"), "content").expect("Failed to create file");
+        fs::write(file_area.path().join("shared/test.txt"), "content")
+            .expect("Failed to create file");
 
         // User with file_rename but not file_root
         let session_id = login_user(
@@ -725,18 +700,16 @@ mod tests {
         }
 
         // File should still exist with original name
-        assert!(file_root.join("shared/test.txt").exists());
+        assert!(file_area.path().join("shared/test.txt").exists());
     }
 
     #[tokio::test]
     async fn test_rename_root_mode_success() {
-        let file_area = setup_file_area();
         let mut test_ctx = create_test_context().await;
-        let file_root = Box::leak(file_area.path().to_path_buf().into_boxed_path());
-        test_ctx.file_root = Some(file_root);
+        let file_area = setup_file_area_basic(&mut test_ctx);
 
         // Create a file in shared (accessible via root mode)
-        fs::write(file_root.join("shared/root_test.txt"), "content")
+        fs::write(file_area.path().join("shared/root_test.txt"), "content")
             .expect("Failed to create file");
 
         // User with both file_rename and file_root permissions
@@ -773,8 +746,8 @@ mod tests {
         }
 
         // File should be renamed
-        assert!(!file_root.join("shared/root_test.txt").exists());
-        assert!(file_root.join("shared/renamed_root.txt").exists());
+        assert!(!file_area.path().join("shared/root_test.txt").exists());
+        assert!(file_area.path().join("shared/renamed_root.txt").exists());
     }
 
     #[tokio::test]
@@ -782,14 +755,12 @@ mod tests {
     async fn test_rename_symlink() {
         use std::os::unix::fs::symlink;
 
-        let file_area = setup_file_area();
         let mut test_ctx = create_test_context().await;
-        let file_root = Box::leak(file_area.path().to_path_buf().into_boxed_path());
-        test_ctx.file_root = Some(file_root);
+        let file_area = setup_file_area_basic(&mut test_ctx);
 
         // Create a target file and a symlink to it
-        let target = file_root.join("shared/target.txt");
-        let link = file_root.join("shared/link.txt");
+        let target = file_area.path().join("shared/target.txt");
+        let link = file_area.path().join("shared/link.txt");
         fs::write(&target, "target content").expect("Failed to create target");
         symlink(&target, &link).expect("Failed to create symlink");
 
@@ -827,22 +798,21 @@ mod tests {
 
         // Old symlink name should be gone, new name should exist
         assert!(!link.exists());
-        assert!(file_root.join("shared/renamed_link.txt").exists());
+        assert!(file_area.path().join("shared/renamed_link.txt").exists());
         // Target should still exist (we renamed the link, not the target)
         assert!(target.exists(), "Target file should not be affected");
     }
 
     #[tokio::test]
     async fn test_rename_in_user_personal_area() {
-        let file_area = setup_file_area();
         let mut test_ctx = create_test_context().await;
-        let file_root = Box::leak(file_area.path().to_path_buf().into_boxed_path());
-        test_ctx.file_root = Some(file_root);
+        let file_area = setup_file_area_basic(&mut test_ctx);
 
         // Create a user's personal area with a file
-        fs::create_dir_all(file_root.join("users/testuser")).expect("Failed to create user dir");
+        fs::create_dir_all(file_area.path().join("users/testuser"))
+            .expect("Failed to create user dir");
         fs::write(
-            file_root.join("users/testuser/myfile.txt"),
+            file_area.path().join("users/testuser/myfile.txt"),
             "personal content",
         )
         .expect("Failed to create file");
@@ -881,9 +851,10 @@ mod tests {
         }
 
         // File should be renamed
-        assert!(!file_root.join("users/testuser/myfile.txt").exists());
+        assert!(!file_area.path().join("users/testuser/myfile.txt").exists());
         assert!(
-            file_root
+            file_area
+                .path()
                 .join("users/testuser/renamed_personal.txt")
                 .exists()
         );

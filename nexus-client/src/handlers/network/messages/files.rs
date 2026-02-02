@@ -75,7 +75,9 @@ impl NexusApp {
             {
                 // Find the target in the file list (case-insensitive)
                 let target_lower = target.to_lowercase();
-                if let Some(entry) = entries.iter().find(|e| e.name.to_lowercase() == target_lower)
+                if let Some(entry) = entries
+                    .iter()
+                    .find(|e| e.name.to_lowercase() == target_lower)
                 {
                     if entry.dir_type.is_some() {
                         // It's a directory - navigate into it

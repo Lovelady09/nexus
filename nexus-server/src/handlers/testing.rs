@@ -4,6 +4,7 @@
 pub const DEFAULT_TEST_LOCALE: &str = "en";
 
 use std::collections::HashMap;
+use std::fs;
 use std::net::SocketAddr;
 use std::path::Path;
 use std::sync::{Arc, LazyLock, RwLock};
@@ -465,4 +466,84 @@ where
         }
         // Otherwise, it's a broadcast - skip it and keep looking
     }
+}
+
+// ========================================================================
+// File Area Setup Helpers
+// ========================================================================
+//
+// These functions create temporary file areas for testing file handlers.
+// They handle the `Box::leak` boilerplate and set `test_ctx.file_root`.
+//
+// Choose the appropriate helper based on what your test needs:
+// - `setup_file_area_basic`: Just shared/ and users/ directories
+// - `setup_file_area_with_uploads`: Basic + an upload folder
+// - `setup_file_area_full`: Uploads + dropbox + sample files
+
+/// Setup a basic file area with shared/ and users/ directories.
+///
+/// This is the minimal setup for file handler tests. Use this when you
+/// only need the directory structure without special folder types.
+///
+/// # Returns
+///
+/// Returns the `TempDir` which must be kept alive for the duration of the test.
+/// The `test_ctx.file_root` is set automatically.
+pub fn setup_file_area_basic(test_ctx: &mut TestContext) -> TempDir {
+    let temp_dir = TempDir::new().expect("Failed to create temp dir");
+    let file_root: &'static Path = Box::leak(temp_dir.path().to_path_buf().into_boxed_path());
+    test_ctx.file_root = Some(file_root);
+
+    fs::create_dir_all(temp_dir.path().join("shared")).expect("Failed to create shared");
+    fs::create_dir_all(temp_dir.path().join("users")).expect("Failed to create users");
+
+    temp_dir
+}
+
+/// Setup a file area with an upload folder.
+///
+/// Creates:
+/// - shared/
+/// - shared/Uploads [NEXUS-UL]/
+/// - users/
+///
+/// Use this when testing upload-related functionality.
+pub fn setup_file_area_with_uploads(test_ctx: &mut TestContext) -> TempDir {
+    let temp_dir = setup_file_area_basic(test_ctx);
+
+    fs::create_dir_all(temp_dir.path().join("shared/Uploads [NEXUS-UL]"))
+        .expect("Failed to create upload folder");
+
+    temp_dir
+}
+
+/// Setup a complete file area with uploads, dropbox, and sample files.
+///
+/// Creates:
+/// - shared/
+/// - shared/Documents/
+/// - shared/Documents/file.txt (with content "doc content")
+/// - shared/Uploads [NEXUS-UL]/
+/// - shared/Submissions [NEXUS-DB]/
+/// - shared/readme.txt (with content "test content")
+/// - users/
+///
+/// Use this for tests that need a realistic file structure.
+pub fn setup_file_area_full(test_ctx: &mut TestContext) -> TempDir {
+    let temp_dir = setup_file_area_with_uploads(test_ctx);
+    let root = temp_dir.path();
+
+    // Add dropbox
+    fs::create_dir_all(root.join("shared/Submissions [NEXUS-DB]"))
+        .expect("Failed to create dropbox");
+
+    // Add documents folder with file
+    fs::create_dir_all(root.join("shared/Documents")).expect("Failed to create Documents");
+    fs::write(root.join("shared/Documents/file.txt"), "doc content")
+        .expect("Failed to create file");
+
+    // Add readme at root of shared
+    fs::write(root.join("shared/readme.txt"), "test content").expect("Failed to create readme");
+
+    temp_dir
 }

@@ -261,31 +261,11 @@ where
 mod tests {
     use std::fs;
 
-    use tempfile::TempDir;
-
     use super::*;
     use crate::handlers::testing::{
         DEFAULT_TEST_LOCALE, create_test_context, login_user, read_server_message,
+        setup_file_area_full,
     };
-
-    fn setup_file_area() -> TempDir {
-        let temp_dir = TempDir::new().expect("Failed to create temp dir");
-
-        // Create shared and users directories
-        // Note: Don't create users/testuser - we want testuser to fall back to shared/
-        fs::create_dir_all(temp_dir.path().join("shared")).expect("Failed to create shared");
-        fs::create_dir_all(temp_dir.path().join("users")).expect("Failed to create users dir");
-
-        // Create an upload folder
-        fs::create_dir_all(temp_dir.path().join("shared/Uploads [NEXUS-UL]"))
-            .expect("Failed to create upload folder");
-
-        // Create a dropbox folder
-        fs::create_dir_all(temp_dir.path().join("shared/Submissions [NEXUS-DB]"))
-            .expect("Failed to create dropbox folder");
-
-        temp_dir
-    }
 
     #[tokio::test]
     async fn test_create_dir_requires_auth() {
@@ -305,9 +285,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_create_dir_without_permission_in_regular_folder() {
-        let file_area = setup_file_area();
         let mut test_ctx = create_test_context().await;
-        test_ctx.file_root = Some(Box::leak(file_area.path().to_path_buf().into_boxed_path()));
+        let _file_area = setup_file_area_full(&mut test_ctx);
 
         // User without file_create_dir permission
         let session_id = login_user(
@@ -341,10 +320,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_create_dir_in_upload_folder_without_permission() {
-        let file_area = setup_file_area();
         let mut test_ctx = create_test_context().await;
-        let file_root = Box::leak(file_area.path().to_path_buf().into_boxed_path());
-        test_ctx.file_root = Some(file_root);
+        let file_area = setup_file_area_full(&mut test_ctx);
 
         // User without file_create_dir permission but can create in upload folders
         let session_id = login_user(
@@ -382,7 +359,8 @@ mod tests {
 
         // Verify directory was actually created
         assert!(
-            file_root
+            file_area
+                .path()
                 .join("shared/Uploads [NEXUS-UL]/NewFolder")
                 .exists()
         );
@@ -390,10 +368,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_create_dir_in_dropbox_without_permission() {
-        let file_area = setup_file_area();
         let mut test_ctx = create_test_context().await;
-        let file_root = Box::leak(file_area.path().to_path_buf().into_boxed_path());
-        test_ctx.file_root = Some(file_root);
+        let file_area = setup_file_area_full(&mut test_ctx);
 
         // User without file_create_dir permission but can create in dropbox
         let session_id = login_user(
@@ -434,7 +410,8 @@ mod tests {
 
         // Verify directory was actually created
         assert!(
-            file_root
+            file_area
+                .path()
                 .join("shared/Submissions [NEXUS-DB]/MySubmission")
                 .exists()
         );
@@ -442,10 +419,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_create_dir_with_permission() {
-        let file_area = setup_file_area();
         let mut test_ctx = create_test_context().await;
-        let file_root = Box::leak(file_area.path().to_path_buf().into_boxed_path());
-        test_ctx.file_root = Some(file_root);
+        let file_area = setup_file_area_full(&mut test_ctx);
 
         // User with file_create_dir permission
         let session_id = login_user(
@@ -482,18 +457,17 @@ mod tests {
         }
 
         // Verify directory was actually created
-        assert!(file_root.join("shared/MyNewFolder").exists());
+        assert!(file_area.path().join("shared/MyNewFolder").exists());
     }
 
     #[tokio::test]
     async fn test_create_dir_already_exists() {
-        let file_area = setup_file_area();
         let mut test_ctx = create_test_context().await;
-        let file_root = Box::leak(file_area.path().to_path_buf().into_boxed_path());
-        test_ctx.file_root = Some(file_root);
+        let file_area = setup_file_area_full(&mut test_ctx);
 
         // Create the directory first
-        fs::create_dir(file_root.join("shared/ExistingFolder")).expect("Failed to create dir");
+        fs::create_dir(file_area.path().join("shared/ExistingFolder"))
+            .expect("Failed to create dir");
 
         let session_id = login_user(
             &mut test_ctx,
@@ -526,9 +500,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_create_dir_empty_name() {
-        let file_area = setup_file_area();
         let mut test_ctx = create_test_context().await;
-        test_ctx.file_root = Some(Box::leak(file_area.path().to_path_buf().into_boxed_path()));
+        let _file_area = setup_file_area_full(&mut test_ctx);
 
         let session_id = login_user(
             &mut test_ctx,
@@ -561,9 +534,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_create_dir_invalid_name_with_slash() {
-        let file_area = setup_file_area();
         let mut test_ctx = create_test_context().await;
-        test_ctx.file_root = Some(Box::leak(file_area.path().to_path_buf().into_boxed_path()));
+        let _file_area = setup_file_area_full(&mut test_ctx);
 
         let session_id = login_user(
             &mut test_ctx,
@@ -596,9 +568,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_create_dir_parent_traversal() {
-        let file_area = setup_file_area();
         let mut test_ctx = create_test_context().await;
-        test_ctx.file_root = Some(Box::leak(file_area.path().to_path_buf().into_boxed_path()));
+        let _file_area = setup_file_area_full(&mut test_ctx);
 
         let session_id = login_user(
             &mut test_ctx,
@@ -631,9 +602,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_create_dir_parent_not_found() {
-        let file_area = setup_file_area();
         let mut test_ctx = create_test_context().await;
-        test_ctx.file_root = Some(Box::leak(file_area.path().to_path_buf().into_boxed_path()));
+        let _file_area = setup_file_area_full(&mut test_ctx);
 
         let session_id = login_user(
             &mut test_ctx,
@@ -666,9 +636,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_create_dir_root_requires_permission() {
-        let file_area = setup_file_area();
         let mut test_ctx = create_test_context().await;
-        test_ctx.file_root = Some(Box::leak(file_area.path().to_path_buf().into_boxed_path()));
+        let _file_area = setup_file_area_full(&mut test_ctx);
 
         // User without file_root permission
         let session_id = login_user(
@@ -702,10 +671,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_create_dir_admin_anywhere() {
-        let file_area = setup_file_area();
         let mut test_ctx = create_test_context().await;
-        let file_root = Box::leak(file_area.path().to_path_buf().into_boxed_path());
-        test_ctx.file_root = Some(file_root);
+        let _file_area = setup_file_area_full(&mut test_ctx);
 
         // Admin user (has all permissions implicitly)
         let session_id = login_user(&mut test_ctx, "admin", "password", &[], true).await;
@@ -737,10 +704,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_create_dir_unicode_name() {
-        let file_area = setup_file_area();
         let mut test_ctx = create_test_context().await;
-        let file_root = Box::leak(file_area.path().to_path_buf().into_boxed_path());
-        test_ctx.file_root = Some(file_root);
+        let file_area = setup_file_area_full(&mut test_ctx);
 
         let session_id = login_user(
             &mut test_ctx,
@@ -776,18 +741,16 @@ mod tests {
         }
 
         // Verify directory was actually created
-        assert!(file_root.join("shared/日本語フォルダ").exists());
+        assert!(file_area.path().join("shared/日本語フォルダ").exists());
     }
 
     #[tokio::test]
     async fn test_create_dir_backslash_path() {
-        let file_area = setup_file_area();
         let mut test_ctx = create_test_context().await;
-        let file_root = Box::leak(file_area.path().to_path_buf().into_boxed_path());
-        test_ctx.file_root = Some(file_root);
+        let file_area = setup_file_area_full(&mut test_ctx);
 
         // Create a subdirectory first
-        fs::create_dir(file_root.join("shared/Subdir")).expect("Failed to create subdir");
+        fs::create_dir(file_area.path().join("shared/Subdir")).expect("Failed to create subdir");
 
         let session_id = login_user(
             &mut test_ctx,
@@ -825,15 +788,13 @@ mod tests {
         }
 
         // Verify directory was actually created
-        assert!(file_root.join("shared/Subdir/NewFolder").exists());
+        assert!(file_area.path().join("shared/Subdir/NewFolder").exists());
     }
 
     #[tokio::test]
     async fn test_create_dir_with_spaces_in_name() {
-        let file_area = setup_file_area();
         let mut test_ctx = create_test_context().await;
-        let file_root = Box::leak(file_area.path().to_path_buf().into_boxed_path());
-        test_ctx.file_root = Some(file_root);
+        let file_area = setup_file_area_full(&mut test_ctx);
 
         let session_id = login_user(
             &mut test_ctx,
@@ -869,14 +830,13 @@ mod tests {
         }
 
         // Verify directory was actually created
-        assert!(file_root.join("shared/My New Folder").exists());
+        assert!(file_area.path().join("shared/My New Folder").exists());
     }
 
     #[tokio::test]
     async fn test_create_dir_dot_name() {
-        let file_area = setup_file_area();
         let mut test_ctx = create_test_context().await;
-        test_ctx.file_root = Some(Box::leak(file_area.path().to_path_buf().into_boxed_path()));
+        let _file_area = setup_file_area_full(&mut test_ctx);
 
         let session_id = login_user(
             &mut test_ctx,
@@ -911,10 +871,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_create_upload_folder() {
-        let file_area = setup_file_area();
         let mut test_ctx = create_test_context().await;
-        let file_root = Box::leak(file_area.path().to_path_buf().into_boxed_path());
-        test_ctx.file_root = Some(file_root);
+        let file_area = setup_file_area_full(&mut test_ctx);
 
         let session_id = login_user(
             &mut test_ctx,
@@ -955,7 +913,12 @@ mod tests {
         }
 
         // Verify directory was created
-        assert!(file_root.join("shared/User Uploads [NEXUS-UL]").exists());
+        assert!(
+            file_area
+                .path()
+                .join("shared/User Uploads [NEXUS-UL]")
+                .exists()
+        );
 
         // Now verify that a user WITHOUT file_create_dir can create inside it
         let session_id2 = login_user(
@@ -996,7 +959,8 @@ mod tests {
         }
 
         assert!(
-            file_root
+            file_area
+                .path()
                 .join("shared/User Uploads [NEXUS-UL]/Subfolder")
                 .exists()
         );
@@ -1004,13 +968,11 @@ mod tests {
 
     #[tokio::test]
     async fn test_create_dir_multiple_slashes_in_path() {
-        let file_area = setup_file_area();
         let mut test_ctx = create_test_context().await;
-        let file_root = Box::leak(file_area.path().to_path_buf().into_boxed_path());
-        test_ctx.file_root = Some(file_root);
+        let file_area = setup_file_area_full(&mut test_ctx);
 
         // Create a subdirectory first
-        fs::create_dir(file_root.join("shared/Subdir")).expect("Failed to create subdir");
+        fs::create_dir(file_area.path().join("shared/Subdir")).expect("Failed to create subdir");
 
         let session_id = login_user(
             &mut test_ctx,
@@ -1048,14 +1010,13 @@ mod tests {
         }
 
         // Verify directory was actually created
-        assert!(file_root.join("shared/Subdir/NewFolder").exists());
+        assert!(file_area.path().join("shared/Subdir/NewFolder").exists());
     }
 
     #[tokio::test]
     async fn test_create_dir_windows_drive_letter_rejected() {
-        let file_area = setup_file_area();
         let mut test_ctx = create_test_context().await;
-        test_ctx.file_root = Some(Box::leak(file_area.path().to_path_buf().into_boxed_path()));
+        let _file_area = setup_file_area_full(&mut test_ctx);
 
         let session_id = login_user(
             &mut test_ctx,
@@ -1089,9 +1050,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_create_dir_windows_drive_letter_with_leading_slash_rejected() {
-        let file_area = setup_file_area();
         let mut test_ctx = create_test_context().await;
-        test_ctx.file_root = Some(Box::leak(file_area.path().to_path_buf().into_boxed_path()));
+        let _file_area = setup_file_area_full(&mut test_ctx);
 
         let session_id = login_user(
             &mut test_ctx,
@@ -1130,13 +1090,11 @@ mod tests {
 
     #[tokio::test]
     async fn test_create_dir_dot_components_normalized() {
-        let file_area = setup_file_area();
         let mut test_ctx = create_test_context().await;
-        let file_root = Box::leak(file_area.path().to_path_buf().into_boxed_path());
-        test_ctx.file_root = Some(file_root);
+        let file_area = setup_file_area_full(&mut test_ctx);
 
         // Create a subdirectory first
-        fs::create_dir(file_root.join("shared/Subdir")).expect("Failed to create subdir");
+        fs::create_dir(file_area.path().join("shared/Subdir")).expect("Failed to create subdir");
 
         let session_id = login_user(
             &mut test_ctx,
@@ -1178,6 +1136,6 @@ mod tests {
         }
 
         // Verify directory was actually created
-        assert!(file_root.join("shared/Subdir/NewFolder").exists());
+        assert!(file_area.path().join("shared/Subdir/NewFolder").exists());
     }
 }

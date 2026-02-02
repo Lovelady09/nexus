@@ -381,28 +381,10 @@ fn should_hide_entry(
 mod tests {
     use super::*;
     use crate::db;
-    use crate::handlers::testing::{create_test_context, login_user, read_server_message};
+    use crate::handlers::testing::{
+        create_test_context, login_user, read_server_message, setup_file_area_full,
+    };
     use std::fs;
-    use tempfile::TempDir;
-
-    fn setup_file_area() -> TempDir {
-        let temp_dir = TempDir::new().expect("Failed to create temp dir");
-        let root = temp_dir.path();
-
-        // Create shared directory structure
-        fs::create_dir_all(root.join("shared")).expect("Failed to create shared");
-        fs::create_dir_all(root.join("shared/Documents")).expect("Failed to create Documents");
-        fs::create_dir_all(root.join("shared/Uploads [NEXUS-UL]"))
-            .expect("Failed to create Uploads");
-        fs::write(root.join("shared/readme.txt"), "test content").expect("Failed to create file");
-        fs::write(root.join("shared/Documents/file.txt"), "doc content")
-            .expect("Failed to create file");
-
-        // Create users directory
-        fs::create_dir_all(root.join("users")).expect("Failed to create users");
-
-        temp_dir
-    }
 
     #[tokio::test]
     async fn test_file_list_requires_login() {
@@ -422,9 +404,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_file_list_requires_permission() {
-        let file_area = setup_file_area();
         let mut test_ctx = create_test_context().await;
-        test_ctx.file_root = Some(Box::leak(file_area.path().to_path_buf().into_boxed_path()));
+        let _file_area = setup_file_area_full(&mut test_ctx);
 
         // Login as user without FileList permission
         let session_id = login_user(&mut test_ctx, "alice", "password", &[], false).await;
@@ -451,9 +432,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_file_list_admin_has_permission() {
-        let file_area = setup_file_area();
         let mut test_ctx = create_test_context().await;
-        test_ctx.file_root = Some(Box::leak(file_area.path().to_path_buf().into_boxed_path()));
+        let _file_area = setup_file_area_full(&mut test_ctx);
 
         // Login as admin (has all permissions implicitly)
         let session_id = login_user(&mut test_ctx, "admin", "password", &[], true).await;
@@ -484,9 +464,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_file_list_with_permission() {
-        let file_area = setup_file_area();
         let mut test_ctx = create_test_context().await;
-        test_ctx.file_root = Some(Box::leak(file_area.path().to_path_buf().into_boxed_path()));
+        let _file_area = setup_file_area_full(&mut test_ctx);
 
         // Login as user with FileList permission
         let session_id = login_user(
@@ -556,9 +535,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_file_list_not_found() {
-        let file_area = setup_file_area();
         let mut test_ctx = create_test_context().await;
-        test_ctx.file_root = Some(Box::leak(file_area.path().to_path_buf().into_boxed_path()));
+        let _file_area = setup_file_area_full(&mut test_ctx);
 
         let session_id = login_user(&mut test_ctx, "admin", "password", &[], true).await;
 
@@ -584,9 +562,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_file_list_not_directory() {
-        let file_area = setup_file_area();
         let mut test_ctx = create_test_context().await;
-        test_ctx.file_root = Some(Box::leak(file_area.path().to_path_buf().into_boxed_path()));
+        let _file_area = setup_file_area_full(&mut test_ctx);
 
         let session_id = login_user(&mut test_ctx, "admin", "password", &[], true).await;
 
@@ -613,9 +590,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_file_list_sorted() {
-        let file_area = setup_file_area();
         let mut test_ctx = create_test_context().await;
-        test_ctx.file_root = Some(Box::leak(file_area.path().to_path_buf().into_boxed_path()));
+        let file_area = setup_file_area_full(&mut test_ctx);
 
         // Create additional files with specific names
         fs::write(file_area.path().join("shared/zebra.txt"), "z").unwrap();
@@ -671,15 +647,13 @@ mod tests {
 
     #[tokio::test]
     async fn test_file_list_dropbox_hidden_from_non_admin() {
-        let file_area = setup_file_area();
+        let mut test_ctx = create_test_context().await;
+        let file_area = setup_file_area_full(&mut test_ctx);
 
         // Create a dropbox folder with content
         let dropbox = file_area.path().join("shared/Inbox [NEXUS-DB]");
         fs::create_dir(&dropbox).expect("Failed to create dropbox");
         fs::write(dropbox.join("secret.txt"), "hidden").expect("Failed to create file");
-
-        let mut test_ctx = create_test_context().await;
-        test_ctx.file_root = Some(Box::leak(file_area.path().to_path_buf().into_boxed_path()));
 
         // Login as regular user with FileList permission
         let session_id = login_user(
@@ -721,15 +695,13 @@ mod tests {
 
     #[tokio::test]
     async fn test_file_list_dropbox_visible_to_admin() {
-        let file_area = setup_file_area();
+        let mut test_ctx = create_test_context().await;
+        let file_area = setup_file_area_full(&mut test_ctx);
 
         // Create a dropbox folder with content
         let dropbox = file_area.path().join("shared/Inbox [NEXUS-DB]");
         fs::create_dir(&dropbox).expect("Failed to create dropbox");
         fs::write(dropbox.join("secret.txt"), "hidden").expect("Failed to create file");
-
-        let mut test_ctx = create_test_context().await;
-        test_ctx.file_root = Some(Box::leak(file_area.path().to_path_buf().into_boxed_path()));
 
         // Login as admin
         let session_id = login_user(&mut test_ctx, "admin", "password", &[], true).await;
@@ -762,15 +734,13 @@ mod tests {
 
     #[tokio::test]
     async fn test_file_list_user_dropbox_visible_to_owner() {
-        let file_area = setup_file_area();
+        let mut test_ctx = create_test_context().await;
+        let file_area = setup_file_area_full(&mut test_ctx);
 
         // Create a user dropbox folder with content
         let dropbox = file_area.path().join("shared/For Alice [NEXUS-DB-alice]");
         fs::create_dir(&dropbox).expect("Failed to create user dropbox");
         fs::write(dropbox.join("private.txt"), "for alice").expect("Failed to create file");
-
-        let mut test_ctx = create_test_context().await;
-        test_ctx.file_root = Some(Box::leak(file_area.path().to_path_buf().into_boxed_path()));
 
         // Login as alice (the owner)
         let session_id = login_user(
@@ -810,15 +780,13 @@ mod tests {
 
     #[tokio::test]
     async fn test_file_list_user_dropbox_hidden_from_other_users() {
-        let file_area = setup_file_area();
+        let mut test_ctx = create_test_context().await;
+        let file_area = setup_file_area_full(&mut test_ctx);
 
         // Create a user dropbox folder for alice with content
         let dropbox = file_area.path().join("shared/For Alice [NEXUS-DB-alice]");
         fs::create_dir(&dropbox).expect("Failed to create user dropbox");
         fs::write(dropbox.join("private.txt"), "for alice").expect("Failed to create file");
-
-        let mut test_ctx = create_test_context().await;
-        test_ctx.file_root = Some(Box::leak(file_area.path().to_path_buf().into_boxed_path()));
 
         // Login as bob (not the owner)
         let session_id = login_user(
@@ -860,14 +828,12 @@ mod tests {
 
     #[tokio::test]
     async fn test_file_list_dropbox_entry_visible_in_parent() {
-        let file_area = setup_file_area();
+        let mut test_ctx = create_test_context().await;
+        let file_area = setup_file_area_full(&mut test_ctx);
 
         // Create a dropbox folder
         let dropbox = file_area.path().join("shared/Inbox [NEXUS-DB]");
         fs::create_dir(&dropbox).expect("Failed to create dropbox");
-
-        let mut test_ctx = create_test_context().await;
-        test_ctx.file_root = Some(Box::leak(file_area.path().to_path_buf().into_boxed_path()));
 
         // Login as regular user with FileList permission
         let session_id = login_user(
@@ -912,16 +878,14 @@ mod tests {
 
     #[tokio::test]
     async fn test_file_list_same_name_with_and_without_suffix() {
-        let file_area = setup_file_area();
+        let mut test_ctx = create_test_context().await;
+        let file_area = setup_file_area_full(&mut test_ctx);
 
         // Create two folders with same base name - one with suffix, one without
         fs::create_dir(file_area.path().join("shared/Downloads"))
             .expect("Failed to create Downloads");
         fs::create_dir(file_area.path().join("shared/Downloads [NEXUS-UL]"))
             .expect("Failed to create Downloads [NEXUS-UL]");
-
-        let mut test_ctx = create_test_context().await;
-        test_ctx.file_root = Some(Box::leak(file_area.path().to_path_buf().into_boxed_path()));
 
         let session_id = login_user(&mut test_ctx, "admin", "password", &[], true).await;
 
@@ -971,9 +935,8 @@ mod tests {
     #[tokio::test]
     async fn test_file_list_suffix_matching_stripped_path() {
         // Test that clients can access "Uploads [NEXUS-UL]" using just "Uploads"
-        let file_area = setup_file_area();
         let mut test_ctx = create_test_context().await;
-        test_ctx.file_root = Some(Box::leak(file_area.path().to_path_buf().into_boxed_path()));
+        let file_area = setup_file_area_full(&mut test_ctx);
 
         // Add a file inside the upload folder
         fs::write(
@@ -1023,15 +986,16 @@ mod tests {
     #[tokio::test]
     async fn test_file_list_suffix_matching_nested_path() {
         // Test that nested paths work with suffix matching
-        let file_area = setup_file_area();
         let mut test_ctx = create_test_context().await;
-        test_ctx.file_root = Some(Box::leak(file_area.path().to_path_buf().into_boxed_path()));
+        let file_area = setup_file_area_full(&mut test_ctx);
 
         // Create nested structure: "Uploads [NEXUS-UL]/subdir/file.txt"
         fs::create_dir(file_area.path().join("shared/Uploads [NEXUS-UL]/subdir"))
             .expect("Failed to create subdir");
         fs::write(
-            file_area.path().join("shared/Uploads [NEXUS-UL]/subdir/nested.txt"),
+            file_area
+                .path()
+                .join("shared/Uploads [NEXUS-UL]/subdir/nested.txt"),
             "nested content",
         )
         .expect("Failed to create file");
@@ -1074,9 +1038,8 @@ mod tests {
     async fn test_file_list_symlink_never_leaks_real_path() {
         use std::os::unix::fs::symlink;
 
-        let file_area = setup_file_area();
         let mut test_ctx = create_test_context().await;
-        test_ctx.file_root = Some(Box::leak(file_area.path().to_path_buf().into_boxed_path()));
+        let file_area = setup_file_area_full(&mut test_ctx);
 
         // Create an external directory with a distinctive path we can check for
         let external = tempfile::TempDir::new().expect("Failed to create external dir");
@@ -1146,9 +1109,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_file_list_upload_folder_can_upload() {
-        let file_area = setup_file_area();
         let mut test_ctx = create_test_context().await;
-        test_ctx.file_root = Some(Box::leak(file_area.path().to_path_buf().into_boxed_path()));
+        let _file_area = setup_file_area_full(&mut test_ctx);
 
         let session_id = login_user(&mut test_ctx, "admin", "password", &[], true).await;
 
@@ -1192,9 +1154,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_file_list_root_requires_permission() {
-        let file_area = setup_file_area();
         let mut test_ctx = create_test_context().await;
-        test_ctx.file_root = Some(Box::leak(file_area.path().to_path_buf().into_boxed_path()));
+        let _file_area = setup_file_area_full(&mut test_ctx);
 
         // Login as user with only FileList permission (not FileRoot)
         let session_id = login_user(
@@ -1229,9 +1190,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_file_list_root_with_permission() {
-        let file_area = setup_file_area();
         let mut test_ctx = create_test_context().await;
-        test_ctx.file_root = Some(Box::leak(file_area.path().to_path_buf().into_boxed_path()));
+        let _file_area = setup_file_area_full(&mut test_ctx);
 
         // Login as user with both FileList and FileRoot permissions
         let session_id = login_user(
@@ -1273,9 +1233,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_file_list_root_admin_has_permission() {
-        let file_area = setup_file_area();
         let mut test_ctx = create_test_context().await;
-        test_ctx.file_root = Some(Box::leak(file_area.path().to_path_buf().into_boxed_path()));
+        let _file_area = setup_file_area_full(&mut test_ctx);
 
         // Login as admin (has all permissions implicitly)
         let session_id = login_user(&mut test_ctx, "admin", "password", &[], true).await;
@@ -1310,15 +1269,13 @@ mod tests {
 
     #[tokio::test]
     async fn test_file_list_root_can_browse_user_areas() {
-        let file_area = setup_file_area();
+        let mut test_ctx = create_test_context().await;
+        let file_area = setup_file_area_full(&mut test_ctx);
 
         // Create a user area with content
         let alice_area = file_area.path().join("users/alice");
         fs::create_dir_all(&alice_area).expect("Failed to create user area");
         fs::write(alice_area.join("private.txt"), "alice's file").expect("Failed to create file");
-
-        let mut test_ctx = create_test_context().await;
-        test_ctx.file_root = Some(Box::leak(file_area.path().to_path_buf().into_boxed_path()));
 
         // Login as admin
         let session_id = login_user(&mut test_ctx, "admin", "password", &[], true).await;
@@ -1351,14 +1308,14 @@ mod tests {
 
     #[tokio::test]
     async fn test_file_list_hides_dotfiles_by_default() {
-        let file_area = setup_file_area();
         let mut test_ctx = create_test_context().await;
-        let file_root = Box::leak(file_area.path().to_path_buf().into_boxed_path());
-        test_ctx.file_root = Some(file_root);
+        let file_area = setup_file_area_full(&mut test_ctx);
 
         // Create a dotfile in shared/
-        fs::write(file_root.join("shared/.hidden"), "secret").expect("Failed to create dotfile");
-        fs::write(file_root.join("shared/visible.txt"), "hello").expect("Failed to create file");
+        fs::write(file_area.path().join("shared/.hidden"), "secret")
+            .expect("Failed to create dotfile");
+        fs::write(file_area.path().join("shared/visible.txt"), "hello")
+            .expect("Failed to create file");
 
         let session_id = login_user(
             &mut test_ctx,
@@ -1403,14 +1360,14 @@ mod tests {
 
     #[tokio::test]
     async fn test_file_list_shows_dotfiles_when_requested() {
-        let file_area = setup_file_area();
         let mut test_ctx = create_test_context().await;
-        let file_root = Box::leak(file_area.path().to_path_buf().into_boxed_path());
-        test_ctx.file_root = Some(file_root);
+        let file_area = setup_file_area_full(&mut test_ctx);
 
         // Create a dotfile in shared/
-        fs::write(file_root.join("shared/.hidden"), "secret").expect("Failed to create dotfile");
-        fs::write(file_root.join("shared/visible.txt"), "hello").expect("Failed to create file");
+        fs::write(file_area.path().join("shared/.hidden"), "secret")
+            .expect("Failed to create dotfile");
+        fs::write(file_area.path().join("shared/visible.txt"), "hello")
+            .expect("Failed to create file");
 
         let session_id = login_user(
             &mut test_ctx,
@@ -1455,14 +1412,13 @@ mod tests {
 
     #[tokio::test]
     async fn test_file_list_hides_dotdirectories_by_default() {
-        let file_area = setup_file_area();
         let mut test_ctx = create_test_context().await;
-        let file_root = Box::leak(file_area.path().to_path_buf().into_boxed_path());
-        test_ctx.file_root = Some(file_root);
+        let file_area = setup_file_area_full(&mut test_ctx);
 
         // Create a hidden directory in shared/
-        fs::create_dir(file_root.join("shared/.hidden_dir")).expect("Failed to create dotdir");
-        fs::create_dir(file_root.join("shared/visible_dir")).expect("Failed to create dir");
+        fs::create_dir(file_area.path().join("shared/.hidden_dir"))
+            .expect("Failed to create dotdir");
+        fs::create_dir(file_area.path().join("shared/visible_dir")).expect("Failed to create dir");
 
         let session_id = login_user(
             &mut test_ctx,

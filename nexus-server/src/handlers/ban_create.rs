@@ -492,92 +492,7 @@ mod tests {
     use super::*;
     use crate::handlers::testing::{create_test_context, login_user, read_server_message};
 
-    // =========================================================================
-    // Unit tests for parse_duration
-    // =========================================================================
-
-    #[test]
-    fn test_parse_duration_none() {
-        assert_eq!(parse_duration(&None), Ok(None));
-    }
-
-    #[test]
-    fn test_parse_duration_empty() {
-        assert_eq!(parse_duration(&Some("".to_string())), Ok(None));
-    }
-
-    #[test]
-    fn test_parse_duration_zero() {
-        assert_eq!(parse_duration(&Some("0".to_string())), Ok(None));
-    }
-
-    #[test]
-    fn test_parse_duration_minutes() {
-        let result = parse_duration(&Some("10m".to_string()));
-        assert!(result.is_ok());
-        let expires = result.unwrap().unwrap();
-        let now = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .unwrap()
-            .as_secs() as i64;
-        // Should be approximately 10 minutes from now (allow 2 second tolerance)
-        assert!((expires - now - 600).abs() < 2);
-    }
-
-    #[test]
-    fn test_parse_duration_hours() {
-        let result = parse_duration(&Some("4h".to_string()));
-        assert!(result.is_ok());
-        let expires = result.unwrap().unwrap();
-        let now = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .unwrap()
-            .as_secs() as i64;
-        assert!((expires - now - 14400).abs() < 2);
-    }
-
-    #[test]
-    fn test_parse_duration_days() {
-        let result = parse_duration(&Some("7d".to_string()));
-        assert!(result.is_ok());
-        let expires = result.unwrap().unwrap();
-        let now = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .unwrap()
-            .as_secs() as i64;
-        assert!((expires - now - 604800).abs() < 2);
-    }
-
-    #[test]
-    fn test_parse_duration_invalid() {
-        assert!(parse_duration(&Some("10x".to_string())).is_err());
-        assert!(parse_duration(&Some("abc".to_string())).is_err());
-        assert!(parse_duration(&Some("10".to_string())).is_err());
-    }
-
-    #[test]
-    fn test_format_duration_remaining() {
-        let now = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .unwrap()
-            .as_secs() as i64;
-
-        // 2 hours 30 minutes
-        assert_eq!(format_duration_remaining(now + 9000), "2h 30m");
-
-        // 1 day 5 hours
-        assert_eq!(format_duration_remaining(now + 104400), "1d 5h");
-
-        // 45 minutes
-        assert_eq!(format_duration_remaining(now + 2700), "45m");
-
-        // 1 minute (minimum)
-        assert_eq!(format_duration_remaining(now + 30), "1m");
-    }
-
-    // =========================================================================
-    // Handler integration tests
-    // =========================================================================
+    // Note: parse_duration and format_duration_remaining are tested in duration.rs
 
     #[tokio::test]
     async fn test_bancreate_requires_login() {
@@ -1028,25 +943,6 @@ mod tests {
             assert!(!cache.is_banned("2001:db9::1".parse().unwrap()));
         }
     }
-
-    #[test]
-    fn test_parse_duration_zero_variants() {
-        // All zero variants should return permanent (None)
-        assert_eq!(parse_duration(&Some("0m".to_string())), Ok(None));
-        assert_eq!(parse_duration(&Some("0h".to_string())), Ok(None));
-        assert_eq!(parse_duration(&Some("0d".to_string())), Ok(None));
-    }
-
-    #[test]
-    fn test_parse_duration_whitespace() {
-        // Whitespace should be trimmed
-        assert_eq!(parse_duration(&Some("  0  ".to_string())), Ok(None));
-        assert_eq!(parse_duration(&Some(" ".to_string())), Ok(None));
-    }
-
-    // =========================================================================
-    // Trusted IP protection tests
-    // =========================================================================
 
     #[tokio::test]
     async fn test_bancreate_cidr_skips_trusted_ips() {

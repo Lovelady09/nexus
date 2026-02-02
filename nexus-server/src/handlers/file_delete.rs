@@ -245,23 +245,12 @@ where
 mod tests {
     use std::fs;
 
-    use tempfile::TempDir;
-
     use super::*;
     use crate::db::Permission;
     use crate::handlers::testing::{
         DEFAULT_TEST_LOCALE, create_test_context, login_user, read_server_message,
+        setup_file_area_basic,
     };
-
-    fn setup_file_area() -> TempDir {
-        let temp_dir = TempDir::new().expect("Failed to create temp dir");
-
-        // Create shared and users directories
-        fs::create_dir_all(temp_dir.path().join("shared")).expect("Failed to create shared");
-        fs::create_dir_all(temp_dir.path().join("users")).expect("Failed to create users dir");
-
-        temp_dir
-    }
 
     #[tokio::test]
     async fn test_delete_requires_auth() {
@@ -280,9 +269,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_delete_requires_permission() {
-        let file_area = setup_file_area();
         let mut test_ctx = create_test_context().await;
-        test_ctx.file_root = Some(Box::leak(file_area.path().to_path_buf().into_boxed_path()));
+        let file_area = setup_file_area_basic(&mut test_ctx);
 
         // Create a file to delete
         fs::write(file_area.path().join("shared/test.txt"), "content")
@@ -322,14 +310,13 @@ mod tests {
 
     #[tokio::test]
     async fn test_delete_file_success() {
-        let file_area = setup_file_area();
         let mut test_ctx = create_test_context().await;
-        let file_root = Box::leak(file_area.path().to_path_buf().into_boxed_path());
-        test_ctx.file_root = Some(file_root);
+        let file_area = setup_file_area_basic(&mut test_ctx);
 
         // Create a file to delete
-        fs::write(file_root.join("shared/test.txt"), "content").expect("Failed to create file");
-        assert!(file_root.join("shared/test.txt").exists());
+        fs::write(file_area.path().join("shared/test.txt"), "content")
+            .expect("Failed to create file");
+        assert!(file_area.path().join("shared/test.txt").exists());
 
         let session_id = login_user(
             &mut test_ctx,
@@ -359,19 +346,17 @@ mod tests {
         }
 
         // File should be gone
-        assert!(!file_root.join("shared/test.txt").exists());
+        assert!(!file_area.path().join("shared/test.txt").exists());
     }
 
     #[tokio::test]
     async fn test_delete_empty_directory_success() {
-        let file_area = setup_file_area();
         let mut test_ctx = create_test_context().await;
-        let file_root = Box::leak(file_area.path().to_path_buf().into_boxed_path());
-        test_ctx.file_root = Some(file_root);
+        let file_area = setup_file_area_basic(&mut test_ctx);
 
         // Create an empty directory
-        fs::create_dir(file_root.join("shared/empty_dir")).expect("Failed to create dir");
-        assert!(file_root.join("shared/empty_dir").exists());
+        fs::create_dir(file_area.path().join("shared/empty_dir")).expect("Failed to create dir");
+        assert!(file_area.path().join("shared/empty_dir").exists());
 
         let session_id = login_user(
             &mut test_ctx,
@@ -401,20 +386,21 @@ mod tests {
         }
 
         // Directory should be gone
-        assert!(!file_root.join("shared/empty_dir").exists());
+        assert!(!file_area.path().join("shared/empty_dir").exists());
     }
 
     #[tokio::test]
     async fn test_delete_non_empty_directory_fails() {
-        let file_area = setup_file_area();
         let mut test_ctx = create_test_context().await;
-        let file_root = Box::leak(file_area.path().to_path_buf().into_boxed_path());
-        test_ctx.file_root = Some(file_root);
+        let file_area = setup_file_area_basic(&mut test_ctx);
 
         // Create a directory with a file inside
-        fs::create_dir(file_root.join("shared/non_empty")).expect("Failed to create dir");
-        fs::write(file_root.join("shared/non_empty/file.txt"), "content")
-            .expect("Failed to create file");
+        fs::create_dir(file_area.path().join("shared/non_empty")).expect("Failed to create dir");
+        fs::write(
+            file_area.path().join("shared/non_empty/file.txt"),
+            "content",
+        )
+        .expect("Failed to create file");
 
         let session_id = login_user(
             &mut test_ctx,
@@ -444,14 +430,13 @@ mod tests {
         }
 
         // Directory should still exist
-        assert!(file_root.join("shared/non_empty").exists());
+        assert!(file_area.path().join("shared/non_empty").exists());
     }
 
     #[tokio::test]
     async fn test_delete_not_found() {
-        let file_area = setup_file_area();
         let mut test_ctx = create_test_context().await;
-        test_ctx.file_root = Some(Box::leak(file_area.path().to_path_buf().into_boxed_path()));
+        let _file_area = setup_file_area_basic(&mut test_ctx);
 
         let session_id = login_user(
             &mut test_ctx,
@@ -483,9 +468,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_delete_path_traversal_blocked() {
-        let file_area = setup_file_area();
         let mut test_ctx = create_test_context().await;
-        test_ctx.file_root = Some(Box::leak(file_area.path().to_path_buf().into_boxed_path()));
+        let _file_area = setup_file_area_basic(&mut test_ctx);
 
         let session_id = login_user(
             &mut test_ctx,
@@ -517,9 +501,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_delete_cannot_delete_area_root() {
-        let file_area = setup_file_area();
         let mut test_ctx = create_test_context().await;
-        test_ctx.file_root = Some(Box::leak(file_area.path().to_path_buf().into_boxed_path()));
+        let _file_area = setup_file_area_basic(&mut test_ctx);
 
         let session_id = login_user(
             &mut test_ctx,
@@ -552,13 +535,12 @@ mod tests {
 
     #[tokio::test]
     async fn test_delete_root_requires_permission() {
-        let file_area = setup_file_area();
         let mut test_ctx = create_test_context().await;
-        let file_root = Box::leak(file_area.path().to_path_buf().into_boxed_path());
-        test_ctx.file_root = Some(file_root);
+        let file_area = setup_file_area_basic(&mut test_ctx);
 
         // Create a file in shared
-        fs::write(file_root.join("shared/test.txt"), "content").expect("Failed to create file");
+        fs::write(file_area.path().join("shared/test.txt"), "content")
+            .expect("Failed to create file");
 
         // User with file_delete but not file_root
         let session_id = login_user(
@@ -590,18 +572,16 @@ mod tests {
         }
 
         // File should still exist
-        assert!(file_root.join("shared/test.txt").exists());
+        assert!(file_area.path().join("shared/test.txt").exists());
     }
 
     #[tokio::test]
     async fn test_delete_admin_can_delete() {
-        let file_area = setup_file_area();
         let mut test_ctx = create_test_context().await;
-        let file_root = Box::leak(file_area.path().to_path_buf().into_boxed_path());
-        test_ctx.file_root = Some(file_root);
+        let file_area = setup_file_area_basic(&mut test_ctx);
 
         // Create a file to delete
-        fs::write(file_root.join("shared/admin_test.txt"), "content")
+        fs::write(file_area.path().join("shared/admin_test.txt"), "content")
             .expect("Failed to create file");
 
         // Admin (has all permissions implicitly)
@@ -626,20 +606,22 @@ mod tests {
         }
 
         // File should be gone
-        assert!(!file_root.join("shared/admin_test.txt").exists());
+        assert!(!file_area.path().join("shared/admin_test.txt").exists());
     }
 
     #[tokio::test]
     async fn test_delete_nested_file() {
-        let file_area = setup_file_area();
         let mut test_ctx = create_test_context().await;
-        let file_root = Box::leak(file_area.path().to_path_buf().into_boxed_path());
-        test_ctx.file_root = Some(file_root);
+        let file_area = setup_file_area_basic(&mut test_ctx);
 
         // Create a nested file
-        fs::create_dir_all(file_root.join("shared/docs/archive")).expect("Failed to create dirs");
-        fs::write(file_root.join("shared/docs/archive/old.txt"), "content")
-            .expect("Failed to create file");
+        fs::create_dir_all(file_area.path().join("shared/docs/archive"))
+            .expect("Failed to create dirs");
+        fs::write(
+            file_area.path().join("shared/docs/archive/old.txt"),
+            "content",
+        )
+        .expect("Failed to create file");
 
         let session_id = login_user(
             &mut test_ctx,
@@ -669,19 +651,22 @@ mod tests {
         }
 
         // File should be gone but directories remain
-        assert!(!file_root.join("shared/docs/archive/old.txt").exists());
-        assert!(file_root.join("shared/docs/archive").exists());
+        assert!(
+            !file_area
+                .path()
+                .join("shared/docs/archive/old.txt")
+                .exists()
+        );
+        assert!(file_area.path().join("shared/docs/archive").exists());
     }
 
     #[tokio::test]
     async fn test_delete_root_mode_success() {
-        let file_area = setup_file_area();
         let mut test_ctx = create_test_context().await;
-        let file_root = Box::leak(file_area.path().to_path_buf().into_boxed_path());
-        test_ctx.file_root = Some(file_root);
+        let file_area = setup_file_area_basic(&mut test_ctx);
 
         // Create a file in shared (accessible via root mode)
-        fs::write(file_root.join("shared/root_test.txt"), "content")
+        fs::write(file_area.path().join("shared/root_test.txt"), "content")
             .expect("Failed to create file");
 
         // User with both file_delete and file_root permissions
@@ -717,7 +702,7 @@ mod tests {
         }
 
         // File should be gone
-        assert!(!file_root.join("shared/root_test.txt").exists());
+        assert!(!file_area.path().join("shared/root_test.txt").exists());
     }
 
     #[tokio::test]
@@ -725,14 +710,12 @@ mod tests {
     async fn test_delete_symlink() {
         use std::os::unix::fs::symlink;
 
-        let file_area = setup_file_area();
         let mut test_ctx = create_test_context().await;
-        let file_root = Box::leak(file_area.path().to_path_buf().into_boxed_path());
-        test_ctx.file_root = Some(file_root);
+        let file_area = setup_file_area_basic(&mut test_ctx);
 
         // Create a target file and a symlink to it
-        let target = file_root.join("shared/target.txt");
-        let link = file_root.join("shared/link.txt");
+        let target = file_area.path().join("shared/target.txt");
+        let link = file_area.path().join("shared/link.txt");
         fs::write(&target, "target content").expect("Failed to create target");
         symlink(&target, &link).expect("Failed to create symlink");
 
@@ -774,15 +757,14 @@ mod tests {
 
     #[tokio::test]
     async fn test_delete_in_user_personal_area() {
-        let file_area = setup_file_area();
         let mut test_ctx = create_test_context().await;
-        let file_root = Box::leak(file_area.path().to_path_buf().into_boxed_path());
-        test_ctx.file_root = Some(file_root);
+        let file_area = setup_file_area_basic(&mut test_ctx);
 
         // Create a user's personal area with a file
-        fs::create_dir_all(file_root.join("users/testuser")).expect("Failed to create user dir");
+        fs::create_dir_all(file_area.path().join("users/testuser"))
+            .expect("Failed to create user dir");
         fs::write(
-            file_root.join("users/testuser/myfile.txt"),
+            file_area.path().join("users/testuser/myfile.txt"),
             "personal content",
         )
         .expect("Failed to create file");
@@ -820,14 +802,13 @@ mod tests {
         }
 
         // File should be gone
-        assert!(!file_root.join("users/testuser/myfile.txt").exists());
+        assert!(!file_area.path().join("users/testuser/myfile.txt").exists());
     }
 
     #[tokio::test]
     async fn test_delete_empty_path() {
-        let file_area = setup_file_area();
         let mut test_ctx = create_test_context().await;
-        test_ctx.file_root = Some(Box::leak(file_area.path().to_path_buf().into_boxed_path()));
+        let _file_area = setup_file_area_basic(&mut test_ctx);
 
         let session_id = login_user(
             &mut test_ctx,
@@ -863,14 +844,12 @@ mod tests {
     async fn test_delete_symlink_to_directory() {
         use std::os::unix::fs::symlink;
 
-        let file_area = setup_file_area();
         let mut test_ctx = create_test_context().await;
-        let file_root = Box::leak(file_area.path().to_path_buf().into_boxed_path());
-        test_ctx.file_root = Some(file_root);
+        let file_area = setup_file_area_basic(&mut test_ctx);
 
         // Create a target directory with contents and a symlink to it
-        let target_dir = file_root.join("shared/target_dir");
-        let link_dir = file_root.join("shared/link_dir");
+        let target_dir = file_area.path().join("shared/target_dir");
+        let link_dir = file_area.path().join("shared/link_dir");
         fs::create_dir(&target_dir).expect("Failed to create target dir");
         fs::write(target_dir.join("file.txt"), "content").expect("Failed to create file");
         symlink(&target_dir, &link_dir).expect("Failed to create symlink");
@@ -923,14 +902,12 @@ mod tests {
     async fn test_delete_file_through_symlinked_parent() {
         use std::os::unix::fs::symlink;
 
-        let file_area = setup_file_area();
         let mut test_ctx = create_test_context().await;
-        let file_root = Box::leak(file_area.path().to_path_buf().into_boxed_path());
-        test_ctx.file_root = Some(file_root);
+        let file_area = setup_file_area_basic(&mut test_ctx);
 
         // Create a target directory with a file, and a symlink to the directory
-        let target_dir = file_root.join("shared/real_docs");
-        let link_dir = file_root.join("shared/docs");
+        let target_dir = file_area.path().join("shared/real_docs");
+        let link_dir = file_area.path().join("shared/docs");
         fs::create_dir(&target_dir).expect("Failed to create target dir");
         fs::write(target_dir.join("readme.txt"), "content").expect("Failed to create file");
         symlink(&target_dir, &link_dir).expect("Failed to create symlink");
@@ -978,19 +955,23 @@ mod tests {
 
     #[tokio::test]
     async fn test_delete_unicode_filename() {
-        let file_area = setup_file_area();
         let mut test_ctx = create_test_context().await;
-        let file_root = Box::leak(file_area.path().to_path_buf().into_boxed_path());
-        test_ctx.file_root = Some(file_root);
+        let file_area = setup_file_area_basic(&mut test_ctx);
 
         // Create a file with unicode characters in the name
         let unicode_filename = "文档_ドキュメント_документ.txt";
         fs::write(
-            file_root.join("shared").join(unicode_filename),
+            file_area.path().join("shared").join(unicode_filename),
             "unicode content",
         )
         .expect("Failed to create unicode file");
-        assert!(file_root.join("shared").join(unicode_filename).exists());
+        assert!(
+            file_area
+                .path()
+                .join("shared")
+                .join(unicode_filename)
+                .exists()
+        );
 
         let session_id = login_user(
             &mut test_ctx,
@@ -1024,6 +1005,12 @@ mod tests {
         }
 
         // File should be gone
-        assert!(!file_root.join("shared").join(unicode_filename).exists());
+        assert!(
+            !file_area
+                .path()
+                .join("shared")
+                .join(unicode_filename)
+                .exists()
+        );
     }
 }
