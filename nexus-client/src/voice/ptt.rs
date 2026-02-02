@@ -526,7 +526,7 @@ pub fn parse_key_code(key: &str) -> Result<Code, String> {
         "numpad8" => Code::Numpad8,
         "numpad9" => Code::Numpad9,
         "numpadadd" | "numpadplus" => Code::NumpadAdd,
-        "numpadsubtract" => Code::NumpadSubtract,
+        "numpadsubtract" | "numpadminus" => Code::NumpadSubtract,
         "numpadmultiply" => Code::NumpadMultiply,
         "numpaddivide" => Code::NumpadDivide,
         "numpaddecimal" => Code::NumpadDecimal,
@@ -639,10 +639,10 @@ fn code_to_string_internal(code: Code) -> String {
         Code::Numpad8 => "Numpad8".to_string(),
         Code::Numpad9 => "Numpad9".to_string(),
         Code::NumpadAdd => "NumpadPlus".to_string(),
-        Code::NumpadSubtract => "Numpad-".to_string(),
-        Code::NumpadMultiply => "Numpad*".to_string(),
-        Code::NumpadDivide => "Numpad/".to_string(),
-        Code::NumpadDecimal => "Numpad.".to_string(),
+        Code::NumpadSubtract => "NumpadMinus".to_string(),
+        Code::NumpadMultiply => "NumpadMultiply".to_string(),
+        Code::NumpadDivide => "NumpadDivide".to_string(),
+        Code::NumpadDecimal => "NumpadDecimal".to_string(),
         Code::NumpadEnter => "NumpadEnter".to_string(),
 
         // Default for unknown codes
@@ -878,5 +878,68 @@ mod tests {
         let (modifiers, code) = parse_hotkey("Ctrl+NumpadPlus").unwrap();
         assert_eq!(modifiers, Modifiers::CONTROL);
         assert_eq!(code, Code::NumpadAdd);
+    }
+
+    #[test]
+    fn test_numpad_operator_roundtrip() {
+        // All numpad operator keys must roundtrip correctly
+        let numpad_codes = vec![
+            Code::NumpadAdd,
+            Code::NumpadSubtract,
+            Code::NumpadMultiply,
+            Code::NumpadDivide,
+            Code::NumpadDecimal,
+        ];
+
+        for code in numpad_codes {
+            let s = code_to_string(code);
+            let parsed = parse_key_code(&s).unwrap();
+            assert_eq!(code, parsed, "Roundtrip failed for {:?} -> {}", code, s);
+
+            // Also test with modifiers
+            let hotkey_str = hotkey_to_string(Modifiers::CONTROL, code);
+            let (modifiers, parsed_code) = parse_hotkey(&hotkey_str).unwrap();
+            assert_eq!(modifiers, Modifiers::CONTROL);
+            assert_eq!(code, parsed_code, "Hotkey roundtrip failed for {:?}", code);
+        }
+    }
+
+    #[test]
+    fn test_numpad_minus_aliases() {
+        // NumpadMinus can be parsed as "numpadminus" or "numpadsubtract"
+        let (_, code1) = parse_hotkey("NumpadMinus").unwrap();
+        let (_, code2) = parse_hotkey("NumpadSubtract").unwrap();
+        assert_eq!(code1, Code::NumpadSubtract);
+        assert_eq!(code2, Code::NumpadSubtract);
+    }
+
+    #[test]
+    fn test_special_char_keys_with_modifiers() {
+        // Special character keys like -, /, etc. should work with modifiers
+        // The key is after the last +, so "Ctrl+-" splits to ["Ctrl", "-"]
+        let test_cases = vec![
+            ("Ctrl+-", Modifiers::CONTROL, Code::Minus),
+            ("Ctrl+/", Modifiers::CONTROL, Code::Slash),
+            ("Ctrl+=", Modifiers::CONTROL, Code::Equal),
+            ("Alt+`", Modifiers::ALT, Code::Backquote),
+            ("Shift+[", Modifiers::SHIFT, Code::BracketLeft),
+            (
+                "Ctrl+Shift+;",
+                Modifiers::CONTROL | Modifiers::SHIFT,
+                Code::Semicolon,
+            ),
+        ];
+
+        for (input, expected_mods, expected_code) in test_cases {
+            let (modifiers, code) = parse_hotkey(input).unwrap();
+            assert_eq!(modifiers, expected_mods, "Modifiers mismatch for {}", input);
+            assert_eq!(code, expected_code, "Code mismatch for {}", input);
+
+            // Also verify roundtrip
+            let output = hotkey_to_string(modifiers, code);
+            let (mods2, code2) = parse_hotkey(&output).unwrap();
+            assert_eq!(modifiers, mods2, "Roundtrip modifiers failed for {}", input);
+            assert_eq!(code, code2, "Roundtrip code failed for {}", input);
+        }
     }
 }
