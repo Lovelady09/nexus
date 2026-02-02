@@ -31,6 +31,7 @@ use crate::style::{
 };
 use crate::types::{InputId, Message, SettingsFormState, SettingsTab};
 use crate::voice::audio::AudioDevice;
+use crate::voice::ptt::{hotkey_to_string, parse_hotkey};
 
 /// Data needed to render the audio settings tab
 pub struct AudioTabData<'a> {
@@ -764,7 +765,11 @@ fn audio_tab_content(data: AudioTabData<'_>) -> Element<'_, Message> {
     let ptt_key_display = if data.ptt_capturing {
         t("audio-ptt-key-hint")
     } else {
-        data.ptt_key.to_string()
+        // Parse and re-format for platform-aware display (e.g., "Cmd" on macOS, "Super" on Linux)
+        match parse_hotkey(data.ptt_key) {
+            Ok((modifiers, code)) => hotkey_to_string(modifiers, code),
+            Err(_) => data.ptt_key.to_string(), // Fallback to raw string if parse fails
+        }
     };
     let ptt_key_button = button(shaped_text(ptt_key_display).size(TEXT_SIZE))
         .on_press(Message::AudioPttKeyCapture)

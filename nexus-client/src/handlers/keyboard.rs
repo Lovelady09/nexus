@@ -10,6 +10,7 @@ use crate::types::{
     ActivePanel, BookmarkEditMode, ChatTab, InputId, Message, NewsManagementMode,
     UserManagementMode,
 };
+use crate::voice::ptt::build_hotkey_string;
 
 impl NexusApp {
     /// Handle keyboard and window events (Tab, Enter, Escape, F5, file drag-and-drop)
@@ -18,7 +19,7 @@ impl NexusApp {
         if let Some(form) = &self.settings_form
             && form.ptt_capturing
         {
-            if let Event::Keyboard(keyboard::Event::KeyPressed { key, .. }) = &event {
+            if let Event::Keyboard(keyboard::Event::KeyPressed { key, modifiers, .. }) = &event {
                 // Convert Iced key to our PTT key string format
                 let key_string = match key {
                     // Named keys
@@ -90,7 +91,8 @@ impl NexusApp {
                 };
 
                 if let Some(key_str) = key_string {
-                    return self.update(Message::AudioPttKeyCaptured(key_str));
+                    let hotkey_string = build_hotkey_string(modifiers, &key_str);
+                    return self.update(Message::AudioPttKeyCaptured(hotkey_string));
                 }
             }
             // While capturing, consume all key events to prevent other actions

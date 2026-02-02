@@ -28,6 +28,26 @@ const PTT_STREAM_CHANNEL_SIZE: usize = 10;
 /// Poll interval for checking hotkey events (milliseconds)
 const PTT_POLL_INTERVAL_MS: u64 = 10;
 
+/// Hotkey string separator (e.g., "Ctrl+Space")
+pub const HOTKEY_SEPARATOR: &str = "+";
+
+/// Modifier name: Control
+pub const MOD_CTRL: &str = "Ctrl";
+const MOD_CONTROL: &str = "Control";
+
+/// Modifier name: Alt
+pub const MOD_ALT: &str = "Alt";
+
+/// Modifier name: Shift
+pub const MOD_SHIFT: &str = "Shift";
+
+/// Modifier name: Super/Command/Windows key
+pub const MOD_SUPER: &str = "Super";
+pub const MOD_CMD: &str = "Cmd";
+const MOD_COMMAND: &str = "Command";
+const MOD_WIN: &str = "Win";
+const MOD_META: &str = "Meta";
+
 // =============================================================================
 // PTT State
 // =============================================================================
@@ -91,8 +111,8 @@ impl PttManager {
         // Unregister existing hotkey first
         self.unregister_hotkey();
 
-        let code = parse_key_code(key)?;
-        let hotkey = HotKey::new(Some(Modifiers::empty()), code);
+        let (modifiers, code) = parse_hotkey(key)?;
+        let hotkey = HotKey::new(Some(modifiers), code);
 
         self.manager
             .register(hotkey)
@@ -252,10 +272,156 @@ fn ptt_event_stream() -> Pin<Box<dyn Stream<Item = Message> + Send>> {
 // Key Code Parsing
 // =============================================================================
 
-/// Parse a key code string to a Code enum
+/// Parse a hotkey string into Modifiers and Code
+///
+/// Supports formats like:
+/// - `"F1"` - Just a key, no modifiers
+/// - `"Ctrl+Space"` - Single modifier + key
+/// - `"Ctrl+Shift+A"` - Multiple modifiers + key
+///
+/// Modifier names (case-insensitive):
+/// - `Ctrl` / `Control`
+/// - `Alt`
+/// - `Shift`
+/// - `Super` / `Cmd` / `Command` / `Win` / `Meta`
 ///
 /// # Arguments
-/// * `key` - Key code string (e.g., "`", "F1", "Space", "KeyA")
+/// * `key` - Hotkey string (e.g., "Ctrl+Space", "F1", "Alt+Shift+A")
+///
+/// # Returns
+/// * `Ok((Modifiers, Code))` - Parsed modifiers and key code
+/// * `Err(String)` - Error if key string is invalid
+pub fn parse_hotkey(key: &str) -> Result<(Modifiers, Code), String> {
+    let parts: Vec<&str> = key.split('+').collect();
+
+    if parts.is_empty() {
+        return Err("Empty hotkey string".to_string());
+    }
+
+    // Last part is the key, everything before is modifiers
+    let key_part = parts.last().unwrap();
+    let modifier_parts = &parts[..parts.len() - 1];
+
+    // Parse modifiers (case-insensitive)
+    let mut modifiers = Modifiers::empty();
+    for modifier in modifier_parts {
+        let mod_lower = modifier.to_lowercase();
+        if mod_lower == MOD_CTRL.to_lowercase() || mod_lower == MOD_CONTROL.to_lowercase() {
+            modifiers |= Modifiers::CONTROL;
+        } else if mod_lower == MOD_ALT.to_lowercase() {
+            modifiers |= Modifiers::ALT;
+        } else if mod_lower == MOD_SHIFT.to_lowercase() {
+            modifiers |= Modifiers::SHIFT;
+        } else if mod_lower == MOD_SUPER.to_lowercase()
+            || mod_lower == MOD_CMD.to_lowercase()
+            || mod_lower == MOD_COMMAND.to_lowercase()
+            || mod_lower == MOD_WIN.to_lowercase()
+            || mod_lower == MOD_META.to_lowercase()
+        {
+            modifiers |= Modifiers::SUPER;
+        } else {
+            return Err(format!("Unknown modifier: {}", modifier));
+        }
+    }
+
+    // Parse key code
+    let code = parse_key_code(key_part)?;
+
+    Ok((modifiers, code))
+}
+
+/// Convert modifiers and code to a display string
+///
+/// Uses platform-appropriate names:
+/// - macOS: `Cmd` for Super key
+/// - Windows/Linux: `Super` for Super key
+///
+/// # Arguments
+/// * `modifiers` - The modifier keys
+/// * `code` - The key code
+///
+/// # Returns
+/// Display string like "Ctrl+Shift+Space" or "Cmd+A"
+pub fn hotkey_to_string(modifiers: Modifiers, code: Code) -> String {
+    let mut parts: Vec<&str> = Vec::new();
+
+    // Order: Ctrl, Alt, Shift, Super/Cmd
+    if modifiers.contains(Modifiers::CONTROL) {
+        parts.push(MOD_CTRL);
+    }
+    if modifiers.contains(Modifiers::ALT) {
+        parts.push(MOD_ALT);
+    }
+    if modifiers.contains(Modifiers::SHIFT) {
+        parts.push(MOD_SHIFT);
+    }
+    if modifiers.contains(Modifiers::SUPER) {
+        #[cfg(target_os = "macos")]
+        parts.push(MOD_CMD);
+        #[cfg(not(target_os = "macos"))]
+        parts.push(MOD_SUPER);
+    }
+
+    let key_str = code_to_string_internal(code);
+    if parts.is_empty() {
+        key_str
+    } else {
+        format!(
+            "{}{}{}",
+            parts.join(HOTKEY_SEPARATOR),
+            HOTKEY_SEPARATOR,
+            key_str
+        )
+    }
+}
+
+/// Build a hotkey string from Iced keyboard modifiers and a key string
+///
+/// This is used during PTT key capture to build the stored hotkey string
+/// from Iced's keyboard event modifiers.
+///
+/// # Arguments
+/// * `modifiers` - Iced keyboard modifiers from the key event
+/// * `key` - The key string (e.g., "Space", "F1", "A")
+///
+/// # Returns
+/// Hotkey string like "Ctrl+Shift+Space" or just "F1" if no modifiers
+pub fn build_hotkey_string(modifiers: &iced::keyboard::Modifiers, key: &str) -> String {
+    let mut parts: Vec<&str> = Vec::new();
+
+    // Order: Ctrl, Alt, Shift, Super/Cmd
+    if modifiers.control() {
+        parts.push(MOD_CTRL);
+    }
+    if modifiers.alt() {
+        parts.push(MOD_ALT);
+    }
+    if modifiers.shift() {
+        parts.push(MOD_SHIFT);
+    }
+    if modifiers.logo() {
+        #[cfg(target_os = "macos")]
+        parts.push(MOD_CMD);
+        #[cfg(not(target_os = "macos"))]
+        parts.push(MOD_SUPER);
+    }
+
+    if parts.is_empty() {
+        key.to_string()
+    } else {
+        format!(
+            "{}{}{}",
+            parts.join(HOTKEY_SEPARATOR),
+            HOTKEY_SEPARATOR,
+            key
+        )
+    }
+}
+
+/// Parse a key code string into a Code enum (internal helper)
+///
+/// # Arguments
+/// * `key` - Key string (e.g., "`", "F1", "Space", "KeyA")
 ///
 /// # Returns
 /// * `Ok(Code)` - Parsed key code
@@ -359,7 +525,7 @@ pub fn parse_key_code(key: &str) -> Result<Code, String> {
         "numpad7" => Code::Numpad7,
         "numpad8" => Code::Numpad8,
         "numpad9" => Code::Numpad9,
-        "numpadadd" => Code::NumpadAdd,
+        "numpadadd" | "numpadplus" => Code::NumpadAdd,
         "numpadsubtract" => Code::NumpadSubtract,
         "numpadmultiply" => Code::NumpadMultiply,
         "numpaddivide" => Code::NumpadDivide,
@@ -372,9 +538,8 @@ pub fn parse_key_code(key: &str) -> Result<Code, String> {
     Ok(code)
 }
 
-/// Convert a Code enum to a display string (used in tests)
-#[cfg(test)]
-pub fn code_to_string(code: Code) -> String {
+/// Convert a Code enum to a display string (internal helper)
+fn code_to_string_internal(code: Code) -> String {
     match code {
         // Special characters
         Code::Backquote => "`".to_string(),
@@ -473,7 +638,7 @@ pub fn code_to_string(code: Code) -> String {
         Code::Numpad7 => "Numpad7".to_string(),
         Code::Numpad8 => "Numpad8".to_string(),
         Code::Numpad9 => "Numpad9".to_string(),
-        Code::NumpadAdd => "Numpad+".to_string(),
+        Code::NumpadAdd => "NumpadPlus".to_string(),
         Code::NumpadSubtract => "Numpad-".to_string(),
         Code::NumpadMultiply => "Numpad*".to_string(),
         Code::NumpadDivide => "Numpad/".to_string(),
@@ -483,6 +648,12 @@ pub fn code_to_string(code: Code) -> String {
         // Default for unknown codes
         _ => format!("{:?}", code),
     }
+}
+
+/// Convert a Code enum to a display string (used in tests)
+#[cfg(test)]
+pub fn code_to_string(code: Code) -> String {
+    code_to_string_internal(code)
 }
 
 // =============================================================================
@@ -557,5 +728,155 @@ mod tests {
     #[test]
     fn test_ptt_state_default() {
         assert_eq!(PttState::default(), PttState::Idle);
+    }
+
+    #[test]
+    fn test_parse_hotkey_no_modifiers() {
+        let (modifiers, code) = parse_hotkey("F1").unwrap();
+        assert_eq!(modifiers, Modifiers::empty());
+        assert_eq!(code, Code::F1);
+
+        let (modifiers, code) = parse_hotkey("Space").unwrap();
+        assert_eq!(modifiers, Modifiers::empty());
+        assert_eq!(code, Code::Space);
+    }
+
+    #[test]
+    fn test_parse_hotkey_single_modifier() {
+        let (modifiers, code) = parse_hotkey("Ctrl+Space").unwrap();
+        assert_eq!(modifiers, Modifiers::CONTROL);
+        assert_eq!(code, Code::Space);
+
+        let (modifiers, code) = parse_hotkey("Alt+F1").unwrap();
+        assert_eq!(modifiers, Modifiers::ALT);
+        assert_eq!(code, Code::F1);
+
+        let (modifiers, code) = parse_hotkey("Shift+A").unwrap();
+        assert_eq!(modifiers, Modifiers::SHIFT);
+        assert_eq!(code, Code::KeyA);
+    }
+
+    #[test]
+    fn test_parse_hotkey_multiple_modifiers() {
+        let (modifiers, code) = parse_hotkey("Ctrl+Shift+Space").unwrap();
+        assert_eq!(modifiers, Modifiers::CONTROL | Modifiers::SHIFT);
+        assert_eq!(code, Code::Space);
+
+        let (modifiers, code) = parse_hotkey("Ctrl+Alt+Shift+A").unwrap();
+        assert_eq!(
+            modifiers,
+            Modifiers::CONTROL | Modifiers::ALT | Modifiers::SHIFT
+        );
+        assert_eq!(code, Code::KeyA);
+    }
+
+    #[test]
+    fn test_parse_hotkey_super_variants() {
+        // All these should map to SUPER modifier
+        let (modifiers, _) = parse_hotkey("Super+A").unwrap();
+        assert_eq!(modifiers, Modifiers::SUPER);
+
+        let (modifiers, _) = parse_hotkey("Cmd+A").unwrap();
+        assert_eq!(modifiers, Modifiers::SUPER);
+
+        let (modifiers, _) = parse_hotkey("Command+A").unwrap();
+        assert_eq!(modifiers, Modifiers::SUPER);
+
+        let (modifiers, _) = parse_hotkey("Win+A").unwrap();
+        assert_eq!(modifiers, Modifiers::SUPER);
+
+        let (modifiers, _) = parse_hotkey("Meta+A").unwrap();
+        assert_eq!(modifiers, Modifiers::SUPER);
+    }
+
+    #[test]
+    fn test_parse_hotkey_case_insensitive() {
+        let (modifiers, code) = parse_hotkey("ctrl+shift+space").unwrap();
+        assert_eq!(modifiers, Modifiers::CONTROL | Modifiers::SHIFT);
+        assert_eq!(code, Code::Space);
+
+        let (modifiers, code) = parse_hotkey("CTRL+SHIFT+SPACE").unwrap();
+        assert_eq!(modifiers, Modifiers::CONTROL | Modifiers::SHIFT);
+        assert_eq!(code, Code::Space);
+    }
+
+    #[test]
+    fn test_parse_hotkey_invalid() {
+        assert!(parse_hotkey("").is_err());
+        assert!(parse_hotkey("InvalidMod+A").is_err());
+        assert!(parse_hotkey("Ctrl+InvalidKey").is_err());
+    }
+
+    #[test]
+    fn test_hotkey_to_string_no_modifiers() {
+        let s = hotkey_to_string(Modifiers::empty(), Code::F1);
+        assert_eq!(s, "F1");
+
+        let s = hotkey_to_string(Modifiers::empty(), Code::Space);
+        assert_eq!(s, "Space");
+    }
+
+    #[test]
+    fn test_hotkey_to_string_with_modifiers() {
+        let s = hotkey_to_string(Modifiers::CONTROL, Code::Space);
+        assert_eq!(s, "Ctrl+Space");
+
+        let s = hotkey_to_string(Modifiers::CONTROL | Modifiers::SHIFT, Code::KeyA);
+        assert_eq!(s, "Ctrl+Shift+A");
+
+        let s = hotkey_to_string(
+            Modifiers::CONTROL | Modifiers::ALT | Modifiers::SHIFT,
+            Code::F1,
+        );
+        assert_eq!(s, "Ctrl+Alt+Shift+F1");
+    }
+
+    #[test]
+    fn test_hotkey_to_string_modifier_order() {
+        // Regardless of input order, output should be Ctrl+Alt+Shift+Super
+        let s = hotkey_to_string(Modifiers::SHIFT | Modifiers::CONTROL, Code::KeyA);
+        assert_eq!(s, "Ctrl+Shift+A");
+
+        let s = hotkey_to_string(Modifiers::ALT | Modifiers::CONTROL, Code::KeyA);
+        assert_eq!(s, "Ctrl+Alt+A");
+    }
+
+    #[test]
+    fn test_hotkey_roundtrip() {
+        // Test that parse -> to_string -> parse gives same result
+        let test_cases = vec![
+            "F1",
+            "Ctrl+Space",
+            "Alt+F1",
+            "Shift+A",
+            "Ctrl+Shift+Space",
+            "Ctrl+NumpadPlus",
+        ];
+
+        for input in test_cases {
+            let (modifiers, code) = parse_hotkey(input).unwrap();
+            let output = hotkey_to_string(modifiers, code);
+            let (modifiers2, code2) = parse_hotkey(&output).unwrap();
+            assert_eq!(modifiers, modifiers2, "Modifiers mismatch for {}", input);
+            assert_eq!(code, code2, "Code mismatch for {}", input);
+        }
+    }
+
+    #[test]
+    fn test_numpad_plus_aliases() {
+        // NumpadPlus can be parsed as "numpadplus" or "numpadadd"
+        let (_, code1) = parse_hotkey("NumpadPlus").unwrap();
+        let (_, code2) = parse_hotkey("NumpadAdd").unwrap();
+        assert_eq!(code1, Code::NumpadAdd);
+        assert_eq!(code2, Code::NumpadAdd);
+
+        // Display should be "NumpadPlus" (not "Numpad+" which would break parsing)
+        let s = hotkey_to_string(Modifiers::empty(), Code::NumpadAdd);
+        assert_eq!(s, "NumpadPlus");
+
+        // With modifiers should work correctly
+        let (modifiers, code) = parse_hotkey("Ctrl+NumpadPlus").unwrap();
+        assert_eq!(modifiers, Modifiers::CONTROL);
+        assert_eq!(code, Code::NumpadAdd);
     }
 }
