@@ -201,7 +201,7 @@ All audio processing settings apply immediately—no need to leave and rejoin vo
 
 ### PTT Key
 
-The push-to-talk key for voice transmission. Click the field and press a key to change it.
+The push-to-talk key for voice transmission. Click the field and press a key (with optional modifiers) to change it.
 
 Default: **Backtick** (`` ` ``)
 
@@ -210,6 +210,11 @@ Supported keys:
 - Numbers (0-9)
 - Function keys (F1-F12)
 - Special keys (Space, Tab, Backtick, etc.)
+
+**Modifier key combinations** are also supported:
+- `Ctrl+Space`, `Alt+F1`, `Ctrl+Shift+A`, `Cmd+Space` (macOS)
+- Supported modifiers: Ctrl, Alt, Shift, Super/Cmd
+- The display is platform-aware—macOS shows "Cmd" while Windows/Linux show "Super"
 
 ### PTT Mode
 
@@ -221,6 +226,19 @@ How the push-to-talk key behaves:
 | **Toggle** | Press once to enable voice-activated transmission; press again to stop |
 
 **Toggle mode with VAD:** When toggled on, your microphone is "hot" but only transmits when you're speaking. Background noise and silence are automatically filtered using Voice Activity Detection. Toggle off to fully mute.
+
+### PTT Release Delay
+
+Adds a brief delay before stopping transmission when you release the PTT key. This prevents cutting off the end of words or sentences.
+
+| Setting | Description |
+|---------|-------------|
+| **Off** | Stop immediately (default) |
+| **100ms** | Continue for 100ms after release |
+| **300ms** | Continue for 300ms after release |
+| **500ms** | Continue for 500ms after release |
+
+If you press PTT again during the delay, the timer is cancelled and transmission continues normally.
 
 ### Microphone Test
 

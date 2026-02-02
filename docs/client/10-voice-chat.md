@@ -120,7 +120,7 @@ The default PTT key is **backtick** (`` ` ``), also known as the grave or tilde 
 
 1. Open **Settings > Audio**
 2. Click the **PTT Key** field
-3. Press your desired key
+3. Press your desired key (with optional modifiers)
 4. Click **Save**
 
 Supported keys include:
@@ -128,6 +128,22 @@ Supported keys include:
 - Number keys (0-9)
 - Function keys (F1-F12)
 - Special keys (Space, Tab, Backtick, etc.)
+
+### Modifier Key Combinations
+
+You can use modifier keys with your PTT key for combinations like:
+- `Ctrl+Space`
+- `Alt+F1`
+- `Ctrl+Shift+A`
+- `Cmd+Space` (macOS)
+
+Supported modifiers:
+- **Ctrl** (Control)
+- **Alt**
+- **Shift**
+- **Super** / **Cmd** (Windows/Super key on Linux, Command on macOS)
+
+The key display is platform-aware—macOS shows "Cmd" while Windows and Linux show "Super" for the same key.
 
 ### When PTT is Active
 
