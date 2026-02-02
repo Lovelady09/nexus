@@ -347,9 +347,9 @@ impl Default for NexusApp {
             active_connection: None,
             active_voice_connection: None,
             voice_session_handle: None,
-            // Create PTT manager at startup (main thread) for Windows event loop compatibility.
-            // If initialization fails, error is shown when user tries to join voice.
-            ptt_manager: voice::ptt::PttManager::new().ok(),
+            // PTT manager is created lazily on first voice join (not at startup).
+            // This ensures the native event loop is active when the hotkey system initializes.
+            ptt_manager: None,
             is_local_speaking: false,
             is_deafened: false,
             mic_level: Arc::new(AtomicU32::new(0)),

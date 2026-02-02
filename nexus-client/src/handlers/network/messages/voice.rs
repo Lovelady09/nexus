@@ -131,8 +131,21 @@ impl NexusApp {
         // Must be synchronous to avoid race with subscription starting
         register_voice_receiver_sync(connection_id, event_rx);
 
+        // Lazily create PTT manager on first voice join (not at startup).
+        // This ensures the native event loop is active when the hotkey system initializes.
+        if self.ptt_manager.is_none() {
+            match crate::voice::ptt::PttManager::new() {
+                Ok(ptt) => self.ptt_manager = Some(ptt),
+                Err(e) => {
+                    return self.add_active_tab_message(
+                        connection_id,
+                        ChatMessage::error(t_args("err-voice-ptt-failed", &[("error", &e)])),
+                    );
+                }
+            }
+        }
+
         // Register PTT hotkey and enable it for voice
-        // Note: PttManager is created at app startup (main thread) for Windows compatibility
         if let Some(ref mut ptt) = self.ptt_manager {
             // Set mode from settings
             ptt.set_mode(self.config.settings.audio.ptt_mode);
@@ -149,15 +162,6 @@ impl NexusApp {
 
             // Enable PTT for voice
             ptt.set_in_voice(true);
-        } else {
-            // PTT manager failed to initialize at startup
-            return self.add_active_tab_message(
-                connection_id,
-                ChatMessage::error(t_args(
-                    "err-voice-ptt-failed",
-                    &[("error", &t("err-ptt-init-failed"))],
-                )),
-            );
         }
 
         // Voice bar appearing provides visual feedback - no console message needed
