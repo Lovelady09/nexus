@@ -291,6 +291,7 @@ The same VU meter style is used in both the settings mic test and the voice bar 
 2. Check **Settings > Audio > PTT Key** is set correctly
 3. Try a different key (some keys may be captured by other applications)
 4. On Linux, ensure your display server allows global hotkeys
+5. On Windows, PTT won't work in applications running with administrator privileges unless Nexus is also run as administrator
 
 ### Connection Failed
 
