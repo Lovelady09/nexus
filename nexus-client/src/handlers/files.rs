@@ -420,13 +420,16 @@ impl NexusApp {
         };
 
         let tab_id = conn.files_management.active_tab_id();
-        self.send_file_list_request_for_tab(conn_id, tab_id, path, root, show_hidden)
+        self.send_file_list_request_for_tab(conn_id, tab_id, path, root, show_hidden, None)
     }
 
     /// Send a FileList request to the server for a specific tab
     ///
     /// This is used by response handlers that need to refresh a specific tab
     /// (identified by tab_id) rather than the currently active tab.
+    ///
+    /// `uri_target` is set when navigating via URI - the target file/folder to find
+    /// and navigate to when the response arrives.
     pub fn send_file_list_request_for_tab(
         &mut self,
         conn_id: usize,
@@ -434,6 +437,7 @@ impl NexusApp {
         path: String,
         root: bool,
         show_hidden: bool,
+        uri_target: Option<String>,
     ) -> Task<Message> {
         let Some(conn) = self.connections.get_mut(&conn_id) else {
             return Task::none();
@@ -445,8 +449,10 @@ impl NexusApp {
             show_hidden,
         }) {
             Ok(message_id) => {
-                conn.pending_requests
-                    .track(message_id, ResponseRouting::PopulateFileList { tab_id });
+                conn.pending_requests.track(
+                    message_id,
+                    ResponseRouting::PopulateFileList { tab_id, uri_target },
+                );
             }
             Err(e) => {
                 // Show error on the specific tab if it still exists, otherwise active tab
@@ -1063,7 +1069,7 @@ impl NexusApp {
         conn.pending_requests.retain(|_, routing| {
             !matches!(
                 routing,
-                ResponseRouting::PopulateFileList { tab_id: tid }
+                ResponseRouting::PopulateFileList { tab_id: tid, .. }
                     | ResponseRouting::FileCreateDirResult { tab_id: tid }
                     | ResponseRouting::FileDeleteResult { tab_id: tid }
                     | ResponseRouting::FileInfoResult { tab_id: tid }
@@ -1610,7 +1616,10 @@ impl NexusApp {
             Ok(message_id) => {
                 conn.pending_requests.track(
                     message_id,
-                    ResponseRouting::PopulateFileList { tab_id: new_tab_id },
+                    ResponseRouting::PopulateFileList {
+                        tab_id: new_tab_id,
+                        uri_target: None,
+                    },
                 );
             }
             Err(err) => {

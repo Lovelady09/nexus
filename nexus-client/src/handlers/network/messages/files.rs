@@ -40,8 +40,8 @@ impl NexusApp {
         let routing = conn.pending_requests.remove(&message_id);
 
         // Only handle if this was a tracked file list request
-        let tab_id = match routing {
-            Some(ResponseRouting::PopulateFileList { tab_id }) => tab_id,
+        let (tab_id, uri_target) = match routing {
+            Some(ResponseRouting::PopulateFileList { tab_id, uri_target }) => (tab_id, uri_target),
             _ => return Task::none(),
         };
 
@@ -68,9 +68,8 @@ impl NexusApp {
             // Build sorted entries cache
             tab.update_sorted_entries();
 
-            // Check for pending URI target (from nexus:// URI navigation)
-            let pending_target = tab.pending_uri_target.take();
-            if let Some(ref target) = pending_target
+            // Check for URI target (from nexus:// URI navigation)
+            if let Some(ref target) = uri_target
                 && let Some(ref entries) = tab.entries
             {
                 // Find the target in the file list (case-insensitive)
@@ -177,6 +176,7 @@ impl NexusApp {
                 current_path,
                 viewing_root,
                 show_hidden,
+                None,
             )
         } else {
             // Show error in dialog (re-lookup tab)
@@ -241,6 +241,7 @@ impl NexusApp {
                 current_path,
                 viewing_root,
                 show_hidden,
+                None,
             )
         } else {
             // Show error in the delete dialog (re-lookup tab)
@@ -344,6 +345,7 @@ impl NexusApp {
                 current_path,
                 viewing_root,
                 show_hidden,
+                None,
             )
         } else {
             // Show error in the rename dialog (re-lookup tab)
@@ -412,6 +414,7 @@ impl NexusApp {
                 current_path,
                 viewing_root,
                 show_hidden,
+                None,
             )
         } else {
             // Parse error_kind for type-safe matching
@@ -515,6 +518,7 @@ impl NexusApp {
                 current_path,
                 viewing_root,
                 show_hidden,
+                None,
             )
         } else {
             // Parse error_kind for type-safe matching

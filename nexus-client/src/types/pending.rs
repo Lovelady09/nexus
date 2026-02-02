@@ -53,7 +53,11 @@ pub enum ResponseRouting {
     NewsShowForRefresh { id: i64, is_new: bool },
     /// Populate file list (from panel open or navigation)
     /// Contains the target tab ID to update when response arrives
-    PopulateFileList { tab_id: TabId },
+    /// `uri_target` is set when navigating via URI - the target file/folder to find
+    PopulateFileList {
+        tab_id: TabId,
+        uri_target: Option<String>,
+    },
     /// File create directory result (close dialog on success, show error on failure)
     /// Contains the target tab ID to update when response arrives
     FileCreateDirResult { tab_id: TabId },
@@ -357,10 +361,16 @@ mod tests {
     fn test_track_populate_file_list() {
         let mut pending: HashMap<MessageId, ResponseRouting> = HashMap::new();
         let id = MessageId::new();
-        pending.track(id, ResponseRouting::PopulateFileList { tab_id: 1 });
+        pending.track(
+            id,
+            ResponseRouting::PopulateFileList {
+                tab_id: 1,
+                uri_target: None,
+            },
+        );
         assert!(matches!(
             pending.get(&id),
-            Some(ResponseRouting::PopulateFileList { tab_id: 1 })
+            Some(ResponseRouting::PopulateFileList { tab_id: 1, .. })
         ));
     }
 

@@ -502,9 +502,6 @@ pub struct FileTab {
     pub search_sort_column: FileSortColumn,
     /// Sort ascending for search results (separate from browsing sort)
     pub search_sort_ascending: bool,
-    /// Pending URI navigation target (filename to find after FileListResponse)
-    /// If found as directory, navigate into it; if file, download/preview it
-    pub pending_uri_target: Option<String>,
 }
 
 impl Default for FileTab {
@@ -538,7 +535,6 @@ impl Default for FileTab {
             search_viewing_root: false,
             search_sort_column: FileSortColumn::Name,
             search_sort_ascending: true,
-            pending_uri_target: None,
         }
     }
 }
@@ -578,7 +574,6 @@ impl FileTab {
             search_viewing_root: false,
             search_sort_column: FileSortColumn::Name,
             search_sort_ascending: true,
-            pending_uri_target: None,
         }
     }
 
@@ -615,7 +610,6 @@ impl FileTab {
             search_viewing_root: false,
             search_sort_column: FileSortColumn::Name,
             search_sort_ascending: true,
-            pending_uri_target: None,
         }
     }
 
@@ -1739,7 +1733,6 @@ mod tests {
             search_viewing_root: false,
             search_sort_column: FileSortColumn::Name,
             search_sort_ascending: true,
-            pending_uri_target: None,
         };
 
         tab.close_new_directory_dialog();

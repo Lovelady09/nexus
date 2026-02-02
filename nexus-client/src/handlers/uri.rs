@@ -247,9 +247,6 @@ impl NexusApp {
                 let show_hidden = self.config.settings.show_hidden_files;
 
                 if !path.is_empty() {
-                    // Get the active file tab
-                    let active_tab = conn.files_management.active_tab_mut();
-
                     // Extract parent directory and target name
                     // We always navigate to parent first, then check if target is file or directory
                     // when FileListResponse arrives
@@ -259,28 +256,39 @@ impl NexusApp {
                         (String::new(), path.as_str())
                     };
 
-                    // Store the target to look for when file list arrives
-                    if !target_name.is_empty() {
-                        active_tab.pending_uri_target = Some(target_name.to_string());
-                    }
+                    // Build uri_target if we have a target name
+                    let uri_target = if !target_name.is_empty() {
+                        Some(target_name.to_string())
+                    } else {
+                        None
+                    };
 
-                    // Navigate to parent directory
+                    // Get the active file tab and navigate to parent directory
+                    let active_tab = conn.files_management.active_tab_mut();
                     active_tab.navigate_to(parent_path);
 
-                    // Request file list for the parent path
+                    // Request file list for the parent path, passing uri_target through routing
+                    // URIs always use viewing_root: false - they're for users sharing files,
+                    // not for admin root browsing
                     let path_str = active_tab.current_path.clone();
-                    let root = active_tab.viewing_root;
-                    return self.send_file_list_request(connection_id, path_str, root, show_hidden);
+                    let tab_id = active_tab.id;
+                    return self.send_file_list_request_for_tab(
+                        connection_id,
+                        tab_id,
+                        path_str,
+                        false, // URIs always navigate within user's area, not root
+                        show_hidden,
+                        uri_target,
+                    );
                 } else {
                     // Empty path - just open files panel at current location
                     // Request file list if not already loaded
                     if conn.files_management.active_tab().entries.is_none() {
                         let path_str = conn.files_management.active_tab().current_path.clone();
-                        let root = conn.files_management.active_tab().viewing_root;
                         return self.send_file_list_request(
                             connection_id,
                             path_str,
-                            root,
+                            false, // URIs always navigate within user's area, not root
                             show_hidden,
                         );
                     }
