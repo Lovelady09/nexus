@@ -6,7 +6,7 @@ use iced::widget::{
 use iced::{Center, Element, Fill};
 use nexus_common::voice::VoiceQuality;
 
-use crate::config::audio::PttMode;
+use crate::config::audio::{PttMode, PttReleaseDelay};
 use crate::voice::audio::AudioDevice;
 
 use super::connection_monitor::connection_monitor_view;
@@ -118,6 +118,8 @@ struct ServerContentContext<'a> {
     pub ptt_capturing: bool,
     /// Push-to-talk mode
     pub ptt_mode: PttMode,
+    /// Push-to-talk release delay
+    pub ptt_release_delay: PttReleaseDelay,
     /// Whether microphone test is active
     pub mic_testing: bool,
     /// Current microphone input level (0.0 - 1.0)
@@ -315,6 +317,7 @@ pub fn main_layout<'a>(config: ViewConfig<'a>) -> Element<'a, Message> {
                 ptt_key: config.ptt_key,
                 ptt_capturing: config.ptt_capturing,
                 ptt_mode: config.ptt_mode,
+                ptt_release_delay: config.ptt_release_delay,
                 mic_testing: config.mic_testing,
                 mic_level: config.mic_level,
                 mic_error: config.mic_error,
@@ -369,6 +372,7 @@ pub fn main_layout<'a>(config: ViewConfig<'a>) -> Element<'a, Message> {
                         ptt_key: config.ptt_key,
                         ptt_capturing: config.ptt_capturing,
                         ptt_mode: config.ptt_mode,
+                        ptt_release_delay: config.ptt_release_delay,
                         mic_testing: config.mic_testing,
                         mic_level: config.mic_level,
                         mic_error: config.mic_error,
@@ -863,6 +867,7 @@ fn server_content_view<'a>(ctx: ServerContentContext<'a>) -> Element<'a, Message
                 ptt_key: ctx.ptt_key,
                 ptt_capturing: ctx.ptt_capturing,
                 ptt_mode: ctx.ptt_mode,
+                ptt_release_delay: ctx.ptt_release_delay,
                 mic_testing: ctx.mic_testing,
                 mic_level: ctx.mic_level,
                 mic_error: ctx.mic_error,

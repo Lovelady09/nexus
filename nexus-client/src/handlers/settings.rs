@@ -1,5 +1,7 @@
 //! Settings panel handlers
 
+use crate::config::audio::PttReleaseDelay;
+
 #[cfg(all(unix, not(target_os = "macos")))]
 use std::time::Instant;
 
@@ -749,6 +751,23 @@ impl NexusApp {
             handle.stop_transmitting();
         }
         self.is_local_speaking = false;
+
+        Task::none()
+    }
+
+    /// Handle PTT release delay selection
+    ///
+    /// Updates the setting immediately. The new delay will apply to the next
+    /// PTT release (no need to rejoin voice).
+    pub fn handle_audio_ptt_release_delay_selected(
+        &mut self,
+        delay: PttReleaseDelay,
+    ) -> Task<Message> {
+        self.config.settings.audio.ptt_release_delay = delay;
+        let _ = self.config.save();
+
+        // No need to update anything else - the delay is read from config
+        // each time PTT is released in handle_voice_ptt_state_changed()
 
         Task::none()
     }

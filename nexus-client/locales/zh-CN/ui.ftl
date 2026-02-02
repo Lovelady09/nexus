@@ -995,6 +995,12 @@ voice-quality-very-high = 极高 (96 kbps)
 ptt-mode-hold = 按住说话
 ptt-mode-toggle = 切换
 
+# PTT release delay
+ptt-delay-off = 关闭
+ptt-delay-100ms = 100毫秒
+ptt-delay-300ms = 300毫秒
+ptt-delay-500ms = 500毫秒
+
 # Audio settings
 audio-output-device = 输出设备
 audio-input-device = 输入设备
@@ -1002,6 +1008,7 @@ audio-refresh-devices = 刷新设备
 audio-voice-quality = 语音质量
 audio-ptt-key = 按键说话键
 audio-ptt-mode = PTT 模式
+audio-ptt-release-delay = PTT 释放延迟
 audio-ptt-key-hint = 按任意键…
 audio-input-level = 输入电平
 audio-system-default = 系统默认

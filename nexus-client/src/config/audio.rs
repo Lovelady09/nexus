@@ -91,6 +91,63 @@ impl std::fmt::Display for PttMode {
 }
 
 // =============================================================================
+// PTT Release Delay
+// =============================================================================
+
+/// Delay before stopping transmission after PTT key release
+///
+/// Prevents cutting off the end of words/sentences when releasing PTT key.
+/// Continues transmitting for a short delay after key release.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+pub enum PttReleaseDelay {
+    /// No delay - stop immediately on release
+    #[default]
+    Off,
+    /// 100 millisecond delay
+    Ms100,
+    /// 300 millisecond delay
+    Ms300,
+    /// 500 millisecond delay
+    Ms500,
+}
+
+impl PttReleaseDelay {
+    /// All delay options for the picker
+    pub const ALL: &'static [PttReleaseDelay] = &[
+        PttReleaseDelay::Off,
+        PttReleaseDelay::Ms100,
+        PttReleaseDelay::Ms300,
+        PttReleaseDelay::Ms500,
+    ];
+
+    /// Get the translation key for this delay
+    pub fn translation_key(self) -> &'static str {
+        match self {
+            PttReleaseDelay::Off => "ptt-delay-off",
+            PttReleaseDelay::Ms100 => "ptt-delay-100ms",
+            PttReleaseDelay::Ms300 => "ptt-delay-300ms",
+            PttReleaseDelay::Ms500 => "ptt-delay-500ms",
+        }
+    }
+
+    /// Get the delay duration in milliseconds (0 for Off)
+    pub fn as_millis(self) -> u64 {
+        match self {
+            PttReleaseDelay::Off => 0,
+            PttReleaseDelay::Ms100 => 100,
+            PttReleaseDelay::Ms300 => 300,
+            PttReleaseDelay::Ms500 => 500,
+        }
+    }
+}
+
+impl std::fmt::Display for PttReleaseDelay {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", crate::i18n::t(self.translation_key()))
+    }
+}
+
+// =============================================================================
 // Audio Settings
 // =============================================================================
 
@@ -116,6 +173,10 @@ pub struct AudioSettings {
     /// Push-to-talk mode (hold or toggle)
     #[serde(default)]
     pub ptt_mode: PttMode,
+
+    /// Push-to-talk release delay
+    #[serde(default)]
+    pub ptt_release_delay: PttReleaseDelay,
 
     /// Enable noise suppression (default: true)
     #[serde(default = "default_true")]
@@ -147,6 +208,7 @@ impl Default for AudioSettings {
             voice_quality: VoiceQuality::default(),
             ptt_key: default_ptt_key(),
             ptt_mode: PttMode::default(),
+            ptt_release_delay: PttReleaseDelay::default(),
             noise_suppression: true,
             echo_cancellation: false,
             agc: true,
@@ -189,6 +251,7 @@ mod tests {
         assert_eq!(settings.voice_quality, VoiceQuality::High);
         assert_eq!(settings.ptt_key, DEFAULT_PTT_KEY);
         assert_eq!(settings.ptt_mode, PttMode::Hold);
+        assert_eq!(settings.ptt_release_delay, PttReleaseDelay::Off);
         assert!(settings.noise_suppression);
         assert!(!settings.echo_cancellation);
         assert!(settings.agc);
@@ -203,6 +266,7 @@ mod tests {
             voice_quality: VoiceQuality::VeryHigh,
             ptt_key: "F1".to_string(),
             ptt_mode: PttMode::Toggle,
+            ptt_release_delay: PttReleaseDelay::Ms300,
             noise_suppression: false,
             echo_cancellation: true,
             agc: false,
@@ -217,6 +281,7 @@ mod tests {
         assert_eq!(settings.voice_quality, deserialized.voice_quality);
         assert_eq!(settings.ptt_key, deserialized.ptt_key);
         assert_eq!(settings.ptt_mode, deserialized.ptt_mode);
+        assert_eq!(settings.ptt_release_delay, deserialized.ptt_release_delay);
         assert_eq!(settings.noise_suppression, deserialized.noise_suppression);
         assert_eq!(settings.echo_cancellation, deserialized.echo_cancellation);
         assert_eq!(settings.agc, deserialized.agc);
@@ -231,6 +296,23 @@ mod tests {
         assert_eq!(PttMode::ALL.len(), 2);
         assert!(PttMode::ALL.contains(&PttMode::Hold));
         assert!(PttMode::ALL.contains(&PttMode::Toggle));
+    }
+
+    #[test]
+    fn test_ptt_release_delay_all() {
+        assert_eq!(PttReleaseDelay::ALL.len(), 4);
+        assert!(PttReleaseDelay::ALL.contains(&PttReleaseDelay::Off));
+        assert!(PttReleaseDelay::ALL.contains(&PttReleaseDelay::Ms100));
+        assert!(PttReleaseDelay::ALL.contains(&PttReleaseDelay::Ms300));
+        assert!(PttReleaseDelay::ALL.contains(&PttReleaseDelay::Ms500));
+    }
+
+    #[test]
+    fn test_ptt_release_delay_as_millis() {
+        assert_eq!(PttReleaseDelay::Off.as_millis(), 0);
+        assert_eq!(PttReleaseDelay::Ms100.as_millis(), 100);
+        assert_eq!(PttReleaseDelay::Ms300.as_millis(), 300);
+        assert_eq!(PttReleaseDelay::Ms500.as_millis(), 500);
     }
 
     #[test]

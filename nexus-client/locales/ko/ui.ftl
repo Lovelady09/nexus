@@ -994,6 +994,12 @@ voice-quality-very-high = 매우 높음 (96 kbps)
 ptt-mode-hold = 누르고 있는 동안 말하기
 ptt-mode-toggle = 전환
 
+# PTT release delay
+ptt-delay-off = 끔
+ptt-delay-100ms = 100ms
+ptt-delay-300ms = 300ms
+ptt-delay-500ms = 500ms
+
 # Audio settings
 audio-output-device = 출력 장치
 audio-input-device = 입력 장치
@@ -1001,6 +1007,7 @@ audio-refresh-devices = 장치 새로 고침
 audio-voice-quality = 음성 품질
 audio-ptt-key = 푸시 투 토크 키
 audio-ptt-mode = PTT 모드
+audio-ptt-release-delay = PTT 릴리스 지연
 audio-ptt-key-hint = 아무 키나 누르세요…
 audio-input-level = 입력 레벨
 audio-system-default = 시스템 기본값

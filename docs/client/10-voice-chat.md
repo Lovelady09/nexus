@@ -97,6 +97,21 @@ Configure in **Settings > Audio**:
 
 **Toggle mode with Voice Activity Detection (VAD):** When you toggle on, your microphone becomes "hot" but only transmits when you're actually speaking. Background noise and silence are automatically filtered out. This gives you hands-free operation while preventing constant transmission of ambient sound. Toggle off to fully mute.
 
+### PTT Release Delay
+
+Configure in **Settings > Audio > PTT Release Delay**:
+
+| Setting | Description |
+|---------|-------------|
+| **Off** | Stop transmitting immediately when key is released (default) |
+| **100ms** | Continue transmitting for 100ms after release |
+| **300ms** | Continue transmitting for 300ms after release |
+| **500ms** | Continue transmitting for 500ms after release |
+
+This prevents cutting off the end of words or sentences when you release the PTT key. The delay applies to both Hold and Toggle modes.
+
+If you press PTT again during the delay period, the timer is cancelled and transmission continues normally.
+
 ### Default Key
 
 The default PTT key is **backtick** (`` ` ``), also known as the grave or tilde key.
@@ -190,6 +205,7 @@ Configure voice in **Settings > Audio**:
 | **Voice Quality** | Audio quality/bandwidth tradeoff |
 | **PTT Key** | Key to press for push-to-talk |
 | **PTT Mode** | Hold or Toggle |
+| **PTT Release Delay** | Continue transmitting briefly after releasing PTT key |
 | **Noise Suppression** | Reduce background noise from your microphone |
 | **Echo Cancellation** | Remove speaker audio from your microphone signal |
 | **Automatic Gain Control** | Automatically adjust microphone volume |

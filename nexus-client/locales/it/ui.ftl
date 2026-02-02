@@ -1017,6 +1017,12 @@ voice-quality-very-high = Molto alta (96 kbps)
 ptt-mode-hold = Tieni premuto per parlare
 ptt-mode-toggle = Attiva/Disattiva
 
+# PTT release delay
+ptt-delay-off = Disattivato
+ptt-delay-100ms = 100ms
+ptt-delay-300ms = 300ms
+ptt-delay-500ms = 500ms
+
 # Audio settings
 audio-output-device = Dispositivo di uscita
 audio-input-device = Dispositivo di ingresso
@@ -1024,6 +1030,7 @@ audio-refresh-devices = Aggiorna dispositivi
 audio-voice-quality = Qualità vocale
 audio-ptt-key = Tasto Push-to-Talk
 audio-ptt-mode = Modalità PTT
+audio-ptt-release-delay = Ritardo rilascio PTT
 audio-ptt-key-hint = Premi un tasto qualsiasi…
 audio-input-level = Livello di ingresso
 audio-system-default = Predefinito di sistema

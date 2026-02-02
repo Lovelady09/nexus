@@ -318,6 +318,8 @@ struct NexusApp {
     is_local_speaking: bool,
     /// Whether local user has deafened (muted all incoming voice audio)
     is_deafened: bool,
+    /// Generation counter for PTT release delay timers (used to cancel stale timers)
+    ptt_release_delay_generation: u64,
     /// Shared mic level for VU meter display (f32 stored as bits, 0.0-1.0)
     mic_level: Arc<AtomicU32>,
 
@@ -352,6 +354,7 @@ impl Default for NexusApp {
             ptt_manager: None,
             is_local_speaking: false,
             is_deafened: false,
+            ptt_release_delay_generation: 0,
             mic_level: Arc::new(AtomicU32::new(0)),
             next_connection_id: 0,
             connecting_bookmarks: HashSet::new(),
@@ -909,6 +912,9 @@ impl NexusApp {
             }
             Message::VoicePttStateChanged(state) => self.handle_voice_ptt_state_changed(state),
             Message::VoicePttEvent(event) => self.handle_voice_ptt_event(event),
+            Message::VoicePttReleaseDelayExpired(generation) => {
+                self.handle_voice_ptt_release_delay_expired(generation)
+            }
             Message::VoiceUserMute(nickname) => self.handle_voice_user_mute(nickname),
             Message::VoiceUserUnmute(nickname) => self.handle_voice_user_unmute(nickname),
             Message::VoiceDeafenToggle => self.handle_voice_deafen_toggle(),
@@ -926,6 +932,9 @@ impl NexusApp {
             Message::AudioPttKeyCapture => self.handle_audio_ptt_key_capture(),
             Message::AudioPttKeyCaptured(key) => self.handle_audio_ptt_key_captured(key),
             Message::AudioPttModeSelected(mode) => self.handle_audio_ptt_mode_selected(mode),
+            Message::AudioPttReleaseDelaySelected(delay) => {
+                self.handle_audio_ptt_release_delay_selected(delay)
+            }
             Message::AudioTestMicStart => self.handle_audio_test_mic_start(),
             Message::AudioTestMicStop => self.handle_audio_test_mic_stop(),
             Message::AudioMicLevel(level) => self.handle_audio_mic_level(level),
@@ -1220,6 +1229,7 @@ impl NexusApp {
             ptt_key: &self.config.settings.audio.ptt_key,
             ptt_capturing,
             ptt_mode: self.config.settings.audio.ptt_mode,
+            ptt_release_delay: self.config.settings.audio.ptt_release_delay,
             mic_testing,
             mic_level,
             mic_error,

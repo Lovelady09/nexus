@@ -14,7 +14,7 @@ use nexus_common::voice::VoiceQuality;
 
 use super::chat::TimestampSettings;
 use super::voice::build_vu_meter;
-use crate::config::audio::{LocalizedVoiceQuality, PttMode};
+use crate::config::audio::{LocalizedVoiceQuality, PttMode, PttReleaseDelay};
 use crate::config::events::{EventSettings, EventType, NotificationContent, SoundChoice};
 use crate::config::settings::{
     CHAT_FONT_SIZES, ProxySettings, SOUND_VOLUME_MAX, SOUND_VOLUME_MIN, default_download_path,
@@ -50,6 +50,8 @@ pub struct AudioTabData<'a> {
     pub ptt_capturing: bool,
     /// Push-to-talk mode
     pub ptt_mode: PttMode,
+    /// Push-to-talk release delay
+    pub ptt_release_delay: PttReleaseDelay,
     /// Whether microphone test is active
     pub mic_testing: bool,
     /// Current microphone input level (0.0 - 1.0)
@@ -129,6 +131,8 @@ pub struct SettingsViewData<'a> {
     pub ptt_capturing: bool,
     /// Push-to-talk mode
     pub ptt_mode: PttMode,
+    /// Push-to-talk release delay
+    pub ptt_release_delay: PttReleaseDelay,
     /// Whether microphone test is active
     pub mic_testing: bool,
     /// Current microphone input level (0.0 - 1.0)
@@ -215,6 +219,7 @@ pub fn settings_view<'a>(data: SettingsViewData<'a>) -> Element<'a, Message> {
         ptt_key: data.ptt_key,
         ptt_capturing: data.ptt_capturing,
         ptt_mode: data.ptt_mode,
+        ptt_release_delay: data.ptt_release_delay,
         mic_testing: data.mic_testing,
         mic_level: data.mic_level,
         mic_error: data.mic_error,
@@ -793,6 +798,26 @@ fn audio_tab_content(data: AudioTabData<'_>) -> Element<'_, Message> {
     ]
     .align_y(iced::Alignment::Center);
     items.push(ptt_mode_row.into());
+
+    items.push(Space::new().height(SPACER_SIZE_SMALL).into());
+
+    // PTT release delay picker
+    let ptt_delay_label = shaped_text(t("audio-ptt-release-delay")).size(TEXT_SIZE);
+    let ptt_delays: Vec<PttReleaseDelay> = PttReleaseDelay::ALL.to_vec();
+    let ptt_delay_picker = pick_list(
+        ptt_delays,
+        Some(data.ptt_release_delay),
+        Message::AudioPttReleaseDelaySelected,
+    )
+    .text_size(TEXT_SIZE);
+
+    let ptt_delay_row = row![
+        ptt_delay_label,
+        Space::new().width(ELEMENT_SPACING),
+        ptt_delay_picker,
+    ]
+    .align_y(iced::Alignment::Center);
+    items.push(ptt_delay_row.into());
 
     items.push(Space::new().height(SPACER_SIZE_MEDIUM).into());
 

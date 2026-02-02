@@ -10,7 +10,7 @@ use nexus_common::voice::VoiceQuality;
 
 use super::form::{FileSortColumn, SettingsTab, TabId};
 use super::{ChatTab, NetworkConnection, ServerMessage};
-use crate::config::audio::PttMode;
+use crate::config::audio::{PttMode, PttReleaseDelay};
 use crate::config::events::{EventType, NotificationContent, SoundChoice};
 use crate::image::ImagePickerError;
 use crate::transfers::TransferEvent;
@@ -553,6 +553,9 @@ pub enum Message {
     VoicePttStateChanged(PttState),
     /// Voice: Raw PTT hotkey event (forwarded from global hotkey subscription)
     VoicePttEvent(GlobalHotKeyEvent),
+    /// Voice: PTT release delay timer expired (time to actually stop transmitting)
+    /// Contains generation counter to detect if PTT was pressed again during delay
+    VoicePttReleaseDelayExpired(u64),
     /// Voice: Mute a user (client-side, stops hearing them)
     VoiceUserMute(String),
     /// Voice: Unmute a user
@@ -578,6 +581,8 @@ pub enum Message {
     AudioPttKeyCaptured(String),
     /// Audio: PTT mode selected
     AudioPttModeSelected(PttMode),
+    /// Audio: PTT release delay selected
+    AudioPttReleaseDelaySelected(PttReleaseDelay),
     /// Audio: Start microphone test
     AudioTestMicStart,
     /// Audio: Stop microphone test

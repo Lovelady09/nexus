@@ -994,6 +994,12 @@ voice-quality-very-high = 最高 (96 kbps)
 ptt-mode-hold = 押している間話す
 ptt-mode-toggle = 切り替え
 
+# PTT release delay
+ptt-delay-off = オフ
+ptt-delay-100ms = 100ms
+ptt-delay-300ms = 300ms
+ptt-delay-500ms = 500ms
+
 # Audio settings
 audio-output-device = 出力デバイス
 audio-input-device = 入力デバイス
@@ -1001,6 +1007,7 @@ audio-refresh-devices = デバイスを更新
 audio-voice-quality = 音声品質
 audio-ptt-key = プッシュトゥトークキー
 audio-ptt-mode = PTTモード
+audio-ptt-release-delay = PTTリリース遅延
 audio-ptt-key-hint = 任意のキーを押してください…
 audio-input-level = 入力レベル
 audio-system-default = システムデフォルト

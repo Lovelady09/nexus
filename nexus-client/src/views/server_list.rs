@@ -187,7 +187,6 @@ fn bookmarks_section<'a>(
                     .wrapping(Wrapping::WordOrGlyph),
             )
             .width(Fill)
-            .height(SERVER_LIST_BUTTON_HEIGHT)
             .padding(INPUT_PADDING)
             .on_press(bookmark_message)
             .style(list_item_button_style(is_connected, has_error));

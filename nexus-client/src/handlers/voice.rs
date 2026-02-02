@@ -5,7 +5,10 @@
 //! - VoiceLeavePressed - User clicks to leave current voice session
 //! - VoiceSessionEvent - Events from the voice session (connected, speaking, etc.)
 //! - VoicePttStateChanged - PTT hotkey pressed/released
+//! - VoicePttReleaseDelayExpired - PTT release delay timer expired
 //! - VoiceUserMute/VoiceUserUnmute - Mute/unmute a user (client-side)
+
+use std::time::Duration;
 
 use global_hotkey::GlobalHotKeyEvent;
 use iced::Task;
@@ -307,6 +310,9 @@ impl NexusApp {
             // global-hotkey crate where ungrab_key doesn't reliably release grabs.
             self.ptt_manager = crate::voice::ptt::PttManager::new().ok();
 
+            // Cancel any pending PTT release delay timer by incrementing generation
+            self.ptt_release_delay_generation += 1;
+
             // Clear local speaking and deafened state
             self.is_local_speaking = false;
             self.is_deafened = false;
@@ -317,6 +323,9 @@ impl NexusApp {
     ///
     /// Called when the PTT hotkey is pressed or released. Starts or stops
     /// audio transmission based on the new state.
+    ///
+    /// If PTT release delay is configured, stopping transmission is delayed
+    /// to prevent cutting off the end of words/sentences.
     pub fn handle_voice_ptt_state_changed(&mut self, state: PttState) -> Task<Message> {
         // Only act if we have an active voice session
         let Some(ref handle) = self.voice_session_handle else {
@@ -325,11 +334,49 @@ impl NexusApp {
 
         match state {
             PttState::Transmitting => {
+                // Cancel any pending release delay by incrementing generation
+                // (the delayed task will see a mismatched generation and do nothing)
+                self.ptt_release_delay_generation += 1;
+
                 handle.start_transmitting();
+                Task::none()
             }
             PttState::Idle => {
-                handle.stop_transmitting();
+                let delay = self.config.settings.audio.ptt_release_delay;
+                let delay_ms = delay.as_millis();
+
+                if delay_ms == 0 {
+                    // No delay - stop immediately
+                    handle.stop_transmitting();
+                    Task::none()
+                } else {
+                    // Start a delayed stop
+                    self.ptt_release_delay_generation += 1;
+                    let generation = self.ptt_release_delay_generation;
+
+                    Task::future(async move {
+                        tokio::time::sleep(Duration::from_millis(delay_ms)).await;
+                        Message::VoicePttReleaseDelayExpired(generation)
+                    })
+                }
             }
+        }
+    }
+
+    /// Handle PTT release delay timer expired
+    ///
+    /// Called when the PTT release delay timer fires. Only stops transmission
+    /// if the generation matches (i.e., PTT wasn't pressed again during the delay).
+    pub fn handle_voice_ptt_release_delay_expired(&mut self, generation: u64) -> Task<Message> {
+        // Check if this timer is still current
+        if generation != self.ptt_release_delay_generation {
+            // PTT was pressed again during the delay - ignore this expired timer
+            return Task::none();
+        }
+
+        // Timer is current - stop transmitting
+        if let Some(ref handle) = self.voice_session_handle {
+            handle.stop_transmitting();
         }
 
         Task::none()

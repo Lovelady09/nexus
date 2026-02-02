@@ -1015,6 +1015,12 @@ voice-quality-very-high = Zeer hoog (96 kbps)
 ptt-mode-hold = Ingedrukt houden om te praten
 ptt-mode-toggle = Schakelen
 
+# PTT release delay
+ptt-delay-off = Uit
+ptt-delay-100ms = 100ms
+ptt-delay-300ms = 300ms
+ptt-delay-500ms = 500ms
+
 # Audio settings
 audio-output-device = Uitvoerapparaat
 audio-input-device = Invoerapparaat
@@ -1022,6 +1028,7 @@ audio-refresh-devices = Apparaten vernieuwen
 audio-voice-quality = Spraakkwaliteit
 audio-ptt-key = Push-to-Talk-toets
 audio-ptt-mode = PTT-modus
+audio-ptt-release-delay = PTT-loslaat vertraging
 audio-ptt-key-hint = Druk op een toets…
 audio-input-level = Ingangsniveau
 audio-system-default = Systeemstandaard

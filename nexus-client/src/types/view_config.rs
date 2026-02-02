@@ -7,7 +7,7 @@ use iced::widget::text_editor;
 use nexus_common::voice::VoiceQuality;
 use uuid::Uuid;
 
-use crate::config::audio::PttMode;
+use crate::config::audio::{PttMode, PttReleaseDelay};
 use crate::config::events::EventSettings;
 use crate::config::settings::{ChatHistoryRetention, ProxySettings};
 use crate::transfers::TransferManager;
@@ -151,6 +151,9 @@ pub struct ViewConfig<'a> {
 
     /// Push-to-talk mode
     pub ptt_mode: PttMode,
+
+    /// Push-to-talk release delay
+    pub ptt_release_delay: PttReleaseDelay,
 
     /// Whether microphone test is active
     pub mic_testing: bool,
