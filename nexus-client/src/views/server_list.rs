@@ -181,12 +181,16 @@ fn bookmarks_section<'a>(
 
             // Transparent button with hover effect
             // Show in danger color if there's an error, primary color if connected, normal otherwise
-            let btn = button(shaped_text(&bookmark.name).size(SERVER_LIST_TEXT_SIZE))
-                .width(Fill)
-                .height(SERVER_LIST_BUTTON_HEIGHT)
-                .padding(INPUT_PADDING)
-                .on_press(bookmark_message)
-                .style(list_item_button_style(is_connected, has_error));
+            let btn = button(
+                shaped_text(&bookmark.name)
+                    .size(SERVER_LIST_TEXT_SIZE)
+                    .wrapping(Wrapping::WordOrGlyph),
+            )
+            .width(Fill)
+            .height(SERVER_LIST_BUTTON_HEIGHT)
+            .padding(INPUT_PADDING)
+            .on_press(bookmark_message)
+            .style(list_item_button_style(is_connected, has_error));
 
             // Action button (transparent icon button with hover effect)
             let edit_btn = tooltip(
