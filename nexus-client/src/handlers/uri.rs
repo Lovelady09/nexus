@@ -248,8 +248,7 @@ impl NexusApp {
 
                 if !path.is_empty() {
                     // Extract parent directory and target name
-                    // We always navigate to parent first, then check if target is file or directory
-                    // when FileListResponse arrives
+                    // Server resolves paths with folder type suffixes (e.g., "uploads" -> "uploads [NEXUS-UL]")
                     let (parent_path, target_name) = if let Some(slash_idx) = path.rfind('/') {
                         (path[..slash_idx].to_string(), &path[slash_idx + 1..])
                     } else {
@@ -265,17 +264,16 @@ impl NexusApp {
 
                     // Get the active file tab and navigate to parent directory
                     let active_tab = conn.files_management.active_tab_mut();
-                    active_tab.navigate_to(parent_path);
+                    active_tab.navigate_to(parent_path.clone());
 
                     // Request file list for the parent path, passing uri_target through routing
                     // URIs always use viewing_root: false - they're for users sharing files,
                     // not for admin root browsing
-                    let path_str = active_tab.current_path.clone();
                     let tab_id = active_tab.id;
                     return self.send_file_list_request_for_tab(
                         connection_id,
                         tab_id,
-                        path_str,
+                        parent_path,
                         false, // URIs always navigate within user's area, not root
                         show_hidden,
                         uri_target,

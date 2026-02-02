@@ -741,6 +741,45 @@ Admins have all permissions automatically.
 | No control chars | ASCII control characters forbidden |
 | Within area | Must stay within user's file area |
 
+## Path Resolution
+
+The server resolves client-provided paths with **suffix matching**, allowing clients to use simplified folder names without type suffixes.
+
+### Resolution Rules
+
+For each path segment:
+
+1. **Exact match first** — If a file/folder with the exact name exists, use it
+2. **Suffix match fallback** — Otherwise, find a folder whose name with suffix stripped matches the segment
+3. **Case sensitive** — Matching follows filesystem behavior (case-sensitive on Linux/macOS)
+
+### Example
+
+Given filesystem structure:
+```
+/shared/
+  uploads [NEXUS-UL]/
+    documents/
+      readme.txt
+```
+
+These paths all resolve to the same file:
+- `uploads [NEXUS-UL]/documents/readme.txt` (exact match)
+- `uploads/documents/readme.txt` (suffix matching)
+- `/uploads/documents/readme.txt` (leading slash stripped)
+
+### Use Cases
+
+- **URI sharing** — Users can share `nexus://server.com/files/uploads/file.txt` without exposing internal folder suffixes
+- **Bookmarks** — Clients can store simplified paths
+- **Manual navigation** — Users can type paths without knowing suffix conventions
+
+### Behavior Notes
+
+- Response paths echo what the client sent (not the resolved path)
+- File listings return actual folder names with suffixes for display
+- When both `uploads` and `uploads [NEXUS-UL]` exist, the exact match (`uploads`) wins
+
 ## Error Kinds
 
 The `error_kind` field in move/copy responses allows programmatic handling:

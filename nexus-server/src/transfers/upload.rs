@@ -16,7 +16,7 @@ use nexus_common::validators;
 use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
 
 use crate::db::Permission;
-use crate::files::path::{allows_upload, build_and_validate_candidate_path};
+use crate::files::path::{allows_upload, validate_and_build_candidate_path};
 use crate::handlers::{
     err_upload_conflict, err_upload_connection_lost, err_upload_destination_not_allowed,
     err_upload_empty, err_upload_file_exists, err_upload_hash_mismatch, err_upload_path_invalid,
@@ -454,7 +454,7 @@ fn validate_and_build_upload_paths(
     // when uploading a directory structure. The security validation in build_and_validate_candidate_path
     // is sufficient (it rejects ".." traversal), and stream_to_part_file/create_empty_file
     // will create parent directories as needed.
-    if build_and_validate_candidate_path(area_root, &relative_to_root.to_string_lossy()).is_err() {
+    if validate_and_build_candidate_path(area_root, &relative_to_root.to_string_lossy()).is_err() {
         return Err(TransferError::invalid(err_upload_path_invalid(locale)));
     }
 

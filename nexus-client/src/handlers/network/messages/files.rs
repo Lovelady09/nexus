@@ -11,9 +11,7 @@ use nexus_common::protocol::{FileEntry, FileInfoDetails, FileSearchResult};
 
 use crate::NexusApp;
 use crate::handlers::files::sort_search_results;
-use crate::types::{
-    FilesManagementState, InputId, Message, PendingOverwrite, ResponseRouting, ScrollableId,
-};
+use crate::types::{InputId, Message, PendingOverwrite, ResponseRouting, ScrollableId};
 
 /// Data from a FileListResponse message
 pub struct FileListResponseData {
@@ -71,16 +69,14 @@ impl NexusApp {
             tab.update_sorted_entries();
 
             // Check for URI target (from nexus:// URI navigation)
+            // Server resolves paths with folder type suffixes, so we just need to find the target
             if let Some(ref target) = uri_target
                 && let Some(ref entries) = tab.entries
             {
                 // Find the target in the file list (case-insensitive)
-                // Use display_name() to strip folder type suffixes (e.g., "[NEXUS-UL]")
-                // so URIs like /files/uploads match "uploads [NEXUS-UL]"
                 let target_lower = target.to_lowercase();
-                if let Some(entry) = entries.iter().find(|e| {
-                    FilesManagementState::display_name(&e.name).to_lowercase() == target_lower
-                }) {
+                if let Some(entry) = entries.iter().find(|e| e.name.to_lowercase() == target_lower)
+                {
                     if entry.dir_type.is_some() {
                         // It's a directory - navigate into it
                         let new_path = if tab.current_path.is_empty() {

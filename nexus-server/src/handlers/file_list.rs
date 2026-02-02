@@ -969,6 +969,107 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_file_list_suffix_matching_stripped_path() {
+        // Test that clients can access "Uploads [NEXUS-UL]" using just "Uploads"
+        let file_area = setup_file_area();
+        let mut test_ctx = create_test_context().await;
+        test_ctx.file_root = Some(Box::leak(file_area.path().to_path_buf().into_boxed_path()));
+
+        // Add a file inside the upload folder
+        fs::write(
+            file_area.path().join("shared/Uploads [NEXUS-UL]/test.txt"),
+            "upload content",
+        )
+        .expect("Failed to create file");
+
+        let session_id = login_user(&mut test_ctx, "admin", "password", &[], true).await;
+
+        // Request using stripped path "Uploads" (without the [NEXUS-UL] suffix)
+        let result = handle_file_list(
+            "Uploads".to_string(),
+            false,
+            false,
+            Some(session_id),
+            &mut test_ctx.handler_context(),
+        )
+        .await;
+
+        assert!(result.is_ok());
+        let response = read_server_message(&mut test_ctx).await;
+        match response {
+            ServerMessage::FileListResponse {
+                success,
+                path,
+                entries,
+                can_upload,
+                ..
+            } => {
+                assert!(success, "FileList should succeed with stripped path");
+                // Path in response should echo what client sent
+                assert_eq!(path, Some("Uploads".to_string()));
+                // Should be able to upload in this folder
+                assert!(can_upload);
+                // Should see the file we created
+                let entries = entries.expect("Expected entries");
+                assert!(
+                    entries.iter().any(|e| e.name == "test.txt"),
+                    "Should find test.txt in upload folder"
+                );
+            }
+            _ => panic!("Expected FileListResponse"),
+        }
+    }
+
+    #[tokio::test]
+    async fn test_file_list_suffix_matching_nested_path() {
+        // Test that nested paths work with suffix matching
+        let file_area = setup_file_area();
+        let mut test_ctx = create_test_context().await;
+        test_ctx.file_root = Some(Box::leak(file_area.path().to_path_buf().into_boxed_path()));
+
+        // Create nested structure: "Uploads [NEXUS-UL]/subdir/file.txt"
+        fs::create_dir(file_area.path().join("shared/Uploads [NEXUS-UL]/subdir"))
+            .expect("Failed to create subdir");
+        fs::write(
+            file_area.path().join("shared/Uploads [NEXUS-UL]/subdir/nested.txt"),
+            "nested content",
+        )
+        .expect("Failed to create file");
+
+        let session_id = login_user(&mut test_ctx, "admin", "password", &[], true).await;
+
+        // Request using stripped path "Uploads/subdir"
+        let result = handle_file_list(
+            "Uploads/subdir".to_string(),
+            false,
+            false,
+            Some(session_id),
+            &mut test_ctx.handler_context(),
+        )
+        .await;
+
+        assert!(result.is_ok());
+        let response = read_server_message(&mut test_ctx).await;
+        match response {
+            ServerMessage::FileListResponse {
+                success,
+                path,
+                entries,
+                ..
+            } => {
+                assert!(success, "FileList should succeed with nested stripped path");
+                assert_eq!(path, Some("Uploads/subdir".to_string()));
+                let entries = entries.expect("Expected entries");
+                assert!(
+                    entries.iter().any(|e| e.name == "nested.txt"),
+                    "Should find nested.txt"
+                );
+            }
+            _ => panic!("Expected FileListResponse"),
+        }
+    }
+
+    #[tokio::test]
     #[cfg(unix)]
     async fn test_file_list_symlink_never_leaks_real_path() {
         use std::os::unix::fs::symlink;
