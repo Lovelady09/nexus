@@ -59,8 +59,11 @@ impl NexusApp {
                 if let Some(id) = opt_id {
                     iced::window::is_minimized(id).then(move |is_minimized| {
                         if is_minimized.unwrap_or(false) {
-                            // Window is minimized - restore it instead of hiding
-                            Task::done(Message::TrayShowWindow(id))
+                            // Window is minimized - restore it
+                            // Query actual maximized state to restore correctly
+                            iced::window::is_maximized(id).map(move |maximized| {
+                                Message::TrayRestoreMinimized { id, maximized }
+                            })
                         } else {
                             // Window is visible and not minimized - hide it
                             iced::window::is_maximized(id).map(move |maximized| {
@@ -76,7 +79,7 @@ impl NexusApp {
                 }
             })
         } else {
-            // Need to show
+            // Need to show from tray-hidden state
             iced::window::oldest().then(|opt_id| {
                 if let Some(id) = opt_id {
                     Task::done(Message::TrayShowWindow(id))
@@ -113,6 +116,47 @@ impl NexusApp {
         #[cfg(not(target_os = "windows"))]
         {
             iced::window::set_mode(id, iced::window::Mode::Hidden)
+        }
+    }
+
+    /// Restore a minimized window (not tray-hidden, just OS-minimized)
+    pub fn handle_tray_restore_minimized(
+        &mut self,
+        id: iced::window::Id,
+        was_maximized: bool,
+    ) -> Task<Message> {
+        // Window wasn't hidden to tray, just minimized via OS
+        // Restore it with the correct maximized state
+        #[cfg(target_os = "windows")]
+        {
+            if was_maximized {
+                Task::batch([
+                    iced::window::minimize(id, false),
+                    iced::window::maximize(id, true),
+                    iced::window::gain_focus(id),
+                ])
+            } else {
+                Task::batch([
+                    iced::window::minimize(id, false),
+                    iced::window::gain_focus(id),
+                ])
+            }
+        }
+
+        #[cfg(not(target_os = "windows"))]
+        {
+            if was_maximized {
+                Task::batch([
+                    iced::window::minimize(id, false),
+                    iced::window::maximize(id, true),
+                    iced::window::gain_focus(id),
+                ])
+            } else {
+                Task::batch([
+                    iced::window::minimize(id, false),
+                    iced::window::gain_focus(id),
+                ])
+            }
         }
     }
 

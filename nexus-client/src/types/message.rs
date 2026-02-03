@@ -620,6 +620,11 @@ pub enum Message {
     },
     /// Tray: Show window (internal, restores maximized state if needed)
     TrayShowWindow(iced::window::Id),
+    /// Tray: Restore minimized window (not tray-hidden, just OS-minimized)
+    TrayRestoreMinimized {
+        id: iced::window::Id,
+        maximized: bool,
+    },
     /// Settings: Show tray icon toggled
     ShowTrayIconToggled(bool),
     /// Settings: Minimize to tray toggled

@@ -1043,6 +1043,10 @@ impl NexusApp {
             #[cfg(not(target_os = "macos"))]
             Message::TrayShowWindow(id) => self.handle_tray_show_window(id),
             #[cfg(not(target_os = "macos"))]
+            Message::TrayRestoreMinimized { id, maximized } => {
+                self.handle_tray_restore_minimized(id, maximized)
+            }
+            #[cfg(not(target_os = "macos"))]
             Message::ShowTrayIconToggled(enabled) => {
                 self.config.settings.show_tray_icon = enabled;
                 self.update_tray_from_settings()
@@ -1062,6 +1066,7 @@ impl NexusApp {
             | Message::TrayMenuQuit
             | Message::TrayHideWindow { .. }
             | Message::TrayShowWindow(_)
+            | Message::TrayRestoreMinimized { .. }
             | Message::ShowTrayIconToggled(_)
             | Message::MinimizeToTrayToggled(_) => Task::none(),
 
