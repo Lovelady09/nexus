@@ -9,7 +9,7 @@ use crossbeam_channel::TryRecvError;
 use iced::Subscription;
 
 use tray_icon::menu::{Menu, MenuEvent, MenuItem, PredefinedMenuItem};
-use tray_icon::{Icon, TrayIcon, TrayIconBuilder, TrayIconEvent};
+use tray_icon::{Icon, MouseButton, MouseButtonState, TrayIcon, TrayIconBuilder, TrayIconEvent};
 
 use super::{TRAY_POLL_INTERVAL_MS, TrayState};
 use crate::i18n::t;
@@ -202,12 +202,17 @@ pub fn poll_tray_events() -> Option<Message> {
     let menu_receiver = MenuEvent::receiver();
 
     // Check for tray icon events (clicks)
+    // Only respond to left-click release to avoid double-toggle (Down + Up events)
     match tray_receiver.try_recv() {
-        Ok(TrayIconEvent::Click { .. }) => {
+        Ok(TrayIconEvent::Click {
+            button: MouseButton::Left,
+            button_state: MouseButtonState::Up,
+            ..
+        }) => {
             return Some(Message::TrayIconClicked);
         }
         Ok(_) => {
-            // Other tray events (e.g., double-click) - ignore
+            // Other tray events (right-click, double-click, mouse down, etc.) - ignore
         }
         Err(TryRecvError::Empty) => {}
         Err(TryRecvError::Disconnected) => {}
