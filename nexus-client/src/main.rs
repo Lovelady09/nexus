@@ -339,6 +339,9 @@ struct NexusApp {
     window_focused: bool,
     /// Whether the application window is currently visible (for minimize to tray)
     window_visible: bool,
+    /// Whether the window was maximized before hiding to tray (to restore state)
+    #[cfg(not(target_os = "macos"))]
+    window_was_maximized: bool,
 
     // -------------------------------------------------------------------------
     // System Tray (Windows/Linux only)
@@ -394,6 +397,8 @@ impl Default for NexusApp {
             // Window State
             window_focused: true,
             window_visible: true,
+            #[cfg(not(target_os = "macos"))]
+            window_was_maximized: false,
             // System Tray (Windows/Linux only)
             #[cfg(not(target_os = "macos"))]
             tray_manager: None,
@@ -455,12 +460,13 @@ impl NexusApp {
                     && self.config.settings.show_tray_icon
                     && self.tray_manager.is_some()
                 {
-                    // Hide window instead of closing
-                    self.window_visible = false;
-                    if let Some(ref mut tray) = self.tray_manager {
-                        tray.set_window_visible(false);
-                    }
-                    return iced::window::set_mode(id, iced::window::Mode::Hidden);
+                    // Query maximized state, then hide window
+                    return iced::window::is_maximized(id).map(move |maximized| {
+                        Message::TrayHideWindow {
+                            id,
+                            was_maximized: maximized,
+                        }
+                    });
                 }
 
                 // Query window size and position, then save and close
@@ -1031,7 +1037,11 @@ impl NexusApp {
             #[cfg(not(target_os = "macos"))]
             Message::TrayMenuQuit => self.handle_tray_quit(),
             #[cfg(not(target_os = "macos"))]
-            Message::TrayToggleVisibility(id) => self.handle_tray_toggle_visibility(id),
+            Message::TrayHideWindow { id, was_maximized } => {
+                self.handle_tray_hide_window(id, was_maximized)
+            }
+            #[cfg(not(target_os = "macos"))]
+            Message::TrayShowWindow(id) => self.handle_tray_show_window(id),
             #[cfg(not(target_os = "macos"))]
             Message::ShowTrayIconToggled(enabled) => {
                 self.config.settings.show_tray_icon = enabled;
@@ -1050,7 +1060,8 @@ impl NexusApp {
             | Message::TrayMenuShowHide
             | Message::TrayMenuMute
             | Message::TrayMenuQuit
-            | Message::TrayToggleVisibility(_)
+            | Message::TrayHideWindow { .. }
+            | Message::TrayShowWindow(_)
             | Message::ShowTrayIconToggled(_)
             | Message::MinimizeToTrayToggled(_) => Task::none(),
 

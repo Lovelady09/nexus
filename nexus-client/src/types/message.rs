@@ -613,8 +613,13 @@ pub enum Message {
     TrayMenuMute,
     /// Tray: Quit menu item selected
     TrayMenuQuit,
-    /// Tray: Toggle window visibility (internal, after getting window ID)
-    TrayToggleVisibility(iced::window::Id),
+    /// Tray: Hide window (internal, carries maximized state to remember)
+    TrayHideWindow {
+        id: iced::window::Id,
+        was_maximized: bool,
+    },
+    /// Tray: Show window (internal, restores maximized state if needed)
+    TrayShowWindow(iced::window::Id),
     /// Settings: Show tray icon toggled
     ShowTrayIconToggled(bool),
     /// Settings: Minimize to tray toggled

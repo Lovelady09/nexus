@@ -52,32 +52,68 @@ impl NexusApp {
 
     /// Toggle window visibility (show/hide)
     fn toggle_window_visibility(&mut self) -> Task<Message> {
-        iced::window::oldest().then(|opt_id| {
-            if let Some(id) = opt_id {
-                Task::done(Message::TrayToggleVisibility(id))
-            } else {
-                Task::none()
-            }
-        })
+        if self.window_visible {
+            // Need to hide - first query maximized state
+            iced::window::oldest().then(|opt_id| {
+                if let Some(id) = opt_id {
+                    iced::window::is_maximized(id).map(move |maximized| Message::TrayHideWindow {
+                        id,
+                        was_maximized: maximized,
+                    })
+                } else {
+                    Task::none()
+                }
+            })
+        } else {
+            // Need to show
+            iced::window::oldest().then(|opt_id| {
+                if let Some(id) = opt_id {
+                    Task::done(Message::TrayShowWindow(id))
+                } else {
+                    Task::none()
+                }
+            })
+        }
     }
 
-    /// Actually toggle the window visibility (called after we have the window ID)
-    pub fn handle_tray_toggle_visibility(&mut self, id: iced::window::Id) -> Task<Message> {
-        self.window_visible = !self.window_visible;
+    /// Hide the window to tray (called after querying maximized state)
+    pub fn handle_tray_hide_window(
+        &mut self,
+        id: iced::window::Id,
+        was_maximized: bool,
+    ) -> Task<Message> {
+        self.window_visible = false;
+        self.window_was_maximized = was_maximized;
 
         if let Some(ref mut tray) = self.tray_manager {
-            tray.set_window_visible(self.window_visible);
+            tray.set_window_visible(false);
         }
 
-        if self.window_visible {
-            // Show window and bring to front
+        iced::window::set_mode(id, iced::window::Mode::Hidden)
+    }
+
+    /// Show the window from tray (restores maximized state if needed)
+    pub fn handle_tray_show_window(&mut self, id: iced::window::Id) -> Task<Message> {
+        self.window_visible = true;
+        let was_maximized = self.window_was_maximized;
+
+        if let Some(ref mut tray) = self.tray_manager {
+            tray.set_window_visible(true);
+        }
+
+        if was_maximized {
+            // Restore to windowed first, then maximize, then focus
+            Task::batch([
+                iced::window::set_mode(id, iced::window::Mode::Windowed),
+                iced::window::maximize(id, true),
+                iced::window::gain_focus(id),
+            ])
+        } else {
+            // Just restore to windowed and focus
             Task::batch([
                 iced::window::set_mode(id, iced::window::Mode::Windowed),
                 iced::window::gain_focus(id),
             ])
-        } else {
-            // Hide window
-            iced::window::set_mode(id, iced::window::Mode::Hidden)
         }
     }
 
@@ -182,12 +218,21 @@ impl NexusApp {
 
                 // Return task to show window if it was hidden
                 if need_show_window {
-                    return iced::window::oldest().then(|opt_id| {
+                    let was_maximized = self.window_was_maximized;
+                    return iced::window::oldest().then(move |opt_id| {
                         if let Some(id) = opt_id {
-                            Task::batch([
-                                iced::window::set_mode(id, iced::window::Mode::Windowed),
-                                iced::window::gain_focus(id),
-                            ])
+                            if was_maximized {
+                                Task::batch([
+                                    iced::window::set_mode(id, iced::window::Mode::Windowed),
+                                    iced::window::maximize(id, true),
+                                    iced::window::gain_focus(id),
+                                ])
+                            } else {
+                                Task::batch([
+                                    iced::window::set_mode(id, iced::window::Mode::Windowed),
+                                    iced::window::gain_focus(id),
+                                ])
+                            }
                         } else {
                             Task::none()
                         }
