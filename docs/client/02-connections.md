@@ -115,9 +115,11 @@ Route connections through a SOCKS5 proxy (e.g., Tor, SSH tunnel).
 Some addresses automatically bypass the proxy:
 
 - **Localhost**: `127.0.0.1`, `::1`, `localhost`
+- **Private/LAN**: `10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16` (RFC 1918)
+- **IPv6 ULA**: `fc00::/7` (Unique Local Addresses)
 - **Yggdrasil**: Addresses in the `0200::/7` range
 
-This ensures local connections and Yggdrasil mesh traffic are not routed through the proxy.
+This ensures local connections, LAN servers, and Yggdrasil mesh traffic are not routed through the proxy.
 
 ### Using with Tor
 

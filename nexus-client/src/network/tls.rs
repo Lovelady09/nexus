@@ -1,6 +1,6 @@
 //! TLS configuration and connection establishment
 
-use std::net::{IpAddr, Ipv6Addr, ToSocketAddrs};
+use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, ToSocketAddrs};
 use std::sync::Arc;
 
 use once_cell::sync::Lazy;
@@ -14,7 +14,9 @@ use tokio_socks::tcp::Socks5Stream;
 
 use crate::i18n::{t, t_args};
 
-use super::constants::{CONNECTION_TIMEOUT, YGGDRASIL_NETWORK};
+use super::constants::{
+    CONNECTION_TIMEOUT, IPV6_ULA, PRIVATE_10, PRIVATE_172, PRIVATE_192, YGGDRASIL_NETWORK,
+};
 use super::types::{ProxyConfig, TlsStream};
 
 /// Global TLS connector (accepts any certificate, no hostname verification)
@@ -172,7 +174,7 @@ pub(crate) async fn establish_connection(
 /// - Localhost/loopback addresses (127.x.x.x, ::1)
 /// - Yggdrasil mesh network addresses (0200::/7)
 pub(crate) fn should_bypass_proxy(address: &str) -> bool {
-    is_loopback_address(address) || is_yggdrasil_address(address)
+    is_loopback_address(address) || is_yggdrasil_address(address) || is_private_address(address)
 }
 
 /// Normalize an address by removing brackets and zone identifiers
@@ -206,6 +208,31 @@ fn is_yggdrasil_address(address: &str) -> bool {
     normalize_address(address)
         .parse::<Ipv6Addr>()
         .is_ok_and(|ip| YGGDRASIL_NETWORK.contains(&ip))
+}
+
+/// Check if an address is in a private/LAN range
+///
+/// Matches RFC 1918 private IPv4 ranges and IPv6 ULA:
+/// - 10.0.0.0/8
+/// - 172.16.0.0/12
+/// - 192.168.0.0/16
+/// - fc00::/7 (IPv6 Unique Local Addresses)
+fn is_private_address(address: &str) -> bool {
+    let normalized = normalize_address(address);
+
+    // Check IPv4 private ranges
+    if let Ok(ipv4) = normalized.parse::<Ipv4Addr>() {
+        return PRIVATE_10.contains(&ipv4)
+            || PRIVATE_172.contains(&ipv4)
+            || PRIVATE_192.contains(&ipv4);
+    }
+
+    // Check IPv6 ULA range
+    if let Ok(ipv6) = normalized.parse::<Ipv6Addr>() {
+        return IPV6_ULA.contains(&ipv6);
+    }
+
+    false
 }
 
 /// Establish a direct TLS connection (no proxy)
@@ -374,10 +401,44 @@ mod tests {
     }
 
     #[test]
+    fn test_bypass_private_ipv4() {
+        // 10.0.0.0/8
+        assert!(should_bypass_proxy("10.0.0.1"));
+        assert!(should_bypass_proxy("10.255.255.255"));
+        assert!(should_bypass_proxy("10.50.100.200"));
+
+        // 172.16.0.0/12
+        assert!(should_bypass_proxy("172.16.0.1"));
+        assert!(should_bypass_proxy("172.31.255.255"));
+        assert!(should_bypass_proxy("172.20.10.5"));
+
+        // 192.168.0.0/16
+        assert!(should_bypass_proxy("192.168.0.1"));
+        assert!(should_bypass_proxy("192.168.255.255"));
+        assert!(should_bypass_proxy("192.168.1.100"));
+    }
+
+    #[test]
+    fn test_bypass_ipv6_ula() {
+        // fc00::/7 range (fc00:: to fdff::)
+        assert!(should_bypass_proxy("fc00::1"));
+        assert!(should_bypass_proxy("fd00::1"));
+        assert!(should_bypass_proxy("fdab:cdef:1234::1"));
+        assert!(should_bypass_proxy("[fd12:3456:789a::1]"));
+    }
+
+    #[test]
     fn test_not_bypass() {
-        // Regular IPv4
-        assert!(!should_bypass_proxy("192.168.1.1"));
-        assert!(!should_bypass_proxy("10.0.0.1"));
+        // Public IPv4
+        assert!(!should_bypass_proxy("8.8.8.8"));
+        assert!(!should_bypass_proxy("1.1.1.1"));
+
+        // Just outside private ranges
+        assert!(!should_bypass_proxy("11.0.0.1")); // Above 10.x.x.x
+        assert!(!should_bypass_proxy("172.15.255.255")); // Below 172.16.x.x
+        assert!(!should_bypass_proxy("172.32.0.1")); // Above 172.31.x.x
+        assert!(!should_bypass_proxy("192.167.255.255")); // Below 192.168.x.x
+        assert!(!should_bypass_proxy("192.169.0.1")); // Above 192.168.x.x
 
         // Hostnames
         assert!(!should_bypass_proxy("example.com"));

@@ -183,6 +183,8 @@ Route connections through a SOCKS5 proxy (e.g., Tor).
 
 **Automatic Bypass:** The proxy is automatically bypassed for:
 - Loopback addresses (127.0.0.1, localhost)
+- Private/LAN addresses (10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16)
+- IPv6 ULA addresses (fc00::/7)
 - Yggdrasil addresses (0200::/7)
 
 ## Audio Tab
