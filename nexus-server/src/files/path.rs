@@ -1157,7 +1157,7 @@ mod tests {
 
     #[test]
     fn test_symlink_to_external_allowed() {
-        let (_temp, root) = setup_test_area();
+        let (_temp, _root) = setup_test_area();
 
         // Symlinks pointing outside the area are allowed (admin-created, trusted)
         #[cfg(unix)]
@@ -1170,12 +1170,12 @@ mod tests {
             fs::write(external_path.join("external.txt"), "external").unwrap();
 
             // Create symlink pointing outside
-            let link_path = root.join("documents/external_link");
+            let link_path = _root.join("documents/external_link");
             symlink(&external_path, &link_path).expect("Failed to create symlink");
 
             // Should be allowed - admin-created symlink
-            let candidate = build_candidate_path(&root, "documents/external_link/external.txt");
-            let result = resolve_path(&root, &candidate);
+            let candidate = build_candidate_path(&_root, "documents/external_link/external.txt");
+            let result = resolve_path(&_root, &candidate);
             assert!(result.is_ok());
             assert!(result.unwrap().ends_with("external.txt"));
         }
@@ -1183,7 +1183,7 @@ mod tests {
 
     #[test]
     fn test_symlink_within_area_allowed() {
-        let (_temp, root) = setup_test_area();
+        let (_temp, _root) = setup_test_area();
 
         // Symlink that stays within the area root should work
         #[cfg(unix)]
@@ -1191,11 +1191,11 @@ mod tests {
             use std::os::unix::fs::symlink;
 
             // Create symlink from one folder to another (both within area)
-            let link_path = root.join("doc_link");
-            symlink(root.join("documents"), &link_path).expect("Failed to create symlink");
+            let link_path = _root.join("doc_link");
+            symlink(_root.join("documents"), &link_path).expect("Failed to create symlink");
 
-            let candidate = build_candidate_path(&root, "doc_link/readme.txt");
-            let result = resolve_path(&root, &candidate);
+            let candidate = build_candidate_path(&_root, "doc_link/readme.txt");
+            let result = resolve_path(&_root, &candidate);
             assert!(result.is_ok());
         }
     }
@@ -1319,7 +1319,7 @@ mod tests {
 
     #[test]
     fn test_resolve_new_path_via_symlink_allowed() {
-        let (_temp, root) = setup_test_area();
+        let (_temp, _root) = setup_test_area();
 
         // Symlinks are trusted (admin-created), so creating files through them is allowed
         #[cfg(unix)]
@@ -1331,12 +1331,12 @@ mod tests {
             let external_path = external.path().canonicalize().unwrap();
 
             // Create symlink pointing outside
-            let link_path = root.join("external_link");
+            let link_path = _root.join("external_link");
             symlink(&external_path, &link_path).expect("Failed to create symlink");
 
             // Creating a new file through the symlink should succeed
-            let candidate = build_candidate_path(&root, "external_link/newfile.txt");
-            let result = resolve_new_path(&root, &candidate);
+            let candidate = build_candidate_path(&_root, "external_link/newfile.txt");
+            let result = resolve_new_path(&_root, &candidate);
             assert!(result.is_ok());
             assert!(result.unwrap().ends_with("newfile.txt"));
         }

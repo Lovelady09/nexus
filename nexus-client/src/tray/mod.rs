@@ -41,12 +41,15 @@ use crate::i18n::{t, t_args};
 pub const TRAY_POLL_INTERVAL_MS: u64 = 50;
 
 /// Tray icon identifier (internal, not user-facing)
+#[cfg(target_os = "linux")]
 pub const TRAY_ID: &str = "nexus-bbs";
 
 /// Tray icon title/name
+#[cfg(target_os = "linux")]
 pub const TRAY_TITLE: &str = "Nexus BBS";
 
 /// Bytes per pixel for ARGB/RGBA image data
+#[cfg(target_os = "linux")]
 pub const BYTES_PER_PIXEL: usize = 4;
 
 // =============================================================================
