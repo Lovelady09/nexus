@@ -53,12 +53,23 @@ impl NexusApp {
     /// Toggle window visibility (show/hide)
     fn toggle_window_visibility(&mut self) -> Task<Message> {
         if self.window_visible {
-            // Need to hide - first query maximized state
+            // Window is "visible" but might be minimized - check before hiding
+            // If minimized, restore it instead of hiding
             iced::window::oldest().then(|opt_id| {
                 if let Some(id) = opt_id {
-                    iced::window::is_maximized(id).map(move |maximized| Message::TrayHideWindow {
-                        id,
-                        was_maximized: maximized,
+                    iced::window::is_minimized(id).then(move |is_minimized| {
+                        if is_minimized.unwrap_or(false) {
+                            // Window is minimized - restore it instead of hiding
+                            Task::done(Message::TrayShowWindow(id))
+                        } else {
+                            // Window is visible and not minimized - hide it
+                            iced::window::is_maximized(id).map(move |maximized| {
+                                Message::TrayHideWindow {
+                                    id,
+                                    was_maximized: maximized,
+                                }
+                            })
+                        }
                     })
                 } else {
                     Task::none()
