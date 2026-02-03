@@ -294,6 +294,14 @@ pub struct Settings {
     /// Audio settings for voice chat
     #[serde(default)]
     pub audio: AudioSettings,
+
+    /// Show system tray icon (Windows/Linux only)
+    #[serde(default)]
+    pub show_tray_icon: bool,
+
+    /// Minimize to tray instead of closing (Windows/Linux only)
+    #[serde(default)]
+    pub minimize_to_tray: bool,
 }
 
 /// Default value for max_scrollback setting
@@ -331,6 +339,8 @@ impl Default for Settings {
             max_scrollback: default_max_scrollback(),
             chat_history_retention: ChatHistoryRetention::default(),
             audio: AudioSettings::default(),
+            show_tray_icon: false,
+            minimize_to_tray: false,
         }
     }
 }

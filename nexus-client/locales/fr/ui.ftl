@@ -1037,6 +1037,34 @@ audio-testing = Test en cours…
 audio-stop-test = Arrêter le test
 # Audio processing
 audio-noise-suppression = Suppression du bruit
-audio-echo-cancellation = Annulation d'écho
+audio-echo-cancellation = Annulation de l'écho
 audio-agc = Contrôle automatique du gain
-audio-transient-suppression = Réduction du bruit de clavier
+audio-transient-suppression = Réduction du bruit du clavier
+
+# =============================================================================
+# System Tray (Windows/Linux only)
+# =============================================================================
+
+# Settings
+settings-show-tray-icon = Afficher l'icône dans la barre des tâches
+settings-minimize-to-tray = Minimiser dans la barre des tâches au lieu de fermer
+
+# Menu items
+tray-show-window = Afficher la fenêtre
+tray-hide-window = Masquer la fenêtre
+tray-mute = Couper le son
+tray-unmute = Rétablir le son
+tray-quit = Quitter
+
+# Errors
+err-tray-creation-failed = Impossible de créer l'icône de la barre des tâches
+
+# Tooltips
+tray-tooltip-normal = Nexus BBS
+tray-tooltip-disconnected = Nexus BBS - Déconnecté
+tray-tooltip-voice = Nexus BBS - En vocal : { $target }
+tray-tooltip-voice-muted = Nexus BBS - En vocal (muet) : { $target }
+tray-tooltip-unread = Nexus BBS - { $count ->
+    [one] { $count } conversation non lue
+   *[other] { $count } conversations non lues
+}

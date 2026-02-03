@@ -12,6 +12,8 @@ mod news;
 mod server_info;
 mod settings;
 mod transfers;
+#[cfg(not(target_os = "macos"))]
+mod tray;
 mod ui;
 mod uri;
 mod user_management;

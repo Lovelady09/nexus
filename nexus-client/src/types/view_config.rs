@@ -181,6 +181,13 @@ pub struct ViewConfig<'a> {
 
     /// Whether local user has deafened (muted all incoming voice audio)
     pub is_deafened: bool,
+
+    // ==================== System Tray (Windows/Linux only) ====================
+    /// Show system tray icon
+    pub show_tray_icon: bool,
+
+    /// Minimize to tray instead of closing
+    pub minimize_to_tray: bool,
 }
 
 /// Toolbar state configuration

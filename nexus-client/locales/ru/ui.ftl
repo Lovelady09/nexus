@@ -1044,6 +1044,35 @@ audio-testing = Тестирование…
 audio-stop-test = Остановить тест
 # Audio processing
 audio-noise-suppression = Подавление шума
-audio-echo-cancellation = Подавление эха
+audio-echo-cancellation = Эхоподавление
 audio-agc = Автоматическая регулировка усиления
 audio-transient-suppression = Подавление шума клавиатуры
+
+# =============================================================================
+# System Tray (Windows/Linux only)
+# =============================================================================
+
+# Settings
+settings-show-tray-icon = Показывать значок в трее
+settings-minimize-to-tray = Сворачивать в трей вместо закрытия
+
+# Menu items
+tray-show-window = Показать окно
+tray-hide-window = Скрыть окно
+tray-mute = Отключить звук
+tray-unmute = Включить звук
+tray-quit = Выход
+
+# Errors
+err-tray-creation-failed = Не удалось создать значок в системном трее
+
+# Tooltips
+tray-tooltip-normal = Nexus BBS
+tray-tooltip-disconnected = Nexus BBS - Отключено
+tray-tooltip-voice = Nexus BBS - В голосовом чате: { $target }
+tray-tooltip-voice-muted = Nexus BBS - В голосовом чате (без звука): { $target }
+tray-tooltip-unread = Nexus BBS - { $count ->
+    [one] { $count } непрочитанный разговор
+    [few] { $count } непрочитанных разговора
+   *[other] { $count } непрочитанных разговоров
+}

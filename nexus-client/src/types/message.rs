@@ -602,6 +602,24 @@ pub enum Message {
     /// Audio: Toggle transient suppression (keyboard/click noise reduction)
     AudioTransientSuppression(bool),
 
+    // ==================== System Tray (Windows/Linux only) ====================
+    /// Tray: Periodic poll for tray events (also pumps GTK on Linux)
+    TrayPoll,
+    /// Tray: Icon was clicked (toggle window visibility)
+    TrayIconClicked,
+    /// Tray: Show/Hide window menu item selected
+    TrayMenuShowHide,
+    /// Tray: Mute/Unmute menu item selected
+    TrayMenuMute,
+    /// Tray: Quit menu item selected
+    TrayMenuQuit,
+    /// Tray: Toggle window visibility (internal, after getting window ID)
+    TrayToggleVisibility(iced::window::Id),
+    /// Settings: Show tray icon toggled
+    ShowTrayIconToggled(bool),
+    /// Settings: Minimize to tray toggled
+    MinimizeToTrayToggled(bool),
+
     // ==================== URI Scheme ====================
     /// URI: Handle a nexus:// URI (from startup arg or IPC)
     HandleNexusUri(NexusUri),

@@ -1,0 +1,217 @@
+//! System tray message handlers (Windows/Linux only)
+
+#![cfg(not(target_os = "macos"))]
+
+use iced::Task;
+
+use crate::NexusApp;
+use crate::i18n::t;
+use crate::types::{ChatMessage, ChatTab, Message};
+
+impl NexusApp {
+    /// Handle tray icon click - toggle window visibility
+    pub fn handle_tray_icon_clicked(&mut self) -> Task<Message> {
+        self.toggle_window_visibility()
+    }
+
+    /// Handle show/hide menu item
+    pub fn handle_tray_show_hide(&mut self) -> Task<Message> {
+        self.toggle_window_visibility()
+    }
+
+    /// Handle mute/unmute menu item - toggle deafen state
+    pub fn handle_tray_mute(&mut self) -> Task<Message> {
+        // Only works if we're in a voice session
+        if self.active_voice_connection.is_some() {
+            self.handle_voice_deafen_toggle()
+        } else {
+            Task::none()
+        }
+    }
+
+    /// Handle quit menu item - proper application shutdown
+    pub fn handle_tray_quit(&mut self) -> Task<Message> {
+        // Get the oldest window and trigger a close that bypasses minimize-to-tray
+        iced::window::oldest().then(|opt_id| {
+            if let Some(id) = opt_id {
+                // Query window size and position, then save and close
+                iced::window::size(id).then(move |size| {
+                    iced::window::position(id).map(move |point| Message::WindowSaveAndClose {
+                        id,
+                        width: size.width,
+                        height: size.height,
+                        x: point.map(|p| p.x as i32),
+                        y: point.map(|p| p.y as i32),
+                    })
+                })
+            } else {
+                Task::none()
+            }
+        })
+    }
+
+    /// Toggle window visibility (show/hide)
+    fn toggle_window_visibility(&mut self) -> Task<Message> {
+        iced::window::oldest().then(|opt_id| {
+            if let Some(id) = opt_id {
+                Task::done(Message::TrayToggleVisibility(id))
+            } else {
+                Task::none()
+            }
+        })
+    }
+
+    /// Actually toggle the window visibility (called after we have the window ID)
+    pub fn handle_tray_toggle_visibility(&mut self, id: iced::window::Id) -> Task<Message> {
+        self.window_visible = !self.window_visible;
+
+        if let Some(ref mut tray) = self.tray_manager {
+            tray.set_window_visible(self.window_visible);
+        }
+
+        if self.window_visible {
+            // Show window and bring to front
+            Task::batch([
+                iced::window::set_mode(id, iced::window::Mode::Windowed),
+                iced::window::gain_focus(id),
+            ])
+        } else {
+            // Hide window
+            iced::window::set_mode(id, iced::window::Mode::Hidden)
+        }
+    }
+
+    /// Update tray icon state based on current application state
+    ///
+    /// Called after state changes that might affect the tray icon.
+    pub fn update_tray_state(&mut self) {
+        use crate::tray::{TrayState, build_tooltip};
+
+        // Early return if no tray manager
+        if self.tray_manager.is_none() {
+            return;
+        }
+
+        // Compute all the state we need BEFORE borrowing tray_manager
+        let is_disconnected = self.connections.is_empty();
+        let in_voice = self.active_voice_connection.is_some();
+        let is_deafened = self.is_deafened;
+        let is_speaking = self.is_local_speaking;
+        let voice_target = self.get_voice_target();
+        let unread_count = self.count_unread_user_messages();
+
+        // Determine state (priority order)
+        let state = if is_disconnected {
+            TrayState::Disconnected
+        } else if in_voice && is_deafened {
+            TrayState::VoiceMuted
+        } else if in_voice && is_speaking {
+            TrayState::VoiceSpeaking
+        } else if in_voice {
+            TrayState::VoiceActive
+        } else if unread_count > 0 {
+            TrayState::Unread
+        } else {
+            TrayState::Normal
+        };
+
+        // Build tooltip
+        let tooltip = build_tooltip(state, voice_target.as_deref(), unread_count);
+
+        // Now borrow tray_manager mutably and update it
+        if let Some(ref mut tray) = self.tray_manager {
+            tray.update_state(state);
+            tray.update_tooltip(&tooltip);
+            tray.set_mute_enabled(in_voice);
+            if in_voice {
+                tray.set_deafened(is_deafened);
+            }
+        }
+    }
+
+    /// Get the current voice target (channel name or user nickname)
+    fn get_voice_target(&self) -> Option<String> {
+        let conn_id = self.active_voice_connection?;
+        let conn = self.connections.get(&conn_id)?;
+        let voice_state = conn.voice_session.as_ref()?;
+        Some(voice_state.target.clone())
+    }
+
+    /// Count total unread user message tabs across all connections
+    fn count_unread_user_messages(&self) -> usize {
+        let mut count = 0;
+        for conn in self.connections.values() {
+            for tab in &conn.unread_tabs {
+                if matches!(tab, ChatTab::UserMessage(_)) {
+                    count += 1;
+                }
+            }
+        }
+        count
+    }
+
+    /// Create or destroy the tray manager based on settings
+    ///
+    /// Returns a Task that may show an error message if tray creation fails.
+    pub fn update_tray_from_settings(&mut self) -> Task<Message> {
+        use crate::tray::TrayManager;
+
+        if self.config.settings.show_tray_icon {
+            // Create tray if not exists
+            if self.tray_manager.is_none() {
+                match TrayManager::new() {
+                    Some(tray) => {
+                        self.tray_manager = Some(tray);
+                        self.update_tray_state();
+                    }
+                    None => {
+                        // Tray creation failed - show error to user
+                        return self.show_tray_error(t("err-tray-creation-failed"));
+                    }
+                }
+            }
+        } else {
+            // Destroy tray if exists
+            if self.tray_manager.is_some() {
+                // If window is hidden, show it first
+                let need_show_window = !self.window_visible;
+                if need_show_window {
+                    self.window_visible = true;
+                }
+                self.tray_manager = None;
+
+                // Return task to show window if it was hidden
+                if need_show_window {
+                    return iced::window::oldest().then(|opt_id| {
+                        if let Some(id) = opt_id {
+                            Task::batch([
+                                iced::window::set_mode(id, iced::window::Mode::Windowed),
+                                iced::window::gain_focus(id),
+                            ])
+                        } else {
+                            Task::none()
+                        }
+                    });
+                }
+            }
+        }
+        Task::none()
+    }
+
+    /// Show a tray-related error to the user
+    ///
+    /// If connected, shows in active chat tab. Otherwise, shows in settings panel.
+    fn show_tray_error(&mut self, error: String) -> Task<Message> {
+        // If we have an active connection, show error in chat
+        if let Some(conn_id) = self.active_connection {
+            return self.add_active_tab_message(conn_id, ChatMessage::error(error));
+        }
+
+        // Otherwise, show in settings panel if it's open
+        if let Some(ref mut form) = self.settings_form {
+            form.error = Some(error);
+        }
+
+        Task::none()
+    }
+}

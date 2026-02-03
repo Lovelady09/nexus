@@ -128,6 +128,11 @@ impl NexusApp {
         let pm_tab = ChatTab::UserMessage(other_nickname);
         if conn.active_chat_tab != pm_tab {
             conn.unread_tabs.insert(pm_tab);
+
+            // Update tray icon state (Windows/Linux only)
+            #[cfg(not(target_os = "macos"))]
+            self.update_tray_state();
+
             Task::none()
         } else {
             self.scroll_chat_if_visible(true)

@@ -1019,4 +1019,29 @@ audio-stop-test = 停止测试
 audio-noise-suppression = 噪音抑制
 audio-echo-cancellation = 回声消除
 audio-agc = 自动增益控制
-audio-transient-suppression = 键盘噪音抑制
+audio-transient-suppression = 键盘噪音消除
+
+# =============================================================================
+# System Tray (Windows/Linux only)
+# =============================================================================
+
+# Settings
+settings-show-tray-icon = 显示托盘图标
+settings-minimize-to-tray = 最小化到托盘而非关闭
+
+# Menu items
+tray-show-window = 显示窗口
+tray-hide-window = 隐藏窗口
+tray-mute = 静音
+tray-unmute = 取消静音
+tray-quit = 退出
+
+# Errors
+err-tray-creation-failed = 无法创建系统托盘图标
+
+# Tooltips
+tray-tooltip-normal = Nexus BBS
+tray-tooltip-disconnected = Nexus BBS - 已断开
+tray-tooltip-voice = Nexus BBS - 语音中: { $target }
+tray-tooltip-voice-muted = Nexus BBS - 语音中 (已静音): { $target }
+tray-tooltip-unread = Nexus BBS - { $count } 个未读对话

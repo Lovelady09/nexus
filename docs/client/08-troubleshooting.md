@@ -301,6 +301,50 @@ You'll lose your settings and bookmarks, but the client will create a fresh conf
 2. If corrupted, you may need to re-create bookmarks
 3. Bookmarks are stored in the config file — back it up periodically
 
+## System Tray Issues (Windows/Linux)
+
+### Tray icon not appearing
+
+**Possible causes:**
+- System tray/notification area not available
+- Desktop environment doesn't support system tray
+- Missing system library
+
+**Solutions:**
+1. Verify your desktop environment has a system tray/notification area
+2. On Linux, ensure `libayatana-appindicator3` or `libappindicator3` is installed:
+   ```bash
+   # Debian/Ubuntu
+   sudo apt-get install libayatana-appindicator3-1
+   
+   # Fedora
+   sudo dnf install libappindicator-gtk3
+   ```
+3. Some minimal desktop environments (like tiling window managers) may not have a system tray by default — install a standalone tray application
+4. Try toggling the setting off and on again
+
+### "Failed to create system tray icon" error
+
+**Cause:** The system tray couldn't be initialized.
+
+**Solutions:**
+1. Check that your desktop environment supports system tray icons
+2. On Linux with Wayland, some tray implementations may not work — try running with XWayland
+3. Restart your desktop environment or log out and back in
+4. The application will continue to work normally without the tray icon
+
+### Window doesn't hide to tray
+
+**Cause:** "Minimize to tray" requires "Show tray icon" to be enabled first.
+
+**Solution:** In Settings > General, enable "Show tray icon" before enabling "Minimize to tray".
+
+### Tray icon shows wrong state
+
+**Cause:** The icon state may be briefly out of sync after rapid changes.
+
+**Solution:** This is cosmetic and will correct itself. If it persists, toggle the tray icon setting off and on.
+
 ## Platform-Specific Issues
 
 ### Linux: "ALSA lib" errors on startup

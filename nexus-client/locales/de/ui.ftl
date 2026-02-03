@@ -1043,3 +1043,31 @@ audio-noise-suppression = Rauschunterdrückung
 audio-echo-cancellation = Echounterdrückung
 audio-agc = Automatische Lautstärkeregelung
 audio-transient-suppression = Tastaturgeräuschunterdrückung
+
+# =============================================================================
+# System Tray (Windows/Linux only)
+# =============================================================================
+
+# Settings
+settings-show-tray-icon = Taskleistensymbol anzeigen
+settings-minimize-to-tray = In Taskleiste minimieren statt schließen
+
+# Menu items
+tray-show-window = Fenster anzeigen
+tray-hide-window = Fenster ausblenden
+tray-mute = Stummschalten
+tray-unmute = Stummschaltung aufheben
+tray-quit = Beenden
+
+# Errors
+err-tray-creation-failed = Taskleistensymbol konnte nicht erstellt werden
+
+# Tooltips
+tray-tooltip-normal = Nexus BBS
+tray-tooltip-disconnected = Nexus BBS - Nicht verbunden
+tray-tooltip-voice = Nexus BBS - In Sprachchat: { $target }
+tray-tooltip-voice-muted = Nexus BBS - In Sprachchat (stumm): { $target }
+tray-tooltip-unread = Nexus BBS - { $count ->
+    [one] { $count } ungelesene Unterhaltung
+   *[other] { $count } ungelesene Unterhaltungen
+}

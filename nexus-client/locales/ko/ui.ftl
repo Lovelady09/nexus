@@ -1017,5 +1017,30 @@ audio-stop-test = 테스트 중지
 # Audio processing
 audio-noise-suppression = 노이즈 억제
 audio-echo-cancellation = 에코 제거
-audio-agc = 자동 이득 제어
+audio-agc = 자동 게인 제어
 audio-transient-suppression = 키보드 소음 감소
+
+# =============================================================================
+# System Tray (Windows/Linux only)
+# =============================================================================
+
+# Settings
+settings-show-tray-icon = 트레이 아이콘 표시
+settings-minimize-to-tray = 닫는 대신 트레이로 최소화
+
+# Menu items
+tray-show-window = 창 표시
+tray-hide-window = 창 숨기기
+tray-mute = 음소거
+tray-unmute = 음소거 해제
+tray-quit = 종료
+
+# Errors
+err-tray-creation-failed = 시스템 트레이 아이콘을 만들 수 없습니다
+
+# Tooltips
+tray-tooltip-normal = Nexus BBS
+tray-tooltip-disconnected = Nexus BBS - 연결 끊김
+tray-tooltip-voice = Nexus BBS - 음성 채팅 중: { $target }
+tray-tooltip-voice-muted = Nexus BBS - 음성 채팅 중 (음소거): { $target }
+tray-tooltip-unread = Nexus BBS - 읽지 않은 대화 { $count }개

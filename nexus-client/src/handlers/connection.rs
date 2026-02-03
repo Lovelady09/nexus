@@ -166,6 +166,10 @@ impl NexusApp {
             if self.active_connection == Some(connection_id) {
                 self.active_connection = None;
             }
+
+            // Update tray icon state (Windows/Linux only)
+            #[cfg(not(target_os = "macos"))]
+            self.update_tray_state();
         }
         Task::none()
     }
@@ -555,8 +559,19 @@ impl NexusApp {
             return Task::none();
         };
 
+        // Check if we're clearing a user message unread (for tray update)
+        #[cfg(not(target_os = "macos"))]
+        let was_unread_user_message =
+            matches!(&tab, ChatTab::UserMessage(_)) && conn.unread_tabs.contains(&tab);
+
         conn.unread_tabs.remove(&tab);
         conn.active_chat_tab = tab;
+
+        // Update tray icon state if we cleared a user message unread (Windows/Linux only)
+        #[cfg(not(target_os = "macos"))]
+        if was_unread_user_message {
+            self.update_tray_state();
+        }
 
         self.handle_show_chat_view()
     }

@@ -8,7 +8,7 @@ Click the **gear icon** in the toolbar or press `Escape` when a panel is open to
 
 Settings are organized into tabs:
 
-- **General** — Theme, avatar, nickname
+- **General** — Theme, avatar, nickname, system tray (Windows/Linux)
 - **Chat** — Font size, timestamps, notifications
 - **Files** — Download location, transfer limits
 - **Network** — Proxy configuration
@@ -62,6 +62,39 @@ Set a default nickname for shared account connections. This is used when:
 - The bookmark doesn't specify its own nickname
 
 Leave blank to be prompted for a nickname when connecting to shared accounts.
+
+### System Tray (Windows/Linux Only)
+
+These settings are only available on Windows and Linux. macOS uses dock badges instead (planned for a future release).
+
+| Setting | Description |
+|---------|-------------|
+| **Show tray icon** | Display an icon in the system tray/notification area |
+| **Minimize to tray** | When closing the window, hide to tray instead of quitting |
+
+When enabled, the tray icon provides:
+
+- **Quick access** — Click the icon to show/hide the window
+- **Status at a glance** — Icon changes based on state:
+  - Gray: Disconnected from all servers
+  - Green dot: In voice chat, actively speaking (PTT pressed)
+  - Purple dot: In voice chat, idle
+  - Yellow dot: In voice chat (muted/deafened)
+  - Red dot: Unread direct messages
+  - Normal: Connected, no activity
+- **Context menu** — Right-click for Show/Hide, Mute/Unmute (when in voice), and Quit
+
+**Tooltip information:**
+- Shows "Nexus BBS" with current status
+- When in voice: shows the channel or user you're chatting with
+- When you have unread messages: shows the count
+
+**Privacy Note:** The tray icon reveals some information to anyone who can see your screen:
+- Whether you're connected to any server
+- Whether you're in a voice chat (and with whom, via tooltip)
+- Whether you have unread direct messages
+
+If privacy is a concern, leave the tray icon disabled.
 
 ## Chat Tab
 

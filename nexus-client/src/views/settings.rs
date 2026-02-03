@@ -148,6 +148,11 @@ pub struct SettingsViewData<'a> {
     pub agc: bool,
     /// Enable transient suppression (keyboard/click noise reduction)
     pub transient_suppression: bool,
+    // ==================== System Tray (Windows/Linux only) ====================
+    /// Show system tray icon
+    pub show_tray_icon: bool,
+    /// Minimize to tray instead of closing
+    pub minimize_to_tray: bool,
 }
 
 // ============================================================================
@@ -184,8 +189,14 @@ pub fn settings_view<'a>(data: SettingsViewData<'a>) -> Element<'a, Message> {
 
     // Build tab content
     let theme = data.current_theme.clone();
-    let general_content =
-        general_tab_content(data.current_theme, avatar, default_avatar, data.nickname);
+    let general_content = general_tab_content(
+        data.current_theme,
+        avatar,
+        default_avatar,
+        data.nickname,
+        data.show_tray_icon,
+        data.minimize_to_tray,
+    );
     let chat_content = chat_tab_content(
         data.chat_history_retention,
         data.max_scrollback,
@@ -324,12 +335,14 @@ pub fn settings_view<'a>(data: SettingsViewData<'a>) -> Element<'a, Message> {
 // Tab Content Builders
 // ============================================================================
 
-/// Build the General tab content (theme, avatar, nickname)
+/// Build the General tab content (theme, avatar, nickname, tray settings)
 fn general_tab_content<'a>(
     current_theme: Theme,
     avatar: Option<&'a crate::image::CachedImage>,
     default_avatar: Option<&'a crate::image::CachedImage>,
     nickname: &'a str,
+    show_tray_icon: bool,
+    minimize_to_tray: bool,
 ) -> Element<'a, Message> {
     let mut items: Vec<Element<'_, Message>> = Vec::new();
 
@@ -387,6 +400,39 @@ fn general_tab_content<'a>(
         .padding(INPUT_PADDING)
         .size(TEXT_SIZE);
     items.push(nickname_input.into());
+
+    // System tray settings (Windows/Linux only)
+    #[cfg(not(target_os = "macos"))]
+    {
+        // Add some spacing before tray section
+        items.push(Space::new().height(SPACER_SIZE_SMALL).into());
+
+        // Show tray icon checkbox
+        let tray_icon_checkbox = checkbox(show_tray_icon)
+            .label(t("settings-show-tray-icon"))
+            .on_toggle(Message::ShowTrayIconToggled)
+            .text_size(TEXT_SIZE);
+        items.push(tray_icon_checkbox.into());
+
+        // Minimize to tray checkbox (only enabled when tray icon is shown)
+        let minimize_checkbox = checkbox(minimize_to_tray)
+            .label(t("settings-minimize-to-tray"))
+            .text_size(TEXT_SIZE);
+        let minimize_checkbox = if show_tray_icon {
+            minimize_checkbox.on_toggle(Message::MinimizeToTrayToggled)
+        } else {
+            minimize_checkbox
+        };
+        let minimize_row = row![Space::new().width(CHECKBOX_INDENT), minimize_checkbox];
+        items.push(minimize_row.into());
+    }
+
+    // Suppress unused variable warnings on macOS
+    #[cfg(target_os = "macos")]
+    {
+        let _ = show_tray_icon;
+        let _ = minimize_to_tray;
+    }
 
     Column::with_children(items)
         .spacing(ELEMENT_SPACING)

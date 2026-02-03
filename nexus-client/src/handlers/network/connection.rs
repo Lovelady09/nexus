@@ -201,6 +201,10 @@ impl NexusApp {
                 self.active_connection = None;
                 self.connection_form.error = Some(t_args("msg-disconnected", &[("error", &error)]));
             }
+
+            // Update tray icon state (Windows/Linux only)
+            #[cfg(not(target_os = "macos"))]
+            self.update_tray_state();
         }
         Task::none()
     }
@@ -363,6 +367,10 @@ impl NexusApp {
         if matches!(source, ConnectionSource::Manual) {
             self.connection_form.clear();
         }
+
+        // Update tray icon state (Windows/Linux only)
+        #[cfg(not(target_os = "macos"))]
+        self.update_tray_state();
 
         operation::focus(Id::from(InputId::ChatInput))
     }

@@ -256,6 +256,11 @@ impl NexusApp {
                         session.set_not_speaking(&conn.nickname);
                     }
                 }
+
+                // Update tray icon state (Windows/Linux only)
+                #[cfg(not(target_os = "macos"))]
+                self.update_tray_state();
+
                 Task::none()
             }
         }
@@ -316,6 +321,10 @@ impl NexusApp {
             // Clear local speaking and deafened state
             self.is_local_speaking = false;
             self.is_deafened = false;
+
+            // Update tray icon state (Windows/Linux only)
+            #[cfg(not(target_os = "macos"))]
+            self.update_tray_state();
         }
     }
 
@@ -441,6 +450,10 @@ impl NexusApp {
         if let Some(ref handle) = self.voice_session_handle {
             handle.set_deafened(self.is_deafened);
         }
+
+        // Update tray icon state (Windows/Linux only)
+        #[cfg(not(target_os = "macos"))]
+        self.update_tray_state();
 
         Task::none()
     }

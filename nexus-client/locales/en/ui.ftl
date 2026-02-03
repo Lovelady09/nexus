@@ -1060,3 +1060,31 @@ audio-noise-suppression = Noise Suppression
 audio-echo-cancellation = Echo Cancellation
 audio-agc = Automatic Gain Control
 audio-transient-suppression = Keyboard Noise Reduction
+
+# =============================================================================
+# System Tray (Windows/Linux only)
+# =============================================================================
+
+# Settings
+settings-show-tray-icon = Show tray icon
+settings-minimize-to-tray = Minimize to tray instead of closing
+
+# Menu items
+tray-show-window = Show Window
+tray-hide-window = Hide Window
+tray-mute = Mute
+tray-unmute = Unmute
+tray-quit = Quit
+
+# Errors
+err-tray-creation-failed = Failed to create system tray icon
+
+# Tooltips
+tray-tooltip-normal = Nexus BBS
+tray-tooltip-disconnected = Nexus BBS - Disconnected
+tray-tooltip-voice = Nexus BBS - In voice: { $target }
+tray-tooltip-voice-muted = Nexus BBS - In voice (muted): { $target }
+tray-tooltip-unread = Nexus BBS - { $count ->
+    [one] { $count } unread conversation
+   *[other] { $count } unread conversations
+}

@@ -1042,3 +1042,31 @@ audio-noise-suppression = Soppressione del rumore
 audio-echo-cancellation = Cancellazione dell'eco
 audio-agc = Controllo automatico del guadagno
 audio-transient-suppression = Riduzione del rumore della tastiera
+
+# =============================================================================
+# System Tray (Windows/Linux only)
+# =============================================================================
+
+# Settings
+settings-show-tray-icon = Mostra icona nella barra delle applicazioni
+settings-minimize-to-tray = Minimizza nella barra invece di chiudere
+
+# Menu items
+tray-show-window = Mostra finestra
+tray-hide-window = Nascondi finestra
+tray-mute = Disattiva audio
+tray-unmute = Attiva audio
+tray-quit = Esci
+
+# Errors
+err-tray-creation-failed = Impossibile creare l'icona nella barra delle applicazioni
+
+# Tooltips
+tray-tooltip-normal = Nexus BBS
+tray-tooltip-disconnected = Nexus BBS - Disconnesso
+tray-tooltip-voice = Nexus BBS - In voce: { $target }
+tray-tooltip-voice-muted = Nexus BBS - In voce (muto): { $target }
+tray-tooltip-unread = Nexus BBS - { $count ->
+    [one] { $count } conversazione non letta
+   *[other] { $count } conversazioni non lette
+}

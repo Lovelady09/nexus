@@ -1040,3 +1040,31 @@ audio-noise-suppression = Ruisonderdrukking
 audio-echo-cancellation = Echo-onderdrukking
 audio-agc = Automatische versterkingsregeling
 audio-transient-suppression = Toetsenbordruisonderdrukking
+
+# =============================================================================
+# System Tray (Windows/Linux only)
+# =============================================================================
+
+# Settings
+settings-show-tray-icon = Systeemvakpictogram weergeven
+settings-minimize-to-tray = Minimaliseren naar systeemvak in plaats van sluiten
+
+# Menu items
+tray-show-window = Venster weergeven
+tray-hide-window = Venster verbergen
+tray-mute = Dempen
+tray-unmute = Dempen opheffen
+tray-quit = Afsluiten
+
+# Errors
+err-tray-creation-failed = Kan systeemvakpictogram niet maken
+
+# Tooltips
+tray-tooltip-normal = Nexus BBS
+tray-tooltip-disconnected = Nexus BBS - Niet verbonden
+tray-tooltip-voice = Nexus BBS - In spraakchat: { $target }
+tray-tooltip-voice-muted = Nexus BBS - In spraakchat (gedempt): { $target }
+tray-tooltip-unread = Nexus BBS - { $count ->
+    [one] { $count } ongelezen gesprek
+   *[other] { $count } ongelezen gesprekken
+}

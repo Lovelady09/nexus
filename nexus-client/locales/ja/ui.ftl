@@ -1019,3 +1019,28 @@ audio-noise-suppression = ノイズ抑制
 audio-echo-cancellation = エコーキャンセル
 audio-agc = 自動ゲイン制御
 audio-transient-suppression = キーボードノイズ低減
+
+# =============================================================================
+# System Tray (Windows/Linux only)
+# =============================================================================
+
+# Settings
+settings-show-tray-icon = トレイアイコンを表示
+settings-minimize-to-tray = 閉じる代わりにトレイに最小化
+
+# Menu items
+tray-show-window = ウィンドウを表示
+tray-hide-window = ウィンドウを非表示
+tray-mute = ミュート
+tray-unmute = ミュート解除
+tray-quit = 終了
+
+# Errors
+err-tray-creation-failed = システムトレイアイコンを作成できませんでした
+
+# Tooltips
+tray-tooltip-normal = Nexus BBS
+tray-tooltip-disconnected = Nexus BBS - 切断中
+tray-tooltip-voice = Nexus BBS - ボイス中: { $target }
+tray-tooltip-voice-muted = Nexus BBS - ボイス中 (ミュート): { $target }
+tray-tooltip-unread = Nexus BBS - 未読の会話 { $count } 件

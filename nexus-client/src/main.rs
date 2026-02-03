@@ -23,6 +23,9 @@ mod views;
 mod voice;
 mod widgets;
 
+#[cfg(not(target_os = "macos"))]
+mod tray;
+
 use std::sync::Arc;
 use std::sync::atomic::AtomicU32;
 
@@ -334,6 +337,15 @@ struct NexusApp {
     // -------------------------------------------------------------------------
     /// Whether the application window is currently focused
     window_focused: bool,
+    /// Whether the application window is currently visible (for minimize to tray)
+    window_visible: bool,
+
+    // -------------------------------------------------------------------------
+    // System Tray (Windows/Linux only)
+    // -------------------------------------------------------------------------
+    /// System tray manager (None on macOS or if tray creation failed)
+    #[cfg(not(target_os = "macos"))]
+    tray_manager: Option<tray::TrayManager>,
 }
 
 impl Default for NexusApp {
@@ -381,6 +393,10 @@ impl Default for NexusApp {
             dragging_files: false,
             // Window State
             window_focused: true,
+            window_visible: true,
+            // System Tray (Windows/Linux only)
+            #[cfg(not(target_os = "macos"))]
+            tray_manager: None,
         }
     }
 }
@@ -391,7 +407,18 @@ impl NexusApp {
     /// Called once at startup to set up initial state and generate tasks for
     /// focusing the input field and auto-connecting to bookmarks.
     fn new() -> (Self, Task<Message>) {
-        let app = Self::default();
+        let mut app = Self::default();
+
+        // Initialize tray icon on startup if setting is enabled (Windows/Linux only)
+        #[cfg(not(target_os = "macos"))]
+        if app.config.settings.show_tray_icon
+            && let Some(tray) = tray::TrayManager::new()
+        {
+            app.tray_manager = Some(tray);
+            // State will be Disconnected on startup, which is correct
+            // If tray creation fails on startup, silently continue without it
+            // (user can toggle the setting to see the error)
+        }
 
         // Check for startup URI
         let startup_uri = STARTUP_URI.lock().unwrap().take();
@@ -422,6 +449,20 @@ impl NexusApp {
             Message::PrevChatTab => self.handle_prev_chat_tab(),
             Message::TabPressed => self.handle_tab_navigation(),
             Message::WindowCloseRequested(id) => {
+                // Check if we should minimize to tray instead of closing (Windows/Linux only)
+                #[cfg(not(target_os = "macos"))]
+                if self.config.settings.minimize_to_tray
+                    && self.config.settings.show_tray_icon
+                    && self.tray_manager.is_some()
+                {
+                    // Hide window instead of closing
+                    self.window_visible = false;
+                    if let Some(ref mut tray) = self.tray_manager {
+                        tray.set_window_visible(false);
+                    }
+                    return iced::window::set_mode(id, iced::window::Mode::Hidden);
+                }
+
                 // Query window size and position, then save and close
                 iced::window::size(id).then(move |size| {
                     iced::window::position(id).map(move |point| Message::WindowSaveAndClose {
@@ -964,6 +1005,55 @@ impl NexusApp {
                 Task::none()
             }
 
+            // System Tray (Windows/Linux only)
+            #[cfg(not(target_os = "macos"))]
+            Message::TrayPoll => {
+                // On Linux, poll from the TrayManager's channel
+                // On Windows, poll from the static tray-icon receivers
+                #[cfg(target_os = "linux")]
+                if let Some(ref mut tray) = self.tray_manager
+                    && let Some(msg) = tray.try_recv()
+                {
+                    return self.update(msg);
+                }
+                #[cfg(target_os = "windows")]
+                if let Some(msg) = tray::poll_tray_events() {
+                    return self.update(msg);
+                }
+                Task::none()
+            }
+            #[cfg(not(target_os = "macos"))]
+            Message::TrayIconClicked => self.handle_tray_icon_clicked(),
+            #[cfg(not(target_os = "macos"))]
+            Message::TrayMenuShowHide => self.handle_tray_show_hide(),
+            #[cfg(not(target_os = "macos"))]
+            Message::TrayMenuMute => self.handle_tray_mute(),
+            #[cfg(not(target_os = "macos"))]
+            Message::TrayMenuQuit => self.handle_tray_quit(),
+            #[cfg(not(target_os = "macos"))]
+            Message::TrayToggleVisibility(id) => self.handle_tray_toggle_visibility(id),
+            #[cfg(not(target_os = "macos"))]
+            Message::ShowTrayIconToggled(enabled) => {
+                self.config.settings.show_tray_icon = enabled;
+                self.update_tray_from_settings()
+            }
+            #[cfg(not(target_os = "macos"))]
+            Message::MinimizeToTrayToggled(enabled) => {
+                self.config.settings.minimize_to_tray = enabled;
+                Task::none()
+            }
+
+            // Ignore tray messages on macOS (they shouldn't arrive, but be safe)
+            #[cfg(target_os = "macos")]
+            Message::TrayPoll
+            | Message::TrayIconClicked
+            | Message::TrayMenuShowHide
+            | Message::TrayMenuMute
+            | Message::TrayMenuQuit
+            | Message::TrayToggleVisibility(_)
+            | Message::ShowTrayIconToggled(_)
+            | Message::MinimizeToTrayToggled(_) => Task::none(),
+
             // URI scheme
             Message::HandleNexusUri(uri) => self.handle_nexus_uri(uri),
             Message::UriReceivedFromIpc(uri_str) => {
@@ -1121,6 +1211,12 @@ impl NexusApp {
             }
         }
 
+        // Subscribe to tray events when tray is active (Windows/Linux only)
+        #[cfg(not(target_os = "macos"))]
+        if self.tray_manager.is_some() {
+            subscriptions.push(tray::tray_subscription());
+        }
+
         Subscription::batch(subscriptions)
     }
 
@@ -1239,6 +1335,9 @@ impl NexusApp {
             transient_suppression: self.config.settings.audio.transient_suppression,
             is_local_speaking: self.is_local_speaking,
             is_deafened: self.is_deafened,
+            // System Tray settings
+            show_tray_icon: self.config.settings.show_tray_icon,
+            minimize_to_tray: self.config.settings.minimize_to_tray,
         };
 
         let main_view = views::main_layout(config);

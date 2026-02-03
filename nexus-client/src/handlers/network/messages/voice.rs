@@ -164,6 +164,10 @@ impl NexusApp {
             ptt.set_in_voice(true);
         }
 
+        // Update tray icon state (Windows/Linux only)
+        #[cfg(not(target_os = "macos"))]
+        self.update_tray_state();
+
         // Voice bar appearing provides visual feedback - no console message needed
         Task::none()
     }

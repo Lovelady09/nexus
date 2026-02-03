@@ -138,6 +138,11 @@ struct ServerContentContext<'a> {
     pub is_local_speaking: bool,
     /// Whether local user has deafened (muted all incoming voice audio)
     pub is_deafened: bool,
+    // ==================== System Tray (Windows/Linux only) ====================
+    /// Show system tray icon
+    pub show_tray_icon: bool,
+    /// Minimize to tray instead of closing
+    pub minimize_to_tray: bool,
 }
 
 // ============================================================================
@@ -327,6 +332,8 @@ pub fn main_layout<'a>(config: ViewConfig<'a>) -> Element<'a, Message> {
                 transient_suppression: config.transient_suppression,
                 is_local_speaking: config.is_local_speaking,
                 is_deafened: config.is_deafened,
+                show_tray_icon: config.show_tray_icon,
+                minimize_to_tray: config.minimize_to_tray,
             })
         } else if config.active_connection.is_some() {
             // Connection exists but couldn't get all required state
@@ -380,6 +387,8 @@ pub fn main_layout<'a>(config: ViewConfig<'a>) -> Element<'a, Message> {
                         echo_cancellation: config.echo_cancellation,
                         agc: config.agc,
                         transient_suppression: config.transient_suppression,
+                        show_tray_icon: config.show_tray_icon,
+                        minimize_to_tray: config.minimize_to_tray,
                     })
                 ]
                 .width(Fill)
@@ -875,6 +884,8 @@ fn server_content_view<'a>(ctx: ServerContentContext<'a>) -> Element<'a, Message
                 echo_cancellation: ctx.echo_cancellation,
                 agc: ctx.agc,
                 transient_suppression: ctx.transient_suppression,
+                show_tray_icon: ctx.show_tray_icon,
+                minimize_to_tray: ctx.minimize_to_tray,
             })
         ]
         .width(Fill)
