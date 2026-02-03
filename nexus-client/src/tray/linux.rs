@@ -258,6 +258,16 @@ impl TrayManager {
     }
 }
 
+impl Drop for TrayManager {
+    fn drop(&mut self) {
+        // Shutdown the ksni tray service to remove the icon
+        let handle = self.handle.clone();
+        tokio::spawn(async move {
+            handle.shutdown().await;
+        });
+    }
+}
+
 // =============================================================================
 // Subscription
 // =============================================================================
