@@ -72,6 +72,16 @@ impl NexusApp {
             }
         };
 
+        // Emit event for our own join (is_from_self suppresses notification but allows sound)
+        emit_event(
+            self,
+            EventType::VoiceJoined,
+            EventContext::new()
+                .with_connection_id(connection_id)
+                .with_channel(&target)
+                .with_is_from_self(true),
+        );
+
         let Some(conn) = self.connections.get_mut(&connection_id) else {
             return Task::none();
         };
@@ -182,6 +192,13 @@ impl NexusApp {
         success: bool,
         error: Option<String>,
     ) -> Task<Message> {
+        // Get the target before cleanup (for event emission)
+        let target = self
+            .connections
+            .get(&connection_id)
+            .and_then(|conn| conn.voice_session.as_ref())
+            .map(|session| session.target.clone());
+
         // Clear local voice state regardless of success
         // (if server says we're not in voice, we should clear our state too)
         self.cleanup_voice_session(connection_id);
@@ -191,6 +208,18 @@ impl NexusApp {
             return self.add_active_tab_message(
                 connection_id,
                 ChatMessage::error(t_args("err-voice-leave", &[("error", &error_msg)])),
+            );
+        }
+
+        // Emit event for our own leave (is_from_self suppresses notification but allows sound)
+        if let Some(target) = target {
+            emit_event(
+                self,
+                EventType::VoiceLeft,
+                EventContext::new()
+                    .with_connection_id(connection_id)
+                    .with_channel(&target)
+                    .with_is_from_self(true),
             );
         }
 

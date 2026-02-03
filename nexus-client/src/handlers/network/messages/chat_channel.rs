@@ -54,6 +54,16 @@ impl NexusApp {
             return Task::none();
         };
 
+        // Emit event for our own join (is_from_self suppresses notification but allows sound)
+        emit_event(
+            self,
+            EventType::ChatJoin,
+            EventContext::new()
+                .with_connection_id(connection_id)
+                .with_channel(&channel_name)
+                .with_is_from_self(true),
+        );
+
         let Some(conn) = self.connections.get_mut(&connection_id) else {
             return Task::none();
         };
@@ -151,6 +161,16 @@ impl NexusApp {
         let Some(channel_name) = channel else {
             return Task::none();
         };
+
+        // Emit event for our own leave (is_from_self suppresses notification but allows sound)
+        emit_event(
+            self,
+            EventType::ChatLeave,
+            EventContext::new()
+                .with_connection_id(connection_id)
+                .with_channel(&channel_name)
+                .with_is_from_self(true),
+        );
 
         self.remove_channel_tab(connection_id, &channel_name)
     }
