@@ -89,7 +89,20 @@ impl NexusApp {
             tray.set_window_visible(false);
         }
 
-        iced::window::set_mode(id, iced::window::Mode::Hidden)
+        // On Windows, minimize first to remove from taskbar, then hide.
+        // Just using Hidden mode leaves a generic icon in the taskbar.
+        #[cfg(target_os = "windows")]
+        {
+            Task::batch([
+                iced::window::minimize(id, true),
+                iced::window::set_mode(id, iced::window::Mode::Hidden),
+            ])
+        }
+
+        #[cfg(not(target_os = "windows"))]
+        {
+            iced::window::set_mode(id, iced::window::Mode::Hidden)
+        }
     }
 
     /// Show the window from tray (restores maximized state if needed)
@@ -101,19 +114,40 @@ impl NexusApp {
             tray.set_window_visible(true);
         }
 
-        if was_maximized {
-            // Restore to windowed first, then maximize, then focus
-            Task::batch([
-                iced::window::set_mode(id, iced::window::Mode::Windowed),
-                iced::window::maximize(id, true),
-                iced::window::gain_focus(id),
-            ])
-        } else {
-            // Just restore to windowed and focus
-            Task::batch([
-                iced::window::set_mode(id, iced::window::Mode::Windowed),
-                iced::window::gain_focus(id),
-            ])
+        // On Windows, we minimized before hiding, so we need to unminimize.
+        // On other platforms, just set mode to Windowed.
+        #[cfg(target_os = "windows")]
+        {
+            if was_maximized {
+                Task::batch([
+                    iced::window::minimize(id, false),
+                    iced::window::set_mode(id, iced::window::Mode::Windowed),
+                    iced::window::maximize(id, true),
+                    iced::window::gain_focus(id),
+                ])
+            } else {
+                Task::batch([
+                    iced::window::minimize(id, false),
+                    iced::window::set_mode(id, iced::window::Mode::Windowed),
+                    iced::window::gain_focus(id),
+                ])
+            }
+        }
+
+        #[cfg(not(target_os = "windows"))]
+        {
+            if was_maximized {
+                Task::batch([
+                    iced::window::set_mode(id, iced::window::Mode::Windowed),
+                    iced::window::maximize(id, true),
+                    iced::window::gain_focus(id),
+                ])
+            } else {
+                Task::batch([
+                    iced::window::set_mode(id, iced::window::Mode::Windowed),
+                    iced::window::gain_focus(id),
+                ])
+            }
         }
     }
 
@@ -221,17 +255,39 @@ impl NexusApp {
                     let was_maximized = self.window_was_maximized;
                     return iced::window::oldest().then(move |opt_id| {
                         if let Some(id) = opt_id {
-                            if was_maximized {
-                                Task::batch([
-                                    iced::window::set_mode(id, iced::window::Mode::Windowed),
-                                    iced::window::maximize(id, true),
-                                    iced::window::gain_focus(id),
-                                ])
-                            } else {
-                                Task::batch([
-                                    iced::window::set_mode(id, iced::window::Mode::Windowed),
-                                    iced::window::gain_focus(id),
-                                ])
+                            // On Windows, we minimized before hiding, so we need to unminimize.
+                            #[cfg(target_os = "windows")]
+                            {
+                                if was_maximized {
+                                    Task::batch([
+                                        iced::window::minimize(id, false),
+                                        iced::window::set_mode(id, iced::window::Mode::Windowed),
+                                        iced::window::maximize(id, true),
+                                        iced::window::gain_focus(id),
+                                    ])
+                                } else {
+                                    Task::batch([
+                                        iced::window::minimize(id, false),
+                                        iced::window::set_mode(id, iced::window::Mode::Windowed),
+                                        iced::window::gain_focus(id),
+                                    ])
+                                }
+                            }
+
+                            #[cfg(not(target_os = "windows"))]
+                            {
+                                if was_maximized {
+                                    Task::batch([
+                                        iced::window::set_mode(id, iced::window::Mode::Windowed),
+                                        iced::window::maximize(id, true),
+                                        iced::window::gain_focus(id),
+                                    ])
+                                } else {
+                                    Task::batch([
+                                        iced::window::set_mode(id, iced::window::Mode::Windowed),
+                                        iced::window::gain_focus(id),
+                                    ])
+                                }
                             }
                         } else {
                             Task::none()
