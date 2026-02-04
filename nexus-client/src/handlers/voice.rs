@@ -10,6 +10,8 @@
 
 use std::time::Duration;
 
+use crate::network::tls::should_bypass_proxy;
+
 use global_hotkey::GlobalHotKeyEvent;
 use iced::Task;
 use nexus_common::protocol::ClientMessage;
@@ -45,6 +47,16 @@ impl NexusApp {
         let Some(conn) = self.connections.get_mut(&connection_id) else {
             return Task::none();
         };
+
+        // Check if connection is using a proxy (voice requires direct UDP connection)
+        // Proxy is used if: proxy enabled in settings AND address is not bypassed
+        if self.config.settings.proxy.enabled && !should_bypass_proxy(&conn.connection_info.address)
+        {
+            return self.add_active_tab_message(
+                connection_id,
+                ChatMessage::error(t("err-voice-proxy-not-supported")),
+            );
+        }
 
         // Check permissions - need at least voice_listen to join
         if !conn.has_permission(PERMISSION_VOICE_LISTEN)

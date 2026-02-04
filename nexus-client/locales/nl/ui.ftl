@@ -983,6 +983,7 @@ err-voice-connection-failed = Spraakchat-verbinding mislukt: { $error }
 err-voice-disconnected = Spraakchat verbroken: { $reason }
 err-voice-audio = Audiofout: { $error }
 err-voice-ptt-failed = Push-to-talk-toets kon niet worden geregistreerd: { $error }
+err-voice-proxy-not-supported = Voicechat is niet beschikbaar bij gebruik van een proxy. Voice vereist een directe UDP-verbinding.
 err-ptt-init-failed = PTT-systeem niet beschikbaar
 warn-voice-processor-disabled = Audioverwerking uitgeschakeld: { $error }
 warn-voice-quality-failed = Kan spraakkwaliteit niet wijzigen: { $error }

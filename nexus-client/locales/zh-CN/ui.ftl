@@ -963,6 +963,7 @@ err-voice-connection-failed = 语音连接失败：{ $error }
 err-voice-disconnected = 语音已断开：{ $reason }
 err-voice-audio = 音频错误：{ $error }
 err-voice-ptt-failed = 按键说话热键注册失败：{ $error }
+err-voice-proxy-not-supported = 使用代理时无法使用语音聊天。语音需要直接UDP连接。
 err-ptt-init-failed = PTT系统不可用
 warn-voice-processor-disabled = 音频处理已禁用：{ $error }
 warn-voice-quality-failed = 语音质量更改失败：{ $error }

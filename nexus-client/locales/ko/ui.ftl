@@ -962,7 +962,8 @@ err-voice-connection-failed = 음성 연결 실패: { $error }
 err-voice-disconnected = 음성 연결 끊김: { $reason }
 err-voice-audio = 오디오 오류: { $error }
 err-voice-ptt-failed = 음성 송신 단축키 등록 실패: { $error }
-err-ptt-init-failed = PTT 시스템 사용 불가
+err-voice-proxy-not-supported = 프록시 사용 시 음성 채팅을 사용할 수 없습니다. 음성에는 직접 UDP 연결이 필요합니다.
+err-ptt-init-failed = PTT 시스템을 사용할 수 없음
 warn-voice-processor-disabled = 오디오 처리 비활성화: { $error }
 warn-voice-quality-failed = 음성 품질 변경 실패: { $error }
 

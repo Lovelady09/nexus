@@ -986,6 +986,7 @@ err-voice-connection-failed = Sprachchat-Verbindung fehlgeschlagen: { $error }
 err-voice-disconnected = Sprachchat getrennt: { $reason }
 err-voice-audio = Audiofehler: { $error }
 err-voice-ptt-failed = Push-to-Talk-Taste konnte nicht registriert werden: { $error }
+err-voice-proxy-not-supported = Voice-Chat ist bei Verwendung eines Proxys nicht verfügbar. Voice benötigt eine direkte UDP-Verbindung.
 err-ptt-init-failed = PTT-System nicht verfügbar
 warn-voice-processor-disabled = Audioverarbeitung deaktiviert: { $error }
 warn-voice-quality-failed = Sprachqualität konnte nicht geändert werden: { $error }

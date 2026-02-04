@@ -1002,6 +1002,7 @@ err-voice-connection-failed = Voice connection failed: { $error }
 err-voice-disconnected = Voice disconnected: { $reason }
 err-voice-audio = Audio error: { $error }
 err-voice-ptt-failed = Push-to-talk hotkey failed to register: { $error }
+err-voice-proxy-not-supported = Voice chat is not available when using a proxy. Voice requires a direct UDP connection.
 err-ptt-init-failed = PTT system unavailable
 warn-voice-processor-disabled = Audio processing disabled: { $error }
 warn-voice-quality-failed = Failed to change voice quality: { $error }

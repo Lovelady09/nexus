@@ -959,10 +959,11 @@ err-voice-not-in-session = 您不在語音聊天中
 err-voice-resolve-address = 無法解析語音伺服器地址
 err-voice-resolve = 無法解析伺服器地址：{ $error }
 err-voice-connection-failed = 語音連線失敗：{ $error }
-err-voice-disconnected = 語音已斷線：{ $reason }
+err-voice-disconnected = 語音已斷開：{ $reason }
 err-voice-audio = 音訊錯誤：{ $error }
 err-voice-ptt-failed = 按鍵說話熱鍵註冊失敗：{ $error }
-err-ptt-init-failed = PTT系統無法使用
+err-voice-proxy-not-supported = 使用代理時無法使用語音聊天。語音需要直接UDP連線。
+err-ptt-init-failed = PTT系統不可用
 warn-voice-processor-disabled = 音訊處理已停用：{ $error }
 warn-voice-quality-failed = 無法變更語音品質：{ $error }
 

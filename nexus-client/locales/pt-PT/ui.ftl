@@ -983,6 +983,7 @@ err-voice-connection-failed = A ligação de voz falhou: { $error }
 err-voice-disconnected = Voz desligada: { $reason }
 err-voice-audio = Erro de áudio: { $error }
 err-voice-ptt-failed = Falha ao registar tecla de atalho para falar: { $error }
+err-voice-proxy-not-supported = O chat de voz não está disponível ao utilizar um proxy. A voz requer uma ligação UDP direta.
 err-ptt-init-failed = Sistema PTT indisponível
 warn-voice-processor-disabled = Processamento de áudio desativado: { $error }
 warn-voice-quality-failed = Falha ao alterar qualidade de voz: { $error }

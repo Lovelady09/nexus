@@ -962,6 +962,7 @@ err-voice-connection-failed = ボイス接続に失敗しました: { $error }
 err-voice-disconnected = ボイスチャットが切断されました: { $reason }
 err-voice-audio = オーディオエラー: { $error }
 err-voice-ptt-failed = プッシュトゥトークのホットキー登録に失敗しました: { $error }
+err-voice-proxy-not-supported = プロキシ使用時はボイスチャットを利用できません。ボイスには直接UDP接続が必要です。
 err-ptt-init-failed = PTTシステムが利用できません
 warn-voice-processor-disabled = 音声処理が無効になりました: { $error }
 warn-voice-quality-failed = 音声品質の変更に失敗しました: { $error }
