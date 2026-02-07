@@ -338,6 +338,7 @@ struct NexusApp {
     /// Whether the application window is currently focused
     window_focused: bool,
     /// Whether the application window is currently visible (for minimize to tray)
+    #[cfg(not(target_os = "macos"))]
     window_visible: bool,
     /// Whether the window was maximized before hiding to tray (to restore state)
     #[cfg(not(target_os = "macos"))]
@@ -396,6 +397,7 @@ impl Default for NexusApp {
             dragging_files: false,
             // Window State
             window_focused: true,
+            #[cfg(not(target_os = "macos"))]
             window_visible: true,
             #[cfg(not(target_os = "macos"))]
             window_was_maximized: false,
@@ -1063,20 +1065,6 @@ impl NexusApp {
                 self.tray_manager = None;
                 self.update_tray_from_settings()
             }
-
-            // Ignore tray messages on macOS (they shouldn't arrive, but be safe)
-            #[cfg(target_os = "macos")]
-            Message::TrayPoll
-            | Message::TrayIconClicked
-            | Message::TrayMenuShowHide
-            | Message::TrayMenuMute
-            | Message::TrayMenuQuit
-            | Message::TrayHideWindow { .. }
-            | Message::TrayShowWindow(_)
-            | Message::TrayRestoreMinimized { .. }
-            | Message::ShowTrayIconToggled(_)
-            | Message::MinimizeToTrayToggled(_)
-            | Message::TrayServiceClosed => Task::none(),
 
             // URI scheme
             Message::HandleNexusUri(uri) => self.handle_nexus_uri(uri),

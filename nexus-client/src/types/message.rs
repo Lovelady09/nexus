@@ -604,32 +604,43 @@ pub enum Message {
 
     // ==================== System Tray (Windows/Linux only) ====================
     /// Tray: Periodic poll for tray events (also pumps GTK on Linux)
+    #[cfg(not(target_os = "macos"))]
     TrayPoll,
     /// Tray: Icon was clicked (toggle window visibility)
+    #[cfg(not(target_os = "macos"))]
     TrayIconClicked,
     /// Tray: Show/Hide window menu item selected
+    #[cfg(not(target_os = "macos"))]
     TrayMenuShowHide,
     /// Tray: Mute/Unmute menu item selected
+    #[cfg(not(target_os = "macos"))]
     TrayMenuMute,
     /// Tray: Quit menu item selected
+    #[cfg(not(target_os = "macos"))]
     TrayMenuQuit,
     /// Tray: Hide window (internal, carries maximized state to remember)
+    #[cfg(not(target_os = "macos"))]
     TrayHideWindow {
         id: iced::window::Id,
         was_maximized: bool,
     },
     /// Tray: Show window (internal, restores maximized state if needed)
+    #[cfg(not(target_os = "macos"))]
     TrayShowWindow(iced::window::Id),
     /// Tray: Restore minimized window (not tray-hidden, just OS-minimized)
+    #[cfg(not(target_os = "macos"))]
     TrayRestoreMinimized {
         id: iced::window::Id,
         maximized: bool,
     },
     /// Settings: Show tray icon toggled
+    #[cfg(not(target_os = "macos"))]
     ShowTrayIconToggled(bool),
     /// Settings: Minimize to tray toggled
+    #[cfg(not(target_os = "macos"))]
     MinimizeToTrayToggled(bool),
     /// Tray: Service has closed (D-Bus connection dropped, e.g., after system sleep)
+    #[cfg(not(target_os = "macos"))]
     TrayServiceClosed,
 
     // ==================== URI Scheme ====================
