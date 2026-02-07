@@ -51,7 +51,7 @@ sys-locale = "0.3"
 fluent-bundle = "0.16"
 unic-langid = "0.9"
 open = "5"
-linkify = "0.10"
+linkify = { git = "https://github.com/zquestz/linkify" }
 rfd = "0.17"
 base64 = "0.22"
 identicon-rs = "7.0"
