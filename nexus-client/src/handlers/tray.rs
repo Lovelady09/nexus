@@ -290,66 +290,70 @@ impl NexusApp {
                         self.update_tray_state();
                     }
                     None => {
-                        // Tray creation failed - show error to user
-                        return self.show_tray_error(t("err-tray-creation-failed"));
+                        // Tray creation failed - show window if hidden and show error
+                        let show_task = self.show_window_if_hidden_to_tray();
+                        let error_task = self.show_tray_error(t("err-tray-creation-failed"));
+                        return Task::batch([show_task, error_task]);
                     }
                 }
             }
         } else {
             // Destroy tray if exists
             if self.tray_manager.is_some() {
-                // If window is hidden, show it first
-                let need_show_window = !self.window_visible;
-                if need_show_window {
-                    self.window_visible = true;
-                }
                 self.tray_manager = None;
-
-                // Return task to show window if it was hidden
-                if need_show_window {
-                    let was_maximized = self.window_was_maximized;
-                    return iced::window::oldest().then(move |opt_id| {
-                        if let Some(id) = opt_id {
-                            // On Windows, we minimized before hiding, so we need to unminimize.
-                            #[cfg(target_os = "windows")]
-                            {
-                                if was_maximized {
-                                    Task::batch([
-                                        iced::window::minimize(id, false),
-                                        iced::window::set_mode(id, iced::window::Mode::Windowed),
-                                        iced::window::maximize(id, true),
-                                        iced::window::gain_focus(id),
-                                    ])
-                                } else {
-                                    Task::batch([
-                                        iced::window::minimize(id, false),
-                                        iced::window::set_mode(id, iced::window::Mode::Windowed),
-                                        iced::window::gain_focus(id),
-                                    ])
-                                }
-                            }
-
-                            #[cfg(not(target_os = "windows"))]
-                            {
-                                if was_maximized {
-                                    Task::batch([
-                                        iced::window::set_mode(id, iced::window::Mode::Windowed),
-                                        iced::window::maximize(id, true),
-                                        iced::window::gain_focus(id),
-                                    ])
-                                } else {
-                                    Task::batch([
-                                        iced::window::set_mode(id, iced::window::Mode::Windowed),
-                                        iced::window::gain_focus(id),
-                                    ])
-                                }
-                            }
-                        } else {
-                            Task::none()
-                        }
-                    });
-                }
+                return self.show_window_if_hidden_to_tray();
             }
+        }
+        Task::none()
+    }
+
+    /// Show the window if it was hidden to tray
+    ///
+    /// Used when tray is destroyed or recreation fails to ensure user isn't stuck
+    /// with no way to access the application.
+    fn show_window_if_hidden_to_tray(&mut self) -> Task<Message> {
+        if !self.window_visible {
+            self.window_visible = true;
+            let was_maximized = self.window_was_maximized;
+            return iced::window::oldest().then(move |opt_id| {
+                if let Some(id) = opt_id {
+                    #[cfg(target_os = "windows")]
+                    {
+                        if was_maximized {
+                            Task::batch([
+                                iced::window::minimize(id, false),
+                                iced::window::set_mode(id, iced::window::Mode::Windowed),
+                                iced::window::maximize(id, true),
+                                iced::window::gain_focus(id),
+                            ])
+                        } else {
+                            Task::batch([
+                                iced::window::minimize(id, false),
+                                iced::window::set_mode(id, iced::window::Mode::Windowed),
+                                iced::window::gain_focus(id),
+                            ])
+                        }
+                    }
+
+                    #[cfg(not(target_os = "windows"))]
+                    {
+                        if was_maximized {
+                            Task::batch([
+                                iced::window::set_mode(id, iced::window::Mode::Windowed),
+                                iced::window::maximize(id, true),
+                                iced::window::gain_focus(id),
+                            ])
+                        } else {
+                            Task::batch([
+                                iced::window::set_mode(id, iced::window::Mode::Windowed),
+                                iced::window::gain_focus(id),
+                            ])
+                        }
+                    }
+                } else {
+                    Task::none()
+                }
+            });
         }
         Task::none()
     }

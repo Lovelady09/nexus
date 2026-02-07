@@ -1059,51 +1059,9 @@ impl NexusApp {
             #[cfg(not(target_os = "macos"))]
             Message::TrayServiceClosed => {
                 // ksni service died (D-Bus connection dropped, e.g., after system sleep)
-                // Since it worked before, try to recreate it
-                use crate::tray::TrayManager;
-
-                // Drop the old dead manager
+                // Drop the dead manager and let update_tray_from_settings() recreate it
                 self.tray_manager = None;
-
-                // Try to recreate the tray
-                match TrayManager::new() {
-                    Some(tray) => {
-                        self.tray_manager = Some(tray);
-                        self.update_tray_state();
-                    }
-                    None => {
-                        // Recreation failed - if window was hidden, show it since tray is gone
-                        if !self.window_visible {
-                            self.window_visible = true;
-                            let was_maximized = self.window_was_maximized;
-                            return iced::window::oldest().then(move |opt_id| {
-                                if let Some(id) = opt_id {
-                                    if was_maximized {
-                                        Task::batch([
-                                            iced::window::set_mode(
-                                                id,
-                                                iced::window::Mode::Windowed,
-                                            ),
-                                            iced::window::maximize(id, true),
-                                            iced::window::gain_focus(id),
-                                        ])
-                                    } else {
-                                        Task::batch([
-                                            iced::window::set_mode(
-                                                id,
-                                                iced::window::Mode::Windowed,
-                                            ),
-                                            iced::window::gain_focus(id),
-                                        ])
-                                    }
-                                } else {
-                                    Task::none()
-                                }
-                            });
-                        }
-                    }
-                }
-                Task::none()
+                self.update_tray_from_settings()
             }
 
             // Ignore tray messages on macOS (they shouldn't arrive, but be safe)
