@@ -253,7 +253,14 @@ impl TrayManager {
     }
 
     /// Try to receive a pending event (non-blocking)
+    ///
+    /// Returns `Some(Message::TrayServiceClosed)` if the ksni service has died
+    /// (e.g., D-Bus connection dropped after system sleep).
     pub fn try_recv(&mut self) -> Option<Message> {
+        // Check if ksni service has died (D-Bus connection dropped)
+        if self.handle.is_closed() {
+            return Some(Message::TrayServiceClosed);
+        }
         self.rx.try_recv().ok()
     }
 }

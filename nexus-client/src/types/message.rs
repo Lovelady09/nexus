@@ -629,6 +629,8 @@ pub enum Message {
     ShowTrayIconToggled(bool),
     /// Settings: Minimize to tray toggled
     MinimizeToTrayToggled(bool),
+    /// Tray: Service has closed (D-Bus connection dropped, e.g., after system sleep)
+    TrayServiceClosed,
 
     // ==================== URI Scheme ====================
     /// URI: Handle a nexus:// URI (from startup arg or IPC)

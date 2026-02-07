@@ -1056,6 +1056,55 @@ impl NexusApp {
                 self.config.settings.minimize_to_tray = enabled;
                 Task::none()
             }
+            #[cfg(not(target_os = "macos"))]
+            Message::TrayServiceClosed => {
+                // ksni service died (D-Bus connection dropped, e.g., after system sleep)
+                // Since it worked before, try to recreate it
+                use crate::tray::TrayManager;
+
+                // Drop the old dead manager
+                self.tray_manager = None;
+
+                // Try to recreate the tray
+                match TrayManager::new() {
+                    Some(tray) => {
+                        self.tray_manager = Some(tray);
+                        self.update_tray_state();
+                    }
+                    None => {
+                        // Recreation failed - if window was hidden, show it since tray is gone
+                        if !self.window_visible {
+                            self.window_visible = true;
+                            let was_maximized = self.window_was_maximized;
+                            return iced::window::oldest().then(move |opt_id| {
+                                if let Some(id) = opt_id {
+                                    if was_maximized {
+                                        Task::batch([
+                                            iced::window::set_mode(
+                                                id,
+                                                iced::window::Mode::Windowed,
+                                            ),
+                                            iced::window::maximize(id, true),
+                                            iced::window::gain_focus(id),
+                                        ])
+                                    } else {
+                                        Task::batch([
+                                            iced::window::set_mode(
+                                                id,
+                                                iced::window::Mode::Windowed,
+                                            ),
+                                            iced::window::gain_focus(id),
+                                        ])
+                                    }
+                                } else {
+                                    Task::none()
+                                }
+                            });
+                        }
+                    }
+                }
+                Task::none()
+            }
 
             // Ignore tray messages on macOS (they shouldn't arrive, but be safe)
             #[cfg(target_os = "macos")]
@@ -1068,7 +1117,8 @@ impl NexusApp {
             | Message::TrayShowWindow(_)
             | Message::TrayRestoreMinimized { .. }
             | Message::ShowTrayIconToggled(_)
-            | Message::MinimizeToTrayToggled(_) => Task::none(),
+            | Message::MinimizeToTrayToggled(_)
+            | Message::TrayServiceClosed => Task::none(),
 
             // URI scheme
             Message::HandleNexusUri(uri) => self.handle_nexus_uri(uri),
