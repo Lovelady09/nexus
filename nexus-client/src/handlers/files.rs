@@ -8,8 +8,8 @@ use nexus_common::validators::{self, DirNameError, SearchQueryError, validate_se
 use crate::NexusApp;
 use crate::i18n::{t, t_args};
 use crate::types::{
-    ActivePanel, ClipboardItem, ClipboardOperation, FileSortColumn, InputId, Message,
-    PendingRequests, ResponseRouting, TabId,
+    ActivePanel, ClipboardItem, ClipboardOperation, FileSortColumn, FilesManagementState, InputId,
+    Message, PendingRequests, ResponseRouting, TabId,
 };
 use crate::uri::url_encode_path;
 use crate::views::files::build_navigate_path;
@@ -1091,7 +1091,8 @@ impl NexusApp {
     /// Handle share request - copies nexus:// URL to clipboard
     ///
     /// Builds a deep link URL with the current connection info and file path,
-    /// then copies it to the system clipboard.
+    /// then copies it to the system clipboard. Folder type suffixes are stripped
+    /// from the path since the server resolves paths without them.
     pub fn handle_file_share(&mut self, path: String) -> Task<Message> {
         let Some(conn_id) = self.active_connection else {
             return Task::none();
@@ -1115,11 +1116,19 @@ impl NexusApp {
             info.address.clone()
         };
 
+        // Strip folder type suffixes from each path segment
+        // Server resolves paths without suffixes (e.g., "uploads" -> "uploads [NEXUS-UL]")
+        let clean_path = path
+            .split('/')
+            .map(FilesManagementState::display_name)
+            .collect::<Vec<_>>()
+            .join("/");
+
         let url = format!(
             "nexus://{}{}/files/{}",
             host,
             port_suffix,
-            url_encode_path(&path)
+            url_encode_path(&clean_path)
         );
 
         iced::clipboard::write(url)
