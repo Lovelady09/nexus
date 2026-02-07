@@ -493,6 +493,7 @@ Manage chat tabs (channels and user message conversations).
 | `/list` | `/l`, `/userlist` | `user_list` | Show connected/all users |
 | `/me` | — | `chat_send` | Send an action message |
 | `/message` | `/m`, `/msg` | `user_message` | Send a message to a user |
+| `/ping` | — | None | Measure server latency |
 | `/reindex` | — | `file_reindex` | Trigger file index rebuild |
 | `/secret` | — | `chat_secret` | Toggle channel secret mode |
 | `/sinfo` | `/si`, `/serverinfo` | None | Show server information |

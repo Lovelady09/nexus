@@ -821,6 +821,8 @@ settings-sound-play = 사운드 재생
 settings-sound-always-play = 항상 재생
 settings-sound-test = 테스트
 settings-notification-test = 테스트
+event-settings-show-toast = 토스트 표시
+settings-toast-test = 테스트
 
 # Sound names
 sound-none = 없음
@@ -1049,3 +1051,16 @@ tray-tooltip-disconnected = Nexus BBS - 연결 끊김
 tray-tooltip-voice = Nexus BBS - 음성 채팅 중: { $target }
 tray-tooltip-voice-muted = Nexus BBS - 음성 채팅 중 (음소거): { $target }
 tray-tooltip-unread = Nexus BBS - 읽지 않은 대화 { $count }개
+
+# =============================================================================
+# Toast Notifications
+# =============================================================================
+
+toast-link-copied = 링크를 클립보드에 복사했습니다
+toast-copied = 클립보드에 복사했습니다
+toast-download-started = { $filename } 다운로드 중
+toast-download-queued = 다운로드 대기: { $filename }
+toast-upload-started = { $filename } 업로드 중
+toast-upload-queued = 업로드 대기: { $filename }
+toast-uploads-started = { $count }개 파일 업로드 중
+toast-uploads-queued = { $count }개 업로드 대기

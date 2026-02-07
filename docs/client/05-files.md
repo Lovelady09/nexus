@@ -180,10 +180,20 @@ Uploading requires:
 
 ### Upload Files
 
+**Method 1: Upload button**
+
 1. Navigate to an upload folder
 2. Click the **Upload** button in the toolbar
 3. Select files in the file picker
 4. Files are queued for upload
+
+**Method 2: Drag and drop**
+
+1. Drag files from your file manager onto the Nexus window
+2. A drop overlay appears when you're over an upload-enabled folder
+3. Release to upload the files
+
+**Note:** The drop overlay only appears when the Files panel is active and the current folder allows uploads.
 
 ### Upload Limitations
 
@@ -256,7 +266,8 @@ You can share files with other Nexus users by copying a link:
 
 1. Right-click a file or folder
 2. Select **Share**
-3. Paste the link anywhere — in Nexus chat, email, or messaging apps
+3. A toast notification confirms the link was copied
+4. Paste the link anywhere — in Nexus chat, email, or messaging apps
 
 The copied link uses the `nexus://` scheme (e.g., `nexus://example.com/files/Music/song.mp3`). When another Nexus user clicks the link:
 

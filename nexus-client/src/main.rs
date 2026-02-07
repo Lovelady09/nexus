@@ -38,8 +38,10 @@ use uuid::Uuid;
 
 use iced::widget::{Id, operation, text_editor};
 use iced::{Element, Subscription, Task, Theme};
+use iced_toasts::{ToastContainer, ToastLevel, toast, toast_container};
 
 use config::events::EventType;
+
 use style::{WINDOW_HEIGHT_MIN, WINDOW_TITLE, WINDOW_WIDTH_MIN};
 use types::{
     BookmarkEditState, ConnectionFormState, FingerprintMismatch, InputId, Message,
@@ -350,6 +352,12 @@ struct NexusApp {
     /// System tray manager (None on macOS or if tray creation failed)
     #[cfg(not(target_os = "macos"))]
     tray_manager: Option<tray::TrayManager>,
+
+    // -------------------------------------------------------------------------
+    // Toasts
+    // -------------------------------------------------------------------------
+    /// Toast notification container for transient feedback messages
+    toasts: ToastContainer<'static, Message>,
 }
 
 impl Default for NexusApp {
@@ -404,6 +412,41 @@ impl Default for NexusApp {
             // System Tray (Windows/Linux only)
             #[cfg(not(target_os = "macos"))]
             tray_manager: None,
+            // Toasts
+            toasts: toast_container(Message::ToastDismiss)
+                .timeout(std::time::Duration::from_secs(style::TOAST_TIMEOUT_SECS))
+                .style(|theme: &iced::Theme| {
+                    use std::rc::Rc;
+                    let palette = theme.extended_palette();
+                    iced_toasts::Style {
+                        text_color: Some(palette.background.base.text),
+                        background: Some(iced::Background::Color(palette.background.base.color)),
+                        border: iced::Border {
+                            color: palette.background.strong.color,
+                            width: style::TOAST_BORDER_WIDTH,
+                            radius: style::TOAST_BORDER_RADIUS.into(),
+                        },
+                        shadow: iced::Shadow {
+                            color: iced::Color::from_rgba(
+                                0.0,
+                                0.0,
+                                0.0,
+                                style::TOAST_SHADOW_OPACITY,
+                            ),
+                            offset: iced::Vector::new(
+                                style::TOAST_SHADOW_OFFSET,
+                                style::TOAST_SHADOW_OFFSET,
+                            ),
+                            blur_radius: style::TOAST_SHADOW_BLUR,
+                        },
+                        level_to_color: Rc::new(move |level| match level {
+                            ToastLevel::Success => Some(palette.success.strong.color),
+                            ToastLevel::Warning => Some(palette.danger.strong.color),
+                            ToastLevel::Error => Some(palette.danger.strong.color),
+                            ToastLevel::Info => Some(palette.primary.strong.color),
+                        }),
+                    }
+                }),
         }
     }
 }
@@ -715,6 +758,13 @@ impl NexusApp {
                 self.handle_event_notification_content_selected(content)
             }
             Message::TestNotification => self.handle_test_notification(),
+            Message::EventShowToastToggled(enabled) => {
+                self.handle_event_show_toast_toggled(enabled)
+            }
+            Message::EventToastContentSelected(content) => {
+                self.handle_event_toast_content_selected(content)
+            }
+            Message::TestToast => self.handle_test_toast(),
             Message::ToggleSoundEnabled(enabled) => {
                 self.config.settings.sound_enabled = enabled;
                 Task::none()
@@ -1014,6 +1064,16 @@ impl NexusApp {
                 self.config.settings.audio.transient_suppression = enabled;
                 let _ = self.config.save();
                 self.update_voice_processor_settings();
+                Task::none()
+            }
+
+            // Toasts
+            Message::ToastDismiss(id) => {
+                self.toasts.dismiss(id);
+                Task::none()
+            }
+            Message::ShowToast(text) => {
+                self.toasts.push(toast(&text).level(ToastLevel::Success));
                 Task::none()
             }
 
@@ -1363,7 +1423,8 @@ impl NexusApp {
             return views::fingerprint_mismatch_dialog(mismatch);
         }
 
-        main_view
+        // Wrap with toast container for transient notifications
+        self.toasts.view(main_view)
     }
 
     fn theme(&self) -> Theme {

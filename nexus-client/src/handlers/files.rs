@@ -13,6 +13,7 @@ use crate::types::{
 };
 use crate::uri::url_encode_path;
 use crate::views::files::build_navigate_path;
+use iced_toasts::{ToastLevel, toast};
 
 /// Strip leading slash from a path
 ///
@@ -1131,7 +1132,9 @@ impl NexusApp {
             url_encode_path(&clean_path)
         );
 
-        iced::clipboard::write(url)
+        // Copy to clipboard, then show toast feedback
+        let toast_text = t("toast-link-copied");
+        iced::clipboard::write(url).chain(Task::done(Message::ShowToast(toast_text)))
     }
 
     // ==================== Downloads ====================
@@ -1200,20 +1203,26 @@ impl NexusApp {
         // For single files: use the filename
         // For directories: use the directory name as the containing folder
         // For root path ("/") downloads: use server name as the folder
-        let trimmed_path = remote_path.trim_matches('/');
-        let local_path = if is_directory && trimmed_path.is_empty() {
+        let trimmed_path = remote_path.trim_matches('/').to_string();
+        let (local_path, toast_filename) = if is_directory && trimmed_path.is_empty() {
             // Root directory download - use server name as folder
             // Sanitize server name to be filesystem-safe, fall back to address
             let safe_name = sanitize_filename(
                 &conn.connection_info.server_name,
                 &conn.connection_info.address,
             );
-            std::path::PathBuf::from(&download_dir).join(safe_name)
+            let path = std::path::PathBuf::from(&download_dir).join(&safe_name);
+            (path, safe_name)
         } else {
             // Extract last path component for the local filename/folder
             // trimmed_path is guaranteed non-empty here, so rsplit will return a non-empty value
-            let filename = trimmed_path.rsplit('/').next().expect("non-empty path");
-            std::path::PathBuf::from(&download_dir).join(filename)
+            let filename = trimmed_path
+                .rsplit('/')
+                .next()
+                .expect("non-empty path")
+                .to_string();
+            let path = std::path::PathBuf::from(&download_dir).join(&filename);
+            (path, filename)
         };
 
         // Create the transfer
@@ -1233,6 +1242,15 @@ impl NexusApp {
 
         // Save transfers to disk
         let _ = self.transfer_manager.save();
+
+        // Show toast feedback
+        let toast_text = if self.config.settings.queue_transfers {
+            t_args("toast-download-queued", &[("filename", &toast_filename)])
+        } else {
+            t_args("toast-download-started", &[("filename", &toast_filename)])
+        };
+        self.toasts
+            .push(toast(&toast_text).level(ToastLevel::Success));
 
         Task::none()
     }
@@ -1292,6 +1310,15 @@ impl NexusApp {
         // Get the current viewing mode (root or user area)
         let remote_root = conn.files_management.active_tab().viewing_root;
 
+        let is_queued = self.config.settings.queue_transfers;
+        let upload_count = paths.len();
+        let first_filename = paths
+            .first()
+            .and_then(|p| p.file_name())
+            .and_then(|n| n.to_str())
+            .unwrap_or("file")
+            .to_string();
+
         // Queue each selected file/directory as a separate upload
         for local_path in paths {
             let is_directory = local_path.is_dir();
@@ -1331,6 +1358,24 @@ impl NexusApp {
         // Save transfers to disk
         let _ = self.transfer_manager.save();
 
+        // Show toast feedback (single file: show name, multiple: show count)
+        let toast_text = if upload_count == 1 {
+            if is_queued {
+                t_args("toast-upload-queued", &[("filename", &first_filename)])
+            } else {
+                t_args("toast-upload-started", &[("filename", &first_filename)])
+            }
+        } else {
+            let count_str = upload_count.to_string();
+            if is_queued {
+                t_args("toast-uploads-queued", &[("count", &count_str)])
+            } else {
+                t_args("toast-uploads-started", &[("count", &count_str)])
+            }
+        };
+        self.toasts
+            .push(toast(&toast_text).level(ToastLevel::Success));
+
         Task::none()
     }
 
@@ -1368,6 +1413,10 @@ impl NexusApp {
         let destination = conn.files_management.active_tab().current_path.clone();
         let remote_root = conn.files_management.active_tab().viewing_root;
         let is_directory = path.is_dir();
+        let path_filename = path
+            .file_name()
+            .and_then(|n| n.to_str())
+            .map(|s| s.to_string());
 
         // For directory uploads, append the directory name to the destination
         // so the server creates the directory structure (e.g., "/Uploads/MyFolder/")
@@ -1402,6 +1451,16 @@ impl NexusApp {
 
         // Save transfers to disk
         let _ = self.transfer_manager.save();
+
+        // Show toast feedback
+        let filename = path_filename.as_deref().unwrap_or("file");
+        let toast_text = if self.config.settings.queue_transfers {
+            t_args("toast-upload-queued", &[("filename", filename)])
+        } else {
+            t_args("toast-upload-started", &[("filename", filename)])
+        };
+        self.toasts
+            .push(toast(&toast_text).level(ToastLevel::Success));
 
         Task::none()
     }

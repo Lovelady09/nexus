@@ -158,43 +158,48 @@ impl NexusApp {
         session_id: u32,
         nickname: String,
     ) -> Task<Message> {
-        let Some(conn) = self.connections.get_mut(&connection_id) else {
-            return Task::none();
+        // Scope conn borrow so it's dropped before emit_event
+        let is_last_session = {
+            let Some(conn) = self.connections.get_mut(&connection_id) else {
+                return Task::none();
+            };
+
+            // Remove the specific session_id from the user's sessions
+            // We look up by session_id since nickname may differ from username for shared accounts
+            let mut is_last_session = false;
+            let mut nickname_to_remove: Option<String> = None;
+
+            if let Some(user) = conn
+                .online_users
+                .iter_mut()
+                .find(|u| u.session_ids.contains(&session_id))
+            {
+                user.session_ids.retain(|&sid| sid != session_id);
+
+                // If user has no more sessions, remove them entirely
+                if user.session_ids.is_empty() {
+                    // Get nickname for avatar cache removal
+                    nickname_to_remove = Some(user.nickname.clone());
+                    is_last_session = true;
+                }
+            }
+
+            // Remove user from list and cache if this was their last session
+            if let Some(ref nickname) = nickname_to_remove {
+                // Remove by nickname
+                conn.online_users.retain(|u| u.nickname != *nickname);
+
+                // Clear expanded_user if the disconnected user was expanded
+                if conn.expanded_user.as_deref() == Some(nickname.as_str()) {
+                    conn.expanded_user = None;
+                }
+
+                // Remove from avatar cache (keyed by lowercase nickname)
+                conn.avatar_cache.remove(&avatar_cache_key(nickname));
+            }
+
+            is_last_session
         };
-
-        // Remove the specific session_id from the user's sessions
-        // We look up by session_id since nickname may differ from username for shared accounts
-        let mut is_last_session = false;
-        let mut nickname_to_remove: Option<String> = None;
-
-        if let Some(user) = conn
-            .online_users
-            .iter_mut()
-            .find(|u| u.session_ids.contains(&session_id))
-        {
-            user.session_ids.retain(|&sid| sid != session_id);
-
-            // If user has no more sessions, remove them entirely
-            if user.session_ids.is_empty() {
-                // Get nickname for avatar cache removal
-                nickname_to_remove = Some(user.nickname.clone());
-                is_last_session = true;
-            }
-        }
-
-        // Remove user from list and cache if this was their last session
-        if let Some(ref nickname) = nickname_to_remove {
-            // Remove by nickname
-            conn.online_users.retain(|u| u.nickname != *nickname);
-
-            // Clear expanded_user if the disconnected user was expanded
-            if conn.expanded_user.as_deref() == Some(nickname.as_str()) {
-                conn.expanded_user = None;
-            }
-
-            // Remove from avatar cache (keyed by lowercase nickname)
-            conn.avatar_cache.remove(&avatar_cache_key(nickname));
-        }
 
         // Emit notification for users going offline
         if is_last_session {

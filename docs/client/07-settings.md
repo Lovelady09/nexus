@@ -309,6 +309,8 @@ Select an event type from the dropdown to configure its notifications:
 | Event | Description |
 |-------|-------------|
 | **Broadcast** | Server-wide broadcast messages |
+| **Chat Join** | User joined a channel you're in |
+| **Chat Leave** | User left a channel you're in |
 | **Chat Message** | Regular chat messages |
 | **Chat Mention** | Messages mentioning your nickname |
 | **Connection Lost** | Disconnected from server |
@@ -320,6 +322,8 @@ Select an event type from the dropdown to configure its notifications:
 | **User Disconnected** | User left the server |
 | **User Kicked** | You were kicked from the server |
 | **User Message** | User message received |
+| **Voice Joined** | User joined voice chat |
+| **Voice Left** | User left voice chat |
 
 ### Per-Event Settings
 
@@ -330,6 +334,9 @@ For each event type:
 | **Show notification** | Display a desktop notification |
 | **Content level** | How much detail to show (Title Only, Summary, Full) |
 | **Test** | Send a test notification |
+| **Show toast** | Display a toast notification in the app |
+| **Content level** | How much detail to show (Title Only, Summary, Full) |
+| **Test** | Show a test toast |
 | **Play sound** | Play a sound when the event occurs |
 | **Always play** | Play sound even when normally suppressed |
 | **Sound** | Which sound to play |
@@ -345,24 +352,28 @@ For each event type:
 
 ### Default Notifications
 
-**Enabled by default:**
+**Notifications enabled by default:**
 - Broadcast, Chat Mention, Connection Lost
 - News Post, Permissions Changed
 - Transfer Complete, Transfer Failed
 - User Kicked, User Message
 
-**Disabled by default** (can be noisy):
-- Chat Message, User Connected, User Disconnected
+**Notifications disabled by default** (can be noisy):
+- Chat Message, Chat Join, Chat Leave
+- User Connected, User Disconnected
+- Voice Joined, Voice Left
+
+**Toasts:** Disabled by default for all events. Enable per-event in the Events tab.
 
 ### Notification Suppression
 
-Notifications are automatically suppressed when:
+Notifications and toasts are automatically suppressed when:
 
 - The event is from your own action (e.g., your own broadcast)
 - You're actively viewing the relevant content (e.g., chat is visible for chat messages)
 - The application window is focused for certain events
 
-**Always play sound** bypasses this suppression for sounds only.
+**Always play sound** bypasses this suppression for sounds only. Toasts follow the same suppression rules as desktop notifications.
 
 ## Saving Settings
 

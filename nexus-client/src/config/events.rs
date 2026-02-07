@@ -246,6 +246,14 @@ pub struct EventConfig {
     #[serde(default)]
     pub notification_content: NotificationContent,
 
+    /// Whether to show a toast notification
+    #[serde(default)]
+    pub show_toast: bool,
+
+    /// Level of detail in toast content
+    #[serde(default)]
+    pub toast_content: NotificationContent,
+
     /// Whether to play a sound for this event
     #[serde(default)]
     pub play_sound: bool,
@@ -265,6 +273,8 @@ impl EventConfig {
         Self {
             show_notification: true,
             notification_content: NotificationContent::default(),
+            show_toast: false,
+            toast_content: NotificationContent::default(),
             play_sound: false,
             sound: SoundChoice::Alert,
             always_play_sound: false,
@@ -310,6 +320,8 @@ impl EventSettings {
 static DEFAULT_EVENT_CONFIG: EventConfig = EventConfig {
     show_notification: false,
     notification_content: NotificationContent::WithPreview,
+    show_toast: false,
+    toast_content: NotificationContent::WithPreview,
     play_sound: false,
     sound: SoundChoice::Alert,
     always_play_sound: false,

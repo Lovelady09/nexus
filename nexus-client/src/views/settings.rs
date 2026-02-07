@@ -1093,6 +1093,53 @@ fn events_tab_content<'a>(
 
     items.push(Space::new().height(SPACER_SIZE_MEDIUM).into());
 
+    // Show toast checkbox (always available - no global toggle)
+    let show_toast_checkbox = checkbox(event_config.show_toast)
+        .label(t("event-settings-show-toast"))
+        .on_toggle(Message::EventShowToastToggled)
+        .text_size(TEXT_SIZE)
+        .spacing(ELEMENT_SPACING);
+    items.push(show_toast_checkbox.into());
+
+    // Toast content level picker and test button on same row
+    let toast_content_levels: Vec<NotificationContent> = NotificationContent::all().to_vec();
+    let toast_content_picker = if event_config.show_toast {
+        pick_list(
+            toast_content_levels,
+            Some(event_config.toast_content),
+            Message::EventToastContentSelected,
+        )
+        .text_size(TEXT_SIZE)
+    } else {
+        pick_list(
+            toast_content_levels,
+            Some(event_config.toast_content),
+            |_| Message::EventToastContentSelected(event_config.toast_content),
+        )
+        .text_size(TEXT_SIZE)
+    };
+
+    let test_toast_button = if event_config.show_toast {
+        button(shaped_text(t("settings-toast-test")).size(TEXT_SIZE))
+            .on_press(Message::TestToast)
+            .padding(INPUT_PADDING)
+            .style(btn::secondary)
+    } else {
+        button(shaped_text(t("settings-toast-test")).size(TEXT_SIZE))
+            .padding(INPUT_PADDING)
+            .style(btn::secondary)
+    };
+
+    let toast_row = row![
+        toast_content_picker,
+        Space::new().width(ELEMENT_SPACING),
+        test_toast_button,
+    ]
+    .align_y(iced::Alignment::Center);
+    items.push(toast_row.into());
+
+    items.push(Space::new().height(SPACER_SIZE_MEDIUM).into());
+
     // Play sound checkbox with Always Play inline
     let play_sound_enabled = sound_enabled;
     let always_play_enabled = sound_enabled && event_config.play_sound;

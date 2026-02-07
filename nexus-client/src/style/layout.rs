@@ -364,6 +364,28 @@ pub const CHAT_MESSAGE_SEPARATOR: &str = ": ";
 pub const CHAT_ACTION_PREFIX: &str = "*** ";
 
 // ============================================================================
+// Toast Notifications
+// ============================================================================
+
+/// Toast border width
+pub const TOAST_BORDER_WIDTH: f32 = 1.0;
+
+/// Toast border radius
+pub const TOAST_BORDER_RADIUS: f32 = 0.0;
+
+/// Toast shadow opacity
+pub const TOAST_SHADOW_OPACITY: f32 = 0.3;
+
+/// Toast shadow offset (x and y)
+pub const TOAST_SHADOW_OFFSET: f32 = 2.0;
+
+/// Toast shadow blur radius
+pub const TOAST_SHADOW_BLUR: f32 = 8.0;
+
+/// Toast auto-dismiss timeout in seconds
+pub const TOAST_TIMEOUT_SECS: u64 = 3;
+
+// ============================================================================
 // Badge (Notification Count)
 // ============================================================================
 

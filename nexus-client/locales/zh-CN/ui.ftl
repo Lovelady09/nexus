@@ -822,6 +822,8 @@ settings-sound-play = 播放声音
 settings-sound-always-play = 始终播放
 settings-sound-test = 测试
 settings-notification-test = 测试
+event-settings-show-toast = 显示提示
+settings-toast-test = 测试
 
 # Sound names
 sound-none = 无
@@ -1050,3 +1052,16 @@ tray-tooltip-disconnected = Nexus BBS - 已断开
 tray-tooltip-voice = Nexus BBS - 语音中: { $target }
 tray-tooltip-voice-muted = Nexus BBS - 语音中 (已静音): { $target }
 tray-tooltip-unread = Nexus BBS - { $count } 个未读对话
+
+# =============================================================================
+# Toast Notifications
+# =============================================================================
+
+toast-link-copied = 链接已复制到剪贴板
+toast-copied = 已复制到剪贴板
+toast-download-started = 正在下载 { $filename }
+toast-download-queued = 下载已排队: { $filename }
+toast-upload-started = 正在上传 { $filename }
+toast-upload-queued = 上传已排队: { $filename }
+toast-uploads-started = 正在上传 { $count } 个文件
+toast-uploads-queued = { $count } 个上传已排队

@@ -238,24 +238,27 @@ impl NexusApp {
         nickname: String,
         target: String,
     ) -> Task<Message> {
-        let Some(conn) = self.connections.get_mut(&connection_id) else {
-            return Task::none();
-        };
-
-        // Track voiced nicknames per channel (even when we're not in voice)
-        // Use lowercase for consistency with ChatJoinResponse population
-        if target.starts_with('#') {
-            conn.channel_voiced
-                .entry(target.to_lowercase())
-                .or_default()
-                .insert(nickname.to_lowercase());
-        }
-
-        // Update voice session participants if we're in the same session
-        if let Some(ref mut session) = conn.voice_session
-            && session.target.to_lowercase() == target.to_lowercase()
+        // Scope conn borrow so it's dropped before emit_event
         {
-            session.add_participant(nickname.clone());
+            let Some(conn) = self.connections.get_mut(&connection_id) else {
+                return Task::none();
+            };
+
+            // Track voiced nicknames per channel (even when we're not in voice)
+            // Use lowercase for consistency with ChatJoinResponse population
+            if target.starts_with('#') {
+                conn.channel_voiced
+                    .entry(target.to_lowercase())
+                    .or_default()
+                    .insert(nickname.to_lowercase());
+            }
+
+            // Update voice session participants if we're in the same session
+            if let Some(ref mut session) = conn.voice_session
+                && session.target.to_lowercase() == target.to_lowercase()
+            {
+                session.add_participant(nickname.clone());
+            }
         }
 
         // Emit VoiceJoined event for notifications
@@ -325,27 +328,30 @@ impl NexusApp {
             }
         }
 
-        let Some(conn) = self.connections.get_mut(&connection_id) else {
-            return Task::none();
-        };
-
-        // Remove from per-channel voiced tracking (use lowercase for consistency)
-        if target.starts_with('#')
-            && let Some(voiced) = conn.channel_voiced.get_mut(&target.to_lowercase())
+        // Scope conn borrow so it's dropped before emit_event
         {
-            voiced.remove(&nickname.to_lowercase());
+            let Some(conn) = self.connections.get_mut(&connection_id) else {
+                return Task::none();
+            };
+
+            // Remove from per-channel voiced tracking (use lowercase for consistency)
+            if target.starts_with('#')
+                && let Some(voiced) = conn.channel_voiced.get_mut(&target.to_lowercase())
+            {
+                voiced.remove(&nickname.to_lowercase());
+            }
+
+            // Update voice session participants if we're in the same session
+            if let Some(ref mut session) = conn.voice_session
+                && session.target.to_lowercase() == target.to_lowercase()
+            {
+                session.remove_participant(&nickname);
+            }
         }
 
-        // Update voice session participants if we're in the same session
-        if let Some(ref mut session) = conn.voice_session
-            && session.target.to_lowercase() == target.to_lowercase()
-        {
-            session.remove_participant(&nickname);
-
-            // Clean up decoder and jitter buffer for the user who left
-            if let Some(ref handle) = self.voice_session_handle {
-                handle.user_left(&nickname);
-            }
+        // Clean up decoder and jitter buffer for the user who left
+        if let Some(ref handle) = self.voice_session_handle {
+            handle.user_left(&nickname);
         }
 
         // Emit VoiceLeft event for notifications

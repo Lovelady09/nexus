@@ -1416,7 +1416,7 @@ dependencies = [
  "wasm-bindgen",
  "wasm-bindgen-futures",
  "web-sys",
- "windows 0.62.2",
+ "windows 0.61.3",
 ]
 
 [[package]]
@@ -3113,7 +3113,7 @@ dependencies = [
  "js-sys",
  "log",
  "wasm-bindgen",
- "windows-core 0.62.2",
+ "windows-core 0.61.2",
 ]
 
 [[package]]
@@ -3313,6 +3313,14 @@ dependencies = [
  "rustc-hash 2.1.1",
  "softbuffer",
  "tiny-skia",
+]
+
+[[package]]
+name = "iced_toasts"
+version = "0.1.2"
+source = "git+https://github.com/zquestz/iced-toasts#21f1de132511be9d11dbeb7c7258a54beb9ba21c"
+dependencies = [
+ "iced",
 ]
 
 [[package]]
@@ -4399,6 +4407,7 @@ dependencies = [
  "iced",
  "iced_aw",
  "iced_fontello",
+ "iced_toasts",
  "identicon-rs",
  "image",
  "interprocess",
@@ -4669,7 +4678,7 @@ version = "0.7.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ff32365de1b6743cb203b710788263c44a03de03802daf96092f2da4fe6ba4d7"
 dependencies = [
- "proc-macro-crate 3.4.0",
+ "proc-macro-crate 2.0.2",
  "proc-macro2",
  "quote",
  "syn 2.0.114",

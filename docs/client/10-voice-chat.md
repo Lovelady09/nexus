@@ -33,6 +33,11 @@ Configure audio devices in **Settings > Audio** before joining voice.
 
 **Note:** Nexus automatically handles audio devices that don't natively support 48kHz (the sample rate required by the Opus codec). If your device uses a different sample rate (e.g., 44.1kHz or 96kHz), audio is automatically resampled with minimal latency impact.
 
+### Network
+
+- **Direct connection required** — Voice uses UDP, which cannot be routed through a SOCKS5 proxy. If your connection uses a proxy, voice chat is unavailable.
+- **Firewall** — UDP traffic on the server's BBS port (default 7500) must not be blocked.
+
 ## Joining Voice
 
 ### From a Channel Tab
@@ -280,6 +285,10 @@ The same VU meter style is used in both the settings mic test and the voice bar 
 
 **"Not in channel"**
 - Join the channel before trying to join voice
+
+**"Voice chat is not available when using a proxy"**
+- Voice uses UDP, which cannot be routed through SOCKS5 proxies
+- Disable the proxy in **Settings > Network** or connect directly to use voice
 
 ### No Audio Output
 

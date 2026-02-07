@@ -842,6 +842,8 @@ settings-sound-play = Reproduzir som
 settings-sound-always-play = Sempre reproduzir
 settings-sound-test = Testar
 settings-notification-test = Testar
+event-settings-show-toast = Mostrar Toast
+settings-toast-test = Testar
 
 # Sound names
 sound-none = Nenhum
@@ -1073,3 +1075,16 @@ tray-tooltip-unread = Nexus BBS - { $count ->
     [one] { $count } conversa não lida
    *[other] { $count } conversas não lidas
 }
+
+# =============================================================================
+# Toast Notifications
+# =============================================================================
+
+toast-link-copied = Link copiado para a área de transferência
+toast-copied = Copiado para a área de transferência
+toast-download-started = Baixando { $filename }
+toast-download-queued = Download na fila: { $filename }
+toast-upload-started = Enviando { $filename }
+toast-upload-queued = Upload na fila: { $filename }
+toast-uploads-started = Enviando { $count } arquivos
+toast-uploads-queued = { $count } uploads na fila

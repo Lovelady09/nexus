@@ -1,5 +1,7 @@
 //! Settings panel handlers
 
+use iced_toasts::{ToastLevel, toast};
+
 use crate::config::audio::PttReleaseDelay;
 
 #[cfg(all(unix, not(target_os = "macos")))]
@@ -580,6 +582,55 @@ impl NexusApp {
             // On non-Linux platforms, just show and ignore result
             #[cfg(not(all(unix, not(target_os = "macos"))))]
             let _ = notification.show();
+        }
+        Task::none()
+    }
+
+    /// Handle show toast checkbox toggle for selected event
+    pub fn handle_event_show_toast_toggled(&mut self, enabled: bool) -> Task<Message> {
+        if let Some(form) = &self.settings_form {
+            let event_type = form.selected_event_type;
+            self.config
+                .settings
+                .event_settings
+                .get_mut(event_type)
+                .show_toast = enabled;
+        }
+        Task::none()
+    }
+
+    /// Handle toast content level selection for selected event
+    pub fn handle_event_toast_content_selected(
+        &mut self,
+        content: NotificationContent,
+    ) -> Task<Message> {
+        if let Some(form) = &self.settings_form {
+            let event_type = form.selected_event_type;
+            self.config
+                .settings
+                .event_settings
+                .get_mut(event_type)
+                .toast_content = content;
+        }
+        Task::none()
+    }
+
+    /// Handle test toast button press
+    pub fn handle_test_toast(&mut self) -> Task<Message> {
+        if let Some(form) = &self.settings_form {
+            let event_type = form.selected_event_type;
+            let config = self.config.settings.event_settings.get(event_type);
+
+            let (summary, body) =
+                crate::events::build_test_notification_content(event_type, config.toast_content);
+
+            let toast_text = if let Some(body) = body {
+                format!("{}: {}", summary, body)
+            } else {
+                summary
+            };
+
+            self.toasts.push(toast(&toast_text).level(ToastLevel::Info));
         }
         Task::none()
     }

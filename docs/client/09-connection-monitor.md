@@ -50,7 +50,7 @@ Right-click any cell in a row to access the context menu:
 | Action | Description | Permission Required |
 |--------|-------------|---------------------|
 | **Info** | Open the User Info panel for this user | `user_info` |
-| **Copy** | Copy the cell value to clipboard | None |
+| **Copy** | Copy the cell value to clipboard (toast confirms) | None |
 | **Kick** | Open disconnect dialog with Kick selected | `user_kick` |
 | **Ban** | Open disconnect dialog with Ban selected | `ban_create` |
 

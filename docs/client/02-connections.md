@@ -121,6 +121,8 @@ Some addresses automatically bypass the proxy:
 
 This ensures local connections, LAN servers, and Yggdrasil mesh traffic are not routed through the proxy.
 
+**Limitation:** Voice chat requires a direct UDP connection and cannot be routed through a SOCKS5 proxy. If you connect via proxy, voice chat will be unavailable on that connection.
+
 ### Using with Tor
 
 To route Nexus traffic through Tor:

@@ -1,7 +1,7 @@
 //! Event notification system
 //!
-//! This module handles emitting desktop notifications for various events
-//! based on user configuration.
+//! This module handles emitting desktop notifications and toast notifications
+//! for various events based on user configuration.
 
 #[cfg(all(unix, not(target_os = "macos")))]
 use std::sync::Mutex;
@@ -22,6 +22,8 @@ pub static NOTIFICATION_HANDLES: Mutex<Vec<(Instant, NotificationHandle)>> = Mut
 /// How long to keep notification handles alive (slightly longer than the notification timeout)
 #[cfg(all(unix, not(target_os = "macos")))]
 pub const HANDLE_LIFETIME: Duration = Duration::from_secs(6);
+
+use iced_toasts::{ToastLevel, toast};
 
 use crate::NexusApp;
 use crate::config::events::{EventType, NotificationContent};
@@ -140,13 +142,13 @@ impl EventContext {
 // Notification Emission
 // =============================================================================
 
-/// Emit an event, potentially showing a notification and/or playing a sound
+/// Emit an event, potentially showing a notification, toast, and/or playing a sound
 ///
 /// This function checks the user's event configuration and current application
-/// state to determine whether a notification should be displayed and/or a
-/// sound should be played. Notifications and sounds are handled independently.
-pub fn emit_event(app: &NexusApp, event_type: EventType, context: EventContext) {
-    let config = app.config.settings.event_settings.get(event_type);
+/// state to determine whether a notification, toast, and/or sound should be
+/// triggered. Each channel is handled independently.
+pub fn emit_event(app: &mut NexusApp, event_type: EventType, context: EventContext) {
+    let config = app.config.settings.event_settings.get(event_type).clone();
     let suppressed = !should_show_notification(app, event_type, &context);
 
     // Handle desktop notification (skip for self-triggered events)
@@ -180,6 +182,21 @@ pub fn emit_event(app: &NexusApp, event_type: EventType, context: EventContext) 
         // On non-Linux platforms, just show and ignore result
         #[cfg(not(all(unix, not(target_os = "macos"))))]
         let _ = notification.show();
+    }
+
+    // Handle toast notification (skip for self-triggered events)
+    if config.show_toast && !suppressed && !context.is_from_self {
+        let (summary, body) =
+            build_notification_content(event_type, &context, config.toast_content);
+
+        // Combine summary and body into a single toast string
+        let toast_text = if let Some(body) = body {
+            format!("{}: {}", summary, body)
+        } else {
+            summary
+        };
+
+        app.toasts.push(toast(&toast_text).level(ToastLevel::Info));
     }
 
     // Handle sound playback (independent of notification settings)

@@ -2,6 +2,7 @@
 
 use iced::Theme;
 use iced::widget::{markdown, text_editor};
+use iced_toasts::ToastId;
 use uuid::Uuid;
 
 use nexus_common::framing::MessageId;
@@ -228,6 +229,12 @@ pub enum Message {
     EventNotificationContentSelected(NotificationContent),
     /// Settings panel (Events tab): Test notification button pressed
     TestNotification,
+    /// Settings panel (Events tab): Show toast checkbox toggled
+    EventShowToastToggled(bool),
+    /// Settings panel (Events tab): Toast content level selected
+    EventToastContentSelected(NotificationContent),
+    /// Settings panel (Events tab): Test toast button pressed
+    TestToast,
     /// Settings panel (Events tab): Global sound toggle
     ToggleSoundEnabled(bool),
     /// Settings panel (Events tab): Sound volume slider changed
@@ -604,6 +611,12 @@ pub enum Message {
     AudioAgc(bool),
     /// Audio: Toggle transient suppression (keyboard/click noise reduction)
     AudioTransientSuppression(bool),
+
+    // ==================== Toasts ====================
+    /// Toast: Dismiss a toast notification
+    ToastDismiss(ToastId),
+    /// Toast: Show a toast notification (triggered after async operations like clipboard write)
+    ShowToast(String),
 
     // ==================== System Tray (Windows/Linux only) ====================
     /// Tray: Periodic poll for tray events (also pumps GTK on Linux)
