@@ -3,7 +3,7 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use iced::futures::{SinkExt, Stream};
 use iced::stream;
@@ -23,8 +23,10 @@ use super::constants::{PING_INTERVAL, STREAM_CHANNEL_SIZE};
 use super::types::{LoginInfo, Reader, Writer};
 
 /// Type alias for the connection registry
-type ConnectionRegistry =
-    Arc<Mutex<HashMap<usize, mpsc::UnboundedReceiver<(MessageId, ServerMessage)>>>>;
+/// The tuple is (message_id, message, receive_timestamp) where timestamp is Some for Pong messages
+type ConnectionRegistry = Arc<
+    Mutex<HashMap<usize, mpsc::UnboundedReceiver<(MessageId, ServerMessage, Option<Instant>)>>>,
+>;
 
 /// Type alias for the command channel receiver
 type CommandReceiver = mpsc::UnboundedReceiver<(MessageId, ClientMessage)>;
@@ -62,7 +64,8 @@ pub(super) async fn setup_communication_channels(
     // Create channels for bidirectional communication
     // Command channel includes MessageId for request-response correlation
     let (cmd_tx, cmd_rx): (CommandSender, CommandReceiver) = mpsc::unbounded_channel();
-    let (msg_tx, msg_rx) = mpsc::unbounded_channel::<(MessageId, ServerMessage)>();
+    // Message channel includes optional timestamp for Pong messages (ping latency measurement)
+    let (msg_tx, msg_rx) = mpsc::unbounded_channel::<(MessageId, ServerMessage, Option<Instant>)>();
     let (shutdown_tx, shutdown_rx) = tokio::sync::oneshot::channel::<()>();
 
     // Spawn separate reader and writer tasks for cancel-safety
@@ -106,7 +109,7 @@ fn spawn_reader_writer_tasks(
     reader: Reader,
     writer: Writer,
     cmd_rx: CommandReceiver,
-    msg_tx: mpsc::UnboundedSender<(MessageId, ServerMessage)>,
+    msg_tx: mpsc::UnboundedSender<(MessageId, ServerMessage, Option<Instant>)>,
     shutdown_rx: tokio::sync::oneshot::Receiver<()>,
 ) {
     // Shared flag to signal both tasks to stop
@@ -133,7 +136,7 @@ fn spawn_reader_writer_tasks(
 /// it sets the stop flag to signal the writer task.
 async fn spawn_reader_task(
     mut reader: Reader,
-    msg_tx: mpsc::UnboundedSender<(MessageId, ServerMessage)>,
+    msg_tx: mpsc::UnboundedSender<(MessageId, ServerMessage, Option<Instant>)>,
     stop_flag: Arc<AtomicBool>,
 ) {
     loop {
@@ -145,9 +148,17 @@ async fn spawn_reader_task(
         // Read the next message - this is now cancel-safe since we're not in a select!
         match read_server_message(&mut reader).await {
             Ok(Some(received)) => {
-                // Send message ID and message to UI
+                // Timestamp Pong messages for accurate ping latency measurement
+                // This captures the time in tokio-land, before Iced's event loop delay
+                let timestamp = if matches!(received.message, ServerMessage::Pong) {
+                    Some(Instant::now())
+                } else {
+                    None
+                };
+
+                // Send message ID, message, and optional timestamp to UI
                 if msg_tx
-                    .send((received.message_id, received.message))
+                    .send((received.message_id, received.message, timestamp))
                     .is_err()
                 {
                     // UI receiver dropped, signal writer to stop
@@ -234,7 +245,7 @@ async fn spawn_writer_task(
 /// Register connection in global registry with pre-assigned ID
 async fn register_connection(
     connection_id: usize,
-    msg_rx: mpsc::UnboundedReceiver<(MessageId, ServerMessage)>,
+    msg_rx: mpsc::UnboundedReceiver<(MessageId, ServerMessage, Option<Instant>)>,
 ) {
     let mut receivers = NETWORK_RECEIVERS.lock().await;
     receivers.insert(connection_id, msg_rx);
@@ -262,12 +273,13 @@ pub fn network_stream(
             };
 
             if let Some(ref mut receiver) = rx {
-                while let Some((message_id, msg)) = receiver.recv().await {
+                while let Some((message_id, msg, timestamp)) = receiver.recv().await {
                     let _ = output
                         .send(Message::ServerMessageReceived(
                             connection_id,
                             message_id,
                             msg,
+                            timestamp,
                         ))
                         .await;
                 }

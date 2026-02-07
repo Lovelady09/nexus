@@ -31,13 +31,16 @@ pub fn execute(
         return Task::none();
     };
 
+    // Capture time before send for accurate latency measurement
+    let sent_time = Instant::now();
+
     // Send the ping
     let msg = ClientMessage::Ping;
     match conn.send(msg) {
         Ok(message_id) => {
             // Track the request with send time for latency calculation
             conn.pending_requests
-                .track(message_id, ResponseRouting::PingResult(Instant::now()));
+                .track(message_id, ResponseRouting::PingResult(sent_time));
         }
         Err(e) => {
             return app.add_active_tab_message(connection_id, ChatMessage::error(e));

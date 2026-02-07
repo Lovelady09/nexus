@@ -2,6 +2,8 @@
 //!
 //! This module contains handlers for all server messages, organized by category.
 
+use std::time::Instant;
+
 use chat_channel::ChatJoinResponseData;
 use files::FileListResponseData;
 use user_message::UserMessageParams;
@@ -48,9 +50,10 @@ impl NexusApp {
         connection_id: usize,
         message_id: MessageId,
         msg: ServerMessage,
+        receive_timestamp: Option<Instant>,
     ) -> Task<Message> {
         if self.connections.contains_key(&connection_id) {
-            self.handle_server_message(connection_id, message_id, msg)
+            self.handle_server_message(connection_id, message_id, msg, receive_timestamp)
         } else {
             Task::none()
         }
@@ -58,12 +61,15 @@ impl NexusApp {
 
     /// Process a specific server message and update state
     ///
+    /// The `receive_timestamp` is `Some(Instant)` for Pong messages, captured in the
+    /// network reader task for accurate ping latency measurement (before Iced's event loop delay).
     /// This is the main dispatcher that routes server messages to their specific handlers.
     pub fn handle_server_message(
         &mut self,
         connection_id: usize,
         message_id: MessageId,
         msg: ServerMessage,
+        receive_timestamp: Option<Instant>,
     ) -> Task<Message> {
         match msg {
             ServerMessage::ChatMessage {
@@ -520,7 +526,7 @@ impl NexusApp {
             }
 
             // Keepalive response - check if this is a response to a /ping command
-            ServerMessage::Pong => self.handle_pong(connection_id, message_id),
+            ServerMessage::Pong => self.handle_pong(connection_id, message_id, receive_timestamp),
 
             // Catch-all for any unhandled message types
             _ => Task::none(),
@@ -528,7 +534,15 @@ impl NexusApp {
     }
 
     /// Handle pong response - check if this is a response to a /ping command
-    fn handle_pong(&mut self, connection_id: usize, message_id: MessageId) -> Task<Message> {
+    ///
+    /// The `receive_timestamp` is captured in the network reader task (tokio-land)
+    /// for accurate latency measurement, avoiding Iced's event loop delay.
+    fn handle_pong(
+        &mut self,
+        connection_id: usize,
+        message_id: MessageId,
+        receive_timestamp: Option<Instant>,
+    ) -> Task<Message> {
         let Some(conn) = self.connections.get_mut(&connection_id) else {
             return Task::none();
         };
@@ -541,8 +555,10 @@ impl NexusApp {
             return Task::none();
         };
 
-        // Calculate latency
-        let elapsed = sent_time.elapsed();
+        // Calculate latency using receive timestamp from network task (accurate)
+        // or fall back to current time (less accurate, includes Iced event loop delay)
+        let receive_time = receive_timestamp.unwrap_or_else(Instant::now);
+        let elapsed = receive_time.duration_since(sent_time);
         let ms = elapsed.as_millis();
 
         // Display result in chat

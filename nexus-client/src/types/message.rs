@@ -165,8 +165,9 @@ pub enum Message {
     SendMessagePressed,
     /// Connection form: Server address field changed
     ServerAddressChanged(String),
-    /// Network: Message received from server (connection_id, message_id, message)
-    ServerMessageReceived(usize, MessageId, ServerMessage),
+    /// Network: Message received from server (connection_id, message_id, message, receive_timestamp)
+    /// The timestamp is Some(Instant) for Pong messages (for accurate ping measurement), None otherwise
+    ServerMessageReceived(usize, MessageId, ServerMessage, Option<std::time::Instant>),
     /// Connection form: Server name field changed
     ServerNameChanged(String),
     /// Connection form: Nickname field changed
