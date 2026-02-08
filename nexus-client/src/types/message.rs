@@ -9,7 +9,7 @@ use nexus_common::framing::MessageId;
 use nexus_common::protocol::FileSearchResult;
 use nexus_common::voice::VoiceQuality;
 
-use super::form::{FileSortColumn, SettingsTab, TabId};
+use super::panel::{FileSortColumn, SettingsTab, TabId};
 use super::{ChatTab, NetworkConnection, ServerMessage};
 use crate::config::audio::{PttMode, PttReleaseDelay};
 use crate::config::events::{EventType, NotificationContent, SoundChoice};
