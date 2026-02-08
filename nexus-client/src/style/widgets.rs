@@ -9,11 +9,15 @@ use super::ui;
 use super::{
     CONTEXT_MENU_BORDER_WIDTH, CONTEXT_MENU_SHADOW_BLUR, CONTEXT_MENU_SHADOW_OFFSET,
     CONTEXT_MENU_SHADOW_OPACITY, STANDARD_BORDER_RADIUS, TITLE_ROW_HEIGHT_WITH_ACTION, TITLE_SIZE,
+    TOAST_BORDER_RADIUS, TOAST_BORDER_WIDTH, TOAST_SHADOW_BLUR, TOAST_SHADOW_OFFSET,
+    TOAST_SHADOW_OPACITY,
 };
 use crate::types::Message;
 use crate::widgets::{MenuButtonStatus, MenuButtonStyle};
+use std::rc::Rc;
+
 use iced::widget::{Container, button, container, rule, text};
-use iced::{Background, Border, Center, Color, Fill, Theme};
+use iced::{Background, Border, Center, Color, Fill, Shadow, Theme, Vector};
 
 // ============================================================================
 // Button Styles
@@ -443,6 +447,34 @@ pub fn speaking_indicator_style(theme: &Theme) -> container::Style {
 ///
 /// let title_row = panel_title(t("files-panel-title"));
 /// ```
+/// Toast notification style — theme-aware with square corners
+///
+/// Used by the `ToastContainer` to style all toast notifications.
+/// Returns a closure compatible with `ToastContainer::style()`.
+pub fn toast_style(theme: &Theme) -> iced_toasts::Style<'_> {
+    let palette = theme.extended_palette();
+    iced_toasts::Style {
+        text_color: Some(palette.background.base.text),
+        background: Some(Background::Color(palette.background.base.color)),
+        border: Border {
+            color: palette.background.strong.color,
+            width: TOAST_BORDER_WIDTH,
+            radius: TOAST_BORDER_RADIUS.into(),
+        },
+        shadow: Shadow {
+            color: Color::from_rgba(0.0, 0.0, 0.0, TOAST_SHADOW_OPACITY),
+            offset: Vector::new(TOAST_SHADOW_OFFSET, TOAST_SHADOW_OFFSET),
+            blur_radius: TOAST_SHADOW_BLUR,
+        },
+        level_to_color: Rc::new(move |level| match level {
+            iced_toasts::ToastLevel::Success => Some(palette.success.strong.color),
+            iced_toasts::ToastLevel::Warning => Some(palette.danger.strong.color),
+            iced_toasts::ToastLevel::Error => Some(palette.danger.strong.color),
+            iced_toasts::ToastLevel::Info => Some(palette.primary.strong.color),
+        }),
+    }
+}
+
 pub fn panel_title(title: impl Into<String>) -> Container<'static, Message> {
     container(
         shaped_text(title)

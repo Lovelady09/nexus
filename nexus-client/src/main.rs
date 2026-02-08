@@ -40,6 +40,8 @@ use iced::widget::{Id, operation, text_editor};
 use iced::{Element, Subscription, Task, Theme};
 use iced_toasts::{ToastContainer, ToastLevel, toast, toast_container};
 
+use style::toast_style;
+
 use config::events::EventType;
 
 use style::{WINDOW_HEIGHT_MIN, WINDOW_TITLE, WINDOW_WIDTH_MIN};
@@ -415,38 +417,7 @@ impl Default for NexusApp {
             // Toasts
             toasts: toast_container(Message::ToastDismiss)
                 .timeout(std::time::Duration::from_secs(style::TOAST_TIMEOUT_SECS))
-                .style(|theme: &iced::Theme| {
-                    use std::rc::Rc;
-                    let palette = theme.extended_palette();
-                    iced_toasts::Style {
-                        text_color: Some(palette.background.base.text),
-                        background: Some(iced::Background::Color(palette.background.base.color)),
-                        border: iced::Border {
-                            color: palette.background.strong.color,
-                            width: style::TOAST_BORDER_WIDTH,
-                            radius: style::TOAST_BORDER_RADIUS.into(),
-                        },
-                        shadow: iced::Shadow {
-                            color: iced::Color::from_rgba(
-                                0.0,
-                                0.0,
-                                0.0,
-                                style::TOAST_SHADOW_OPACITY,
-                            ),
-                            offset: iced::Vector::new(
-                                style::TOAST_SHADOW_OFFSET,
-                                style::TOAST_SHADOW_OFFSET,
-                            ),
-                            blur_radius: style::TOAST_SHADOW_BLUR,
-                        },
-                        level_to_color: Rc::new(move |level| match level {
-                            ToastLevel::Success => Some(palette.success.strong.color),
-                            ToastLevel::Warning => Some(palette.danger.strong.color),
-                            ToastLevel::Error => Some(palette.danger.strong.color),
-                            ToastLevel::Info => Some(palette.primary.strong.color),
-                        }),
-                    }
-                }),
+                .style(toast_style),
         }
     }
 }
