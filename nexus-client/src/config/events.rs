@@ -106,7 +106,7 @@ impl fmt::Display for EventType {
 // Notification Content
 // =============================================================================
 
-/// Level of detail in notification content
+/// Level of detail in event content (used for both notifications and toasts)
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum NotificationContent {

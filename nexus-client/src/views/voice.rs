@@ -32,6 +32,9 @@ const VOICE_BAR_PADDING: f32 = 6.0;
 /// Icon size for voice bar
 const VOICE_BAR_ICON_SIZE: f32 = 14.0;
 
+/// Padding for buttons inside the voice bar (tighter than bar padding)
+const VOICE_BAR_BUTTON_PADDING: f32 = 4.0;
+
 /// Fixed width for the deafen button area to prevent layout shifting
 const DEAFEN_BUTTON_WIDTH: f32 = 24.0;
 
@@ -159,7 +162,7 @@ pub fn build_voice_bar(
 
     let deafen_btn = button(deafen_icon)
         .on_press(Message::VoiceDeafenToggle)
-        .padding(4)
+        .padding(VOICE_BAR_BUTTON_PADDING)
         .style(voice_deafen_button_style);
 
     let deafen_button = tooltip(

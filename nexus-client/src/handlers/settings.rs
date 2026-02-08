@@ -552,10 +552,8 @@ impl NexusApp {
             let config = self.config.settings.event_settings.get(event_type);
 
             // Build a sample notification with current content level
-            let (summary, body) = crate::events::build_test_notification_content(
-                event_type,
-                config.notification_content,
-            );
+            let (summary, body) =
+                crate::events::build_test_event_content(event_type, config.notification_content);
 
             // Show the notification
             let mut notification = notify_rust::Notification::new();
@@ -622,7 +620,7 @@ impl NexusApp {
             let config = self.config.settings.event_settings.get(event_type);
 
             let (summary, body) =
-                crate::events::build_test_notification_content(event_type, config.toast_content);
+                crate::events::build_test_event_content(event_type, config.toast_content);
 
             let toast_text = if let Some(body) = body {
                 format!("{}: {}", summary, body)

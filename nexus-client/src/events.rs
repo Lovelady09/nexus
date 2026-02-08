@@ -149,7 +149,7 @@ impl EventContext {
 /// triggered. Each channel is handled independently.
 pub fn emit_event(app: &mut NexusApp, event_type: EventType, context: EventContext) {
     let config = app.config.settings.event_settings.get(event_type).clone();
-    let suppressed = !should_show_notification(app, event_type, &context);
+    let suppressed = !should_show_event(app, event_type, &context);
 
     // Handle desktop notification (skip for self-triggered events)
     if app.config.settings.notifications_enabled
@@ -158,7 +158,7 @@ pub fn emit_event(app: &mut NexusApp, event_type: EventType, context: EventConte
         && !context.is_from_self
     {
         let (summary, body) =
-            build_notification_content(event_type, &context, config.notification_content);
+            build_event_content(event_type, &context, config.notification_content);
 
         let mut notification = Notification::new();
         notification
@@ -186,8 +186,7 @@ pub fn emit_event(app: &mut NexusApp, event_type: EventType, context: EventConte
 
     // Handle toast notification (skip for self-triggered events)
     if config.show_toast && !suppressed && !context.is_from_self {
-        let (summary, body) =
-            build_notification_content(event_type, &context, config.toast_content);
+        let (summary, body) = build_event_content(event_type, &context, config.toast_content);
 
         // Combine summary and body into a single toast string
         let toast_text = if let Some(body) = body {
@@ -212,10 +211,10 @@ pub fn emit_event(app: &mut NexusApp, event_type: EventType, context: EventConte
     }
 }
 
-/// Build notification content for a test notification
+/// Build event content for a test notification or toast
 ///
 /// Returns (summary, body) with sample content for the given event type.
-pub fn build_test_notification_content(
+pub fn build_test_event_content(
     event_type: EventType,
     content_level: NotificationContent,
 ) -> (String, Option<String>) {
@@ -232,14 +231,14 @@ pub fn build_test_notification_content(
         channel: Some("#general".to_string()),
     };
 
-    build_notification_content(event_type, &context, content_level)
+    build_event_content(event_type, &context, content_level)
 }
 
-/// Determine if a notification should be shown based on app state
+/// Determine if an event should trigger notifications, toasts, or sounds
 ///
-/// This checks conditions beyond just "is notification enabled" - for example,
+/// This checks whether the event is suppressed based on app state - for example,
 /// whether the user is already viewing the relevant content.
-fn should_show_notification(app: &NexusApp, event_type: EventType, context: &EventContext) -> bool {
+fn should_show_event(app: &NexusApp, event_type: EventType, context: &EventContext) -> bool {
     match event_type {
         EventType::UserMessage => {
             // Don't notify if window is focused AND this connection is active AND we're viewing that user's message tab
@@ -374,8 +373,8 @@ fn should_show_notification(app: &NexusApp, event_type: EventType, context: &Eve
     }
 }
 
-/// Build notification summary and body based on content level
-fn build_notification_content(
+/// Build event summary and body based on content level
+fn build_event_content(
     event_type: EventType,
     context: &EventContext,
     content_level: NotificationContent,
