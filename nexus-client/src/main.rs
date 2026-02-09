@@ -75,9 +75,9 @@ fn get_ipc_socket_path() -> String {
     }
     #[cfg(windows)]
     {
-        // Windows: use named pipe
+        // Windows: use named pipe (full path required for connect_by_path)
         let username = std::env::var("USERNAME").unwrap_or_else(|_| "user".to_string());
-        format!("nexus-{}", username)
+        format!(r"\\.\pipe\nexus-{}", username)
     }
 }
 
