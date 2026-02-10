@@ -316,7 +316,7 @@ where
 /// This is NOT cryptographically secure and should NOT be used for authentication
 /// or security-sensitive purposes.
 pub(crate) fn generate_transfer_id() -> String {
-    use rand::Rng;
+    use rand::RngExt;
     let bytes: [u8; 4] = rand::rng().random();
     hex::encode(bytes)
 }

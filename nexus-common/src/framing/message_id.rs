@@ -2,7 +2,7 @@
 
 use std::fmt;
 
-use rand::Rng;
+use rand::RngExt;
 
 use super::MSG_ID_LENGTH;
 use super::error::FrameError;
