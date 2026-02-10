@@ -12,9 +12,9 @@ Pre-built binaries are available for all major platforms on the [GitHub Releases
 
 Download the appropriate tarball for your Mac:
 
-| Architecture | File |
-|--------------|------|
-| Intel | `nexusd-{version}-macos-x64.tar.gz` |
+| Architecture             | File                                  |
+| ------------------------ | ------------------------------------- |
+| Intel                    | `nexusd-{version}-macos-x64.tar.gz`   |
 | Apple Silicon (M1/M2/M3) | `nexusd-{version}-macos-arm64.tar.gz` |
 
 ```bash
@@ -34,9 +34,9 @@ cd nexusd
 
 Download the appropriate tarball for your architecture:
 
-| Architecture | File |
-|--------------|------|
-| x64 (Intel/AMD) | `nexusd-{version}-linux-x64.tar.gz` |
+| Architecture                         | File                                  |
+| ------------------------------------ | ------------------------------------- |
+| x64 (Intel/AMD)                      | `nexusd-{version}-linux-x64.tar.gz`   |
 | arm64 (Raspberry Pi 4+, ARM servers) | `nexusd-{version}-linux-arm64.tar.gz` |
 
 ```bash
@@ -77,6 +77,7 @@ Data is stored in `/var/lib/nexusd/` (created automatically by systemd).
 ### Building from Source
 
 Requirements:
+
 - Rust 1.91+ (2024 edition)
 - Linux, macOS, or Windows
 
@@ -112,6 +113,7 @@ Transfer port: 0.0.0.0:7501
 ```
 
 The server automatically:
+
 - Creates the data directory
 - Generates a self-signed TLS certificate
 - Initializes the SQLite database
@@ -130,13 +132,13 @@ The **first user to connect and log in** automatically becomes an administrator.
 
 ## Default Ports
 
-| Port | Protocol | Purpose |
-|------|----------|---------|
-| 7500 | TCP | Main BBS connection (chat, commands, browsing) |
-| 7500 | UDP | Voice chat audio (DTLS encrypted) |
-| 7501 | TCP | File transfers (downloads, uploads) |
-| 7502 | TCP | WebSocket BBS connection (requires `--websocket`) |
-| 7503 | TCP | WebSocket file transfers (requires `--websocket`) |
+| Port | Protocol | Purpose                                           |
+| ---- | -------- | ------------------------------------------------- |
+| 7500 | TCP      | Main BBS connection (chat, commands, browsing)    |
+| 7500 | UDP      | Voice chat audio (DTLS encrypted)                 |
+| 7501 | TCP      | File transfers (downloads, uploads)               |
+| 7502 | TCP      | WebSocket BBS connection (requires `--websocket`) |
+| 7503 | TCP      | WebSocket file transfers (requires `--websocket`) |
 
 All TCP ports use TLS encryption. UDP voice uses DTLS encryption with the same certificate. WebSocket ports are only active when `--websocket` is enabled.
 
@@ -144,13 +146,14 @@ All TCP ports use TLS encryption. UDP voice uses DTLS encryption with the same c
 
 The server stores data in platform-specific directories:
 
-| Platform | Default Location |
-|----------|------------------|
-| Linux | `~/.local/share/nexusd/` |
-| macOS | `~/Library/Application Support/nexusd/` |
-| Windows | `%APPDATA%\nexusd\` |
+| Platform | Default Location                        |
+| -------- | --------------------------------------- |
+| Linux    | `~/.local/share/nexusd/`                |
+| macOS    | `~/Library/Application Support/nexusd/` |
+| Windows  | `%APPDATA%\nexusd\`                     |
 
 Contents:
+
 - `nexus.db` — SQLite database (users, settings, news)
 - `cert.pem` — TLS certificate
 - `key.pem` — TLS private key

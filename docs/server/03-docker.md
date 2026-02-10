@@ -72,16 +72,17 @@ docker compose up -d
 
 ### Available Tags
 
-| Tag | Description |
-|-----|-------------|
-| `latest` | Most recent stable release |
-| `0.5.0` | Specific version |
-| `0.5` | Latest patch release in 0.5.x series |
-| `0` | Latest release in 0.x.x series |
+| Tag      | Description                          |
+| -------- | ------------------------------------ |
+| `latest` | Most recent stable release           |
+| `0.5.0`  | Specific version                     |
+| `0.5`    | Latest patch release in 0.5.x series |
+| `0`      | Latest release in 0.x.x series       |
 
 ### Supported Architectures
 
 Pre-built images support both architectures in a single manifest:
+
 - `linux/amd64` (x86_64)
 - `linux/arm64` (aarch64)
 
@@ -126,15 +127,15 @@ docker run -d \
 
 ## Environment Variables
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `NEXUS_BIND` | `0.0.0.0` | IP address to bind to |
-| `NEXUS_PORT` | `7500` | Main BBS port |
-| `NEXUS_TRANSFER_PORT` | `7501` | File transfer port |
-| `NEXUS_WEBSOCKET` | (empty) | Set to any value to enable WebSocket support |
-| `NEXUS_WEBSOCKET_PORT` | `7502` | WebSocket BBS port (requires `NEXUS_WEBSOCKET`) |
-| `NEXUS_TRANSFER_WEBSOCKET_PORT` | `7503` | WebSocket transfer port (requires `NEXUS_WEBSOCKET`) |
-| `NEXUS_DEBUG` | (empty) | Set to any value to enable debug logging |
+| Variable                        | Default   | Description                                          |
+| ------------------------------- | --------- | ---------------------------------------------------- |
+| `NEXUS_BIND`                    | `0.0.0.0` | IP address to bind to                                |
+| `NEXUS_PORT`                    | `7500`    | Main BBS port                                        |
+| `NEXUS_TRANSFER_PORT`           | `7501`    | File transfer port                                   |
+| `NEXUS_WEBSOCKET`               | (empty)   | Set to any value to enable WebSocket support         |
+| `NEXUS_WEBSOCKET_PORT`          | `7502`    | WebSocket BBS port (requires `NEXUS_WEBSOCKET`)      |
+| `NEXUS_TRANSFER_WEBSOCKET_PORT` | `7503`    | WebSocket transfer port (requires `NEXUS_WEBSOCKET`) |
+| `NEXUS_DEBUG`                   | (empty)   | Set to any value to enable debug logging             |
 
 ### Enable Debug Mode
 
@@ -200,9 +201,9 @@ volumes:
 
 ```yaml
 ports:
-  - "7500:7500/tcp"   # Main BBS
-  - "7500:7500/udp"   # Voice chat
-  - "7501:7501"       # File transfers
+  - "7500:7500/tcp" # Main BBS
+  - "7500:7500/udp" # Voice chat
+  - "7501:7501" # File transfers
   # Uncomment for WebSocket support (requires NEXUS_WEBSOCKET=true)
   # - "7502:7502"     # WebSocket BBS
   # - "7503:7503"     # WebSocket transfers
@@ -214,9 +215,9 @@ To use different external ports:
 
 ```yaml
 ports:
-  - "8500:7500/tcp"   # External 8500 → Internal 7500 (BBS)
-  - "8500:7500/udp"   # External 8500 → Internal 7500 (Voice)
-  - "8501:7501"       # External 8501 → Internal 7501
+  - "8500:7500/tcp" # External 8500 → Internal 7500 (BBS)
+  - "8500:7500/udp" # External 8500 → Internal 7500 (Voice)
+  - "8501:7501" # External 8501 → Internal 7501
 ```
 
 ### Specific Interface
@@ -353,7 +354,7 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '2'
+          cpus: "2"
           memory: 512M
 ```
 
@@ -387,6 +388,7 @@ docker compose logs
 ```
 
 Common issues:
+
 - Port already in use — change the external port
 - Permission denied — check volume permissions
 

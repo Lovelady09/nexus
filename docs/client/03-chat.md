@@ -106,10 +106,12 @@ Secret channels are hidden from `/channels` output for non-members. Viewing the 
 ### Starting a Conversation
 
 **Method 1: From the user list**
+
 1. Click a user's name in the user list
 2. Click the message icon in their action bar
 
 **Method 2: Using the /msg command**
+
 ```
 /msg alice Hey, how are you?
 ```
@@ -154,9 +156,9 @@ To send a message starting with `/`:
 
 ### Keyboard Shortcuts
 
-| Shortcut | Action |
-|----------|--------|
-| `Ctrl+Tab` (or `Cmd+Tab` on macOS) | Next tab |
+| Shortcut                                       | Action       |
+| ---------------------------------------------- | ------------ |
+| `Ctrl+Tab` (or `Cmd+Tab` on macOS)             | Next tab     |
 | `Ctrl+Shift+Tab` (or `Cmd+Shift+Tab` on macOS) | Previous tab |
 
 ### Window Commands
@@ -246,10 +248,10 @@ Mentions are case-insensitive and match on word boundaries.
 
 The user list (right panel) shows contextual users:
 
-| Active Tab | User List Shows |
-|------------|-----------------|
-| Console | All online users |
-| Channel | Channel members only |
+| Active Tab   | User List Shows        |
+| ------------ | ---------------------- |
+| Console      | All online users       |
+| Channel      | Channel members only   |
 | User Message | You and the other user |
 
 Click a user to see available actions (info, message, kick).
@@ -260,13 +262,13 @@ Click a user to see available actions (info, message, kick).
 
 Configure notifications for activity:
 
-| Event | Description | Default |
-|-------|-------------|---------|
-| Chat Message | Any message in a channel | Off |
-| Chat Mention | Your nickname mentioned | On |
-| Chat Join | User joins a channel you're in | Off |
-| Chat Leave | User leaves a channel you're in | Off |
-| User Message | 1-on-1 message received | On |
+| Event        | Description                     | Default |
+| ------------ | ------------------------------- | ------- |
+| Chat Message | Any message in a channel        | Off     |
+| Chat Mention | Your nickname mentioned         | On      |
+| Chat Join    | User joins a channel you're in  | Off     |
+| Chat Leave   | User leaves a channel you're in | Off     |
+| User Message | 1-on-1 message received         | On      |
 
 Notifications are suppressed when you're viewing that specific channel.
 
@@ -299,15 +301,16 @@ User message conversations are automatically saved to disk and restored when you
 
 Configure how long to keep history in **Settings > Chat > Chat History**:
 
-| Setting | Behavior |
-|---------|----------|
-| Forever | Keep all history indefinitely (default) |
-| 30 Days | Delete messages older than 30 days |
-| 14 Days | Delete messages older than 14 days |
-| 7 Days | Delete messages older than 7 days |
+| Setting  | Behavior                                          |
+| -------- | ------------------------------------------------- |
+| Forever  | Keep all history indefinitely (default)           |
+| 30 Days  | Delete messages older than 30 days                |
+| 14 Days  | Delete messages older than 14 days                |
+| 7 Days   | Delete messages older than 7 days                 |
 | Disabled | Don't save history (existing files are preserved) |
 
 **Notes:**
+
 - Console and channel history is not saved (cleared on disconnect)
 - Using `/clear` on a user message tab deletes both the display and the saved history file
 - Changing the retention setting only affects new connections
@@ -323,18 +326,18 @@ If you're logged in from multiple devices:
 
 ## Quick Reference
 
-| Command | Description |
-|---------|-------------|
-| `/join #channel` | Join or create a channel |
-| `/leave` | Leave current channel |
-| `/channels` | List available channels |
-| `/topic [set text\|clear]` | View or set channel topic |
-| `/secret [on\|off]` | Toggle secret mode (admin) |
-| `/msg user message` | Send user message |
-| `/me action` | Send action message |
-| `/clear` | Clear current tab history |
-| `/window` | Manage tabs |
-| `/focus target` | Switch to tab |
+| Command                    | Description                |
+| -------------------------- | -------------------------- |
+| `/join #channel`           | Join or create a channel   |
+| `/leave`                   | Leave current channel      |
+| `/channels`                | List available channels    |
+| `/topic [set text\|clear]` | View or set channel topic  |
+| `/secret [on\|off]`        | Toggle secret mode (admin) |
+| `/msg user message`        | Send user message          |
+| `/me action`               | Send action message        |
+| `/clear`                   | Clear current tab history  |
+| `/window`                  | Manage tabs                |
+| `/focus target`            | Switch to tab              |
 
 ## Next Steps
 

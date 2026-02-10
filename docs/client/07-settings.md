@@ -22,6 +22,7 @@ Settings are organized into tabs:
 Choose from 30 available themes:
 
 **Built-in Iced Themes:**
+
 - Light, Dark
 - Dracula
 - Nord
@@ -35,6 +36,7 @@ Choose from 30 available themes:
 - Ferra
 
 **Celestial Themes:**
+
 - Celestial Azul Light, Celestial Azul Dark
 - Celestial Pueril Light, Celestial Pueril Dark
 - Celestial Sea Light, Celestial Sea Dark
@@ -51,6 +53,7 @@ Your avatar appears next to your messages in chat.
 - If no avatar is set, an auto-generated identicon is used
 
 **Requirements:**
+
 - Maximum size: 128KB
 - Supported formats: PNG, JPEG, WebP, SVG
 
@@ -67,9 +70,9 @@ Leave blank to be prompted for a nickname when connecting to shared accounts.
 
 These settings are only available on Windows and Linux. macOS uses dock badges instead (planned for a future release).
 
-| Setting | Description |
-|---------|-------------|
-| **Show tray icon** | Display an icon in the system tray/notification area |
+| Setting              | Description                                               |
+| -------------------- | --------------------------------------------------------- |
+| **Show tray icon**   | Display an icon in the system tray/notification area      |
 | **Minimize to tray** | When closing the window, hide to tray instead of quitting |
 
 When enabled, the tray icon provides:
@@ -85,11 +88,13 @@ When enabled, the tray icon provides:
 - **Context menu** — Right-click for Show/Hide, Mute/Unmute (when in voice), and Quit
 
 **Tooltip information:**
+
 - Shows "Nexus BBS" with current status
 - When in voice: shows the channel or user you're chatting with
 - When you have unread messages: shows the count
 
 **Privacy Note:** The tray icon reveals some information to anyone who can see your screen:
+
 - Whether you're connected to any server
 - Whether you're in a voice chat (and with whom, via tooltip)
 - Whether you have unread direct messages
@@ -102,15 +107,16 @@ If privacy is a concern, leave the tray icon disabled.
 
 Controls how long user message history is retained on disk. User message conversations are stored locally and restored when you reconnect to a server.
 
-| Setting | Behavior |
-|---------|----------|
-| **Forever** | Keep all history indefinitely (default) |
-| **30 Days** | Delete messages older than 30 days |
-| **14 Days** | Delete messages older than 14 days |
-| **7 Days** | Delete messages older than 7 days |
+| Setting      | Behavior                                              |
+| ------------ | ----------------------------------------------------- |
+| **Forever**  | Keep all history indefinitely (default)               |
+| **30 Days**  | Delete messages older than 30 days                    |
+| **14 Days**  | Delete messages older than 14 days                    |
+| **7 Days**   | Delete messages older than 7 days                     |
 | **Disabled** | Don't save new history (existing files are preserved) |
 
 **Notes:**
+
 - Only user messages are saved; console and channel history is not persisted
 - Stored locally at `~/.local/share/nexus/history/` (Linux/macOS) or `%APPDATA%\nexus\history\` (Windows)
 - Changing this setting only affects new connections
@@ -137,11 +143,11 @@ When enabled, shows system messages when users connect or disconnect from the se
 
 Configure how timestamps appear on chat messages:
 
-| Setting | Description |
-|---------|-------------|
-| **Show timestamps** | Display timestamps on messages |
+| Setting              | Description                                             |
+| -------------------- | ------------------------------------------------------- |
+| **Show timestamps**  | Display timestamps on messages                          |
 | **Use 24-hour time** | Use 24-hour format (14:30) instead of 12-hour (2:30 PM) |
-| **Show seconds** | Include seconds in timestamps |
+| **Show seconds**     | Include seconds in timestamps                           |
 
 Timestamp sub-options are disabled when "Show timestamps" is off.
 
@@ -157,11 +163,11 @@ Click **Browse** to choose a different location.
 
 When enabled, limits how many transfers run simultaneously per server.
 
-| Setting | Description | Default |
-|---------|-------------|---------|
-| **Queue transfers** | Enable transfer limiting | Off |
-| **Download limit** | Max concurrent downloads per server | 2 |
-| **Upload limit** | Max concurrent uploads per server | 2 |
+| Setting             | Description                         | Default |
+| ------------------- | ----------------------------------- | ------- |
+| **Queue transfers** | Enable transfer limiting            | Off     |
+| **Download limit**  | Max concurrent downloads per server | 2       |
+| **Upload limit**    | Max concurrent uploads per server   | 2       |
 
 Set limits to 0 for unlimited concurrent transfers.
 
@@ -173,15 +179,16 @@ Set limits to 0 for unlimited concurrent transfers.
 
 Route connections through a SOCKS5 proxy (e.g., Tor).
 
-| Setting | Description |
-|---------|-------------|
-| **Use SOCKS5 proxy** | Enable proxy routing |
-| **Address** | Proxy server address (default: 127.0.0.1) |
-| **Port** | Proxy server port (default: 9050 for Tor) |
-| **Username** | Optional authentication username |
-| **Password** | Optional authentication password |
+| Setting              | Description                               |
+| -------------------- | ----------------------------------------- |
+| **Use SOCKS5 proxy** | Enable proxy routing                      |
+| **Address**          | Proxy server address (default: 127.0.0.1) |
+| **Port**             | Proxy server port (default: 9050 for Tor) |
+| **Username**         | Optional authentication username          |
+| **Password**         | Optional authentication password          |
 
 **Automatic Bypass:** The proxy is automatically bypassed for:
+
 - Loopback addresses (127.0.0.1, localhost)
 - Private/LAN addresses (10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16)
 - IPv6 ULA addresses (fc00::/7)
@@ -194,6 +201,7 @@ Configure voice chat settings. See [Voice Chat](10-voice-chat.md) for usage deta
 ### Output Device
 
 Select the audio output device for:
+
 - Voice chat audio from other users
 - Notification sounds
 
@@ -211,26 +219,29 @@ Choose **System Default** to use your operating system's default input device.
 
 Controls the audio quality and bandwidth usage:
 
-| Level | Bitrate | Description |
-|-------|---------|-------------|
-| Low | 16 kbps | For poor connections |
-| Medium | 32 kbps | Balanced quality/bandwidth |
-| High | 64 kbps | Good quality (default) |
+| Level     | Bitrate | Description                     |
+| --------- | ------- | ------------------------------- |
+| Low       | 16 kbps | For poor connections            |
+| Medium    | 32 kbps | Balanced quality/bandwidth      |
+| High      | 64 kbps | Good quality (default)          |
 | Very High | 96 kbps | Best quality, highest bandwidth |
 
 Higher quality sounds better but uses more bandwidth.
 
 ### Audio Processing
 
-Nexus uses WebRTC audio processing (the same technology as Discord, Google Meet, and Chrome) to improve voice quality:
+Nexus uses WebRTC AudioProcessing 2.0 (the same technology as Discord, Google Meet, and Chrome) to improve voice quality:
 
-| Setting | Default | Description |
-|---------|---------|-------------|
-| **Noise Suppression** | On | Filters out background noise (fans, keyboards, AC) |
-| **Echo Cancellation** | Off | Removes speaker audio picked up by your microphone |
-| **Automatic Gain Control** | On | Normalizes your volume automatically |
+| Setting                      | Default | Description                                                       |
+| ---------------------------- | ------- | ----------------------------------------------------------------- |
+| **Noise Suppression**        | On      | Filters out background noise (fans, AC, ambient noise)            |
+| **Echo Cancellation**        | Off     | Removes speaker audio picked up by your microphone                |
+| **Automatic Gain Control**   | On      | Normalizes your volume automatically                              |
+| **Keyboard Noise Reduction** | Off     | Suppresses transient sounds like keyboard clicks and mouse clicks |
 
 **Why is echo cancellation off by default?** Most users wear headphones, which don't cause echo. Echo cancellation adds processing overhead and is only needed when using speakers. Enable it if others hear themselves echoing back.
+
+**Why is keyboard noise reduction off by default?** Transient suppression can occasionally clip the start of words. Enable it if you type while talking and want to reduce keyboard noise for others.
 
 All audio processing settings apply immediately—no need to leave and rejoin voice.
 
@@ -241,12 +252,14 @@ The push-to-talk key for voice transmission. Click the field and press a key (wi
 Default: **Backtick** (`` ` ``)
 
 Supported keys:
+
 - Letters (A-Z)
 - Numbers (0-9)
 - Function keys (F1-F12)
 - Special keys (Space, Tab, Backtick, etc.)
 
 **Modifier key combinations** are also supported:
+
 - `Ctrl+Space`, `Alt+F1`, `Ctrl+Shift+A`, `Cmd+Space` (macOS)
 - Supported modifiers: Ctrl, Alt, Shift, Super/Cmd
 - The display is platform-aware—macOS shows "Cmd" while Windows/Linux show "Super"
@@ -255,9 +268,9 @@ Supported keys:
 
 How the push-to-talk key behaves:
 
-| Mode | Behavior |
-|------|----------|
-| **Hold** | Press and hold to talk; release to stop |
+| Mode       | Behavior                                                               |
+| ---------- | ---------------------------------------------------------------------- |
+| **Hold**   | Press and hold to talk; release to stop                                |
 | **Toggle** | Press once to enable voice-activated transmission; press again to stop |
 
 **Toggle mode with VAD:** When toggled on, your microphone is "hot" but only transmits when you're speaking. Background noise and silence are automatically filtered using Voice Activity Detection. Toggle off to fully mute.
@@ -266,9 +279,9 @@ How the push-to-talk key behaves:
 
 Adds a brief delay before stopping transmission when you release the PTT key. This prevents cutting off the end of words or sentences.
 
-| Setting | Description |
-|---------|-------------|
-| **Off** | Stop immediately (default) |
+| Setting   | Description                      |
+| --------- | -------------------------------- |
+| **Off**   | Stop immediately (default)       |
 | **100ms** | Continue for 100ms after release |
 | **300ms** | Continue for 300ms after release |
 | **500ms** | Continue for 500ms after release |
@@ -296,51 +309,51 @@ Configure desktop notifications and sounds for different events.
 
 ### Global Toggles
 
-| Setting | Description |
-|---------|-------------|
+| Setting                  | Description                                 |
+| ------------------------ | ------------------------------------------- |
 | **Enable notifications** | Master toggle for all desktop notifications |
-| **Enable sound** | Master toggle for all sound notifications |
-| **Volume** | Master volume for all sounds (0–100%) |
+| **Enable sound**         | Master toggle for all sound notifications   |
+| **Volume**               | Master volume for all sounds (0–100%)       |
 
 ### Event Types
 
 Select an event type from the dropdown to configure its notifications:
 
-| Event | Description |
-|-------|-------------|
-| **Broadcast** | Server-wide broadcast messages |
-| **Chat Join** | User joined a channel you're in |
-| **Chat Leave** | User left a channel you're in |
-| **Chat Message** | Regular chat messages |
-| **Chat Mention** | Messages mentioning your nickname |
-| **Connection Lost** | Disconnected from server |
-| **News Post** | New news posts published |
-| **Permissions Changed** | Your permissions were modified |
-| **Transfer Complete** | Download/upload finished |
-| **Transfer Failed** | Download/upload error |
-| **User Connected** | User joined the server |
-| **User Disconnected** | User left the server |
-| **User Kicked** | You were kicked from the server |
-| **User Message** | User message received |
-| **Voice Joined** | User joined voice chat |
-| **Voice Left** | User left voice chat |
+| Event                   | Description                       |
+| ----------------------- | --------------------------------- |
+| **Broadcast**           | Server-wide broadcast messages    |
+| **Chat Join**           | User joined a channel you're in   |
+| **Chat Leave**          | User left a channel you're in     |
+| **Chat Message**        | Regular chat messages             |
+| **Chat Mention**        | Messages mentioning your nickname |
+| **Connection Lost**     | Disconnected from server          |
+| **News Post**           | New news posts published          |
+| **Permissions Changed** | Your permissions were modified    |
+| **Transfer Complete**   | Download/upload finished          |
+| **Transfer Failed**     | Download/upload error             |
+| **User Connected**      | User joined the server            |
+| **User Disconnected**   | User left the server              |
+| **User Kicked**         | You were kicked from the server   |
+| **User Message**        | User message received             |
+| **Voice Joined**        | User joined voice chat            |
+| **Voice Left**          | User left voice chat              |
 
 ### Per-Event Settings
 
 For each event type:
 
-| Setting | Description |
-|---------|-------------|
-| **Show notification** | Display a desktop notification |
-| **Content level** | How much detail to show (Title Only, Summary, Full) |
-| **Test** | Send a test notification |
-| **Show toast** | Display a toast notification in the app |
-| **Content level** | How much detail to show (Title Only, Summary, Full) |
-| **Test** | Show a test toast |
-| **Play sound** | Play a sound when the event occurs |
-| **Always play** | Play sound even when normally suppressed |
-| **Sound** | Which sound to play |
-| **Test** | Play the selected sound |
+| Setting               | Description                                         |
+| --------------------- | --------------------------------------------------- |
+| **Show notification** | Display a desktop notification                      |
+| **Content level**     | How much detail to show (Title Only, Summary, Full) |
+| **Test**              | Send a test notification                            |
+| **Show toast**        | Display a toast notification in the app             |
+| **Content level**     | How much detail to show (Title Only, Summary, Full) |
+| **Test**              | Show a test toast                                   |
+| **Play sound**        | Play a sound when the event occurs                  |
+| **Always play**       | Play sound even when normally suppressed            |
+| **Sound**             | Which sound to play                                 |
+| **Test**              | Play the selected sound                             |
 
 ### Available Sounds
 
@@ -353,12 +366,14 @@ For each event type:
 ### Default Notifications
 
 **Notifications enabled by default:**
+
 - Broadcast, Chat Mention, Connection Lost
 - News Post, Permissions Changed
 - Transfer Complete, Transfer Failed
 - User Kicked, User Message
 
 **Notifications disabled by default** (can be noisy):
+
 - Chat Message, Chat Join, Chat Leave
 - User Connected, User Disconnected
 - Voice Joined, Voice Left
@@ -385,17 +400,18 @@ Settings are saved to `~/.config/nexus/config.json` (Linux/macOS) or `%APPDATA%\
 
 ## Keyboard Shortcuts
 
-| Shortcut | Action |
-|----------|--------|
-| `Escape` | Cancel and close settings |
-| `Enter` | Save settings (in text fields) |
-| `Tab` | Move to next field |
+| Shortcut | Action                         |
+| -------- | ------------------------------ |
+| `Escape` | Cancel and close settings      |
+| `Enter`  | Save settings (in text fields) |
+| `Tab`    | Move to next field             |
 
 ## Troubleshooting
 
 ### Settings not saving
 
 Check that you have write permission to the config directory:
+
 - Linux/macOS: `~/.config/nexus/`
 - Windows: `%APPDATA%\nexus\`
 

@@ -30,22 +30,22 @@ Pre-built binaries are available on the [Releases](https://github.com/zquestz/ne
 
 ### Client
 
-| Platform | Download |
-|----------|----------|
-| macOS (Universal) | `nexus-client-{version}-macos-universal.dmg` |
-| Windows (x64) | `nexus-client-{version}-windows-x64.msi` |
-| Linux (x64) | `.AppImage` or `.deb` |
-| Linux (arm64) | `.AppImage` or `.deb` |
-| Arch Linux (AUR) | [nexus-client](https://aur.archlinux.org/packages/nexus-client) or [nexus-client-git](https://aur.archlinux.org/packages/nexus-client-git) |
+| Platform          | Download                                                                                                                                   |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| macOS (Universal) | `nexus-client-{version}-macos-universal.dmg`                                                                                               |
+| Windows (x64)     | `nexus-client-{version}-windows-x64.msi`                                                                                                   |
+| Linux (x64)       | `.AppImage` or `.deb`                                                                                                                      |
+| Linux (arm64)     | `.AppImage` or `.deb`                                                                                                                      |
+| Arch Linux (AUR)  | [nexus-client](https://aur.archlinux.org/packages/nexus-client) or [nexus-client-git](https://aur.archlinux.org/packages/nexus-client-git) |
 
 ### Server
 
-| Platform | Download |
-|----------|----------|
-| macOS | `nexusd-{version}-macos-{x64,arm64}.tar.gz` |
-| Windows | `nexusd-{version}-windows-x64.zip` |
-| Linux | `nexusd-{version}-linux-{x64,arm64}.tar.gz` |
-| Docker | `ghcr.io/zquestz/nexusd:{version}` |
+| Platform | Download                                    |
+| -------- | ------------------------------------------- |
+| macOS    | `nexusd-{version}-macos-{x64,arm64}.tar.gz` |
+| Windows  | `nexusd-{version}-windows-x64.zip`          |
+| Linux    | `nexusd-{version}-linux-{x64,arm64}.tar.gz` |
+| Docker   | `ghcr.io/zquestz/nexusd:{version}`          |
 
 See [Client Installation](docs/client/01-getting-started.md) and [Server Installation](docs/server/01-getting-started.md) for detailed instructions.
 
@@ -74,7 +74,7 @@ See [Docker Documentation](docs/server/03-docker.md) for details.
 
 ## Screenshots
 
-*Coming soon*
+_Coming soon_
 
 ## Documentation
 
@@ -84,11 +84,11 @@ See [Docker Documentation](docs/server/03-docker.md) for details.
 
 ## Architecture
 
-| Crate | Description |
-|-------|-------------|
+| Crate          | Description                   |
+| -------------- | ----------------------------- |
 | `nexus-common` | Shared protocol and utilities |
-| `nexus-server` | Server daemon (`nexusd`) |
-| `nexus-client` | GUI client (`nexus`) |
+| `nexus-server` | Server daemon (`nexusd`)      |
+| `nexus-client` | GUI client (`nexus`)          |
 
 ## Build Requirements
 
@@ -101,16 +101,19 @@ See [Docker Documentation](docs/server/03-docker.md) for details.
 Voice chat requires ALSA and WebRTC audio processing build tools:
 
 **Debian/Ubuntu:**
+
 ```bash
 sudo apt install build-essential autoconf automake libtool pkg-config clang libasound2-dev
 ```
 
 **Arch Linux:**
+
 ```bash
 sudo pacman -S base-devel autoconf automake libtool pkg-config clang alsa-lib
 ```
 
 **Fedora:**
+
 ```bash
 sudo dnf install @development-tools autoconf automake libtool pkg-config clang alsa-lib-devel
 ```

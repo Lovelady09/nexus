@@ -16,11 +16,13 @@ Bookmarks save server connection details for quick access. Each bookmark stores:
 ### Creating Bookmarks
 
 **Method 1: While connecting**
+
 1. Fill out the connection form
 2. Check **Add to bookmarks**
 3. Click **Connect**
 
 **Method 2: From the server list**
+
 1. Click the bookmark icon in the server list header
 2. Fill out the server details
 3. Click **Save**
@@ -103,12 +105,12 @@ Route connections through a SOCKS5 proxy (e.g., Tor, SSH tunnel).
 
 ### Default Proxy Settings
 
-| Setting | Default | Description |
-|---------|---------|-------------|
-| Address | `127.0.0.1` | Proxy server hostname or IP |
-| Port | `9050` | Proxy server port (Tor default) |
-| Username | (empty) | Optional authentication |
-| Password | (empty) | Optional authentication |
+| Setting  | Default     | Description                     |
+| -------- | ----------- | ------------------------------- |
+| Address  | `127.0.0.1` | Proxy server hostname or IP     |
+| Port     | `9050`      | Proxy server port (Tor default) |
+| Username | (empty)     | Optional authentication         |
+| Password | (empty)     | Optional authentication         |
 
 ### Proxy Bypass
 
@@ -146,18 +148,18 @@ nexus://[user[:password]@]host[:port][/path]
 
 ### Examples
 
-| URI | Action |
-|-----|--------|
-| `nexus://server.com` | Connect as guest |
-| `nexus://server.com:8500` | Connect to custom port |
-| `nexus://alice@server.com` | Connect as alice (uses bookmark password if saved) |
-| `nexus://shared:pass@server.com` | Connect with shared account credentials |
-| `nexus://server.com/chat` | Connect and focus chat panel |
-| `nexus://server.com/chat/#general` | Connect and join #general channel |
-| `nexus://server.com/chat/alice` | Connect and open user message tab with alice |
-| `nexus://server.com/files/Music` | Connect and open Files to Music folder |
-| `nexus://server.com/news` | Connect and open News panel |
-| `nexus://server.com/info` | Connect and open Server Info panel |
+| URI                                | Action                                             |
+| ---------------------------------- | -------------------------------------------------- |
+| `nexus://server.com`               | Connect as guest                                   |
+| `nexus://server.com:8500`          | Connect to custom port                             |
+| `nexus://alice@server.com`         | Connect as alice (uses bookmark password if saved) |
+| `nexus://shared:pass@server.com`   | Connect with shared account credentials            |
+| `nexus://server.com/chat`          | Connect and focus chat panel                       |
+| `nexus://server.com/chat/#general` | Connect and join #general channel                  |
+| `nexus://server.com/chat/alice`    | Connect and open user message tab with alice       |
+| `nexus://server.com/files/Music`   | Connect and open Files to Music folder             |
+| `nexus://server.com/news`          | Connect and open News panel                        |
+| `nexus://server.com/info`          | Connect and open Server Info panel                 |
 
 ### Connection Behavior
 

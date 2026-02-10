@@ -100,11 +100,11 @@ By default, you won't receive notifications for your own posts.
 
 ## Permissions
 
-| Permission | Allows |
-|------------|--------|
-| `news_list` | View news posts |
-| `news_create` | Create new posts |
-| `news_edit` | Edit others' posts |
+| Permission    | Allows               |
+| ------------- | -------------------- |
+| `news_list`   | View news posts      |
+| `news_create` | Create new posts     |
+| `news_edit`   | Edit others' posts   |
 | `news_delete` | Delete others' posts |
 
 **Note:** You can always edit and delete your own posts, regardless of `news_edit` and `news_delete` permissions.
@@ -113,10 +113,10 @@ Admins automatically have all permissions.
 
 ## Keyboard Shortcuts
 
-| Shortcut | Action |
-|----------|--------|
+| Shortcut | Action                        |
+| -------- | ----------------------------- |
 | `Escape` | Cancel editing, close dialogs |
-| `Enter` | Confirm dialogs |
+| `Enter`  | Confirm dialogs               |
 
 ## Troubleshooting
 
@@ -135,6 +135,7 @@ You need `news_edit` or `news_delete` permission. Additionally, non-admins canno
 ### Image upload fails
 
 Check that your image:
+
 - Is under 700KB in size
 - Is a supported format (PNG, JPEG, WebP, SVG)
 - Is a valid image file

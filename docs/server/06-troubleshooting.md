@@ -9,6 +9,7 @@ This guide covers common issues when running the Nexus BBS server.
 **Cause:** Another process is using port 7500 or 7501.
 
 **Solutions:**
+
 1. Find the process: `lsof -i :7500` or `netstat -tlnp | grep 7500`
 2. Stop the conflicting process
 3. Or use different ports: `nexusd --port 8500 --transfer-port 8501`
@@ -18,6 +19,7 @@ This guide covers common issues when running the Nexus BBS server.
 **Cause:** Ports below 1024 require root privileges.
 
 **Solutions:**
+
 1. Use ports above 1024 (default 7500/7501 are fine)
 2. Or run as root (not recommended)
 3. Or use `setcap` on Linux: `sudo setcap 'cap_net_bind_service=+ep' /path/to/nexusd`
@@ -27,6 +29,7 @@ This guide covers common issues when running the Nexus BBS server.
 **Cause:** Cannot create or access the database file.
 
 **Solutions:**
+
 1. Check the parent directory exists
 2. Verify write permissions
 3. Ensure disk has free space
@@ -37,6 +40,7 @@ This guide covers common issues when running the Nexus BBS server.
 **Cause:** Cannot write certificate files.
 
 **Solutions:**
+
 1. Check permissions on the data directory
 2. Verify disk has free space
 3. Delete existing `cert.pem` and `key.pem` to regenerate
@@ -46,6 +50,7 @@ This guide covers common issues when running the Nexus BBS server.
 ### Clients can't connect
 
 **Checklist:**
+
 1. Server is running (`ps aux | grep nexusd`)
 2. Listening on correct interface (`--bind 0.0.0.0` for all interfaces)
 3. Firewall allows ports 7500 and 7501
@@ -54,11 +59,13 @@ This guide covers common issues when running the Nexus BBS server.
 ### Connections drop immediately
 
 **Possible causes:**
+
 - TLS handshake failure
 - Client/server version mismatch
 - Connection limit reached
 
 **Solutions:**
+
 1. Run with `--debug` to see detailed errors
 2. Check client and server versions are compatible
 3. Increase `max_connections_per_ip` if legitimate
@@ -68,6 +75,7 @@ This guide covers common issues when running the Nexus BBS server.
 **Cause:** Router doesn't support UPnP or it's disabled.
 
 **Solutions:**
+
 1. Enable UPnP in router settings
 2. Manually forward ports 7500 and 7501
 3. The server continues without UPnP — it's optional
@@ -87,6 +95,7 @@ Use the **Connection Monitor** panel to view all active connections in real-time
    - **Ban** — Block the user's IP
 
 This is useful for:
+
 - Identifying suspicious connections
 - Checking who is online from which IP
 - Managing shared account sessions
@@ -99,10 +108,12 @@ This is useful for:
 ### "Invalid username or password"
 
 **For users:**
+
 - Verify credentials are correct
 - Username is case-insensitive, password is case-sensitive
 
 **For admins:**
+
 - Check if account is disabled
 - Verify account exists in database
 
@@ -123,6 +134,7 @@ This is useful for:
 ### Transfers fail to start
 
 **Checklist:**
+
 1. Transfer port (7501) is accessible
 2. Firewall allows port 7501
 3. User has `file_download` or `file_upload` permission
@@ -130,6 +142,7 @@ This is useful for:
 ### Uploads rejected
 
 **Possible causes:**
+
 - User lacks `file_upload` permission
 - Folder doesn't allow uploads (missing `[NEXUS-UL]` suffix)
 - Disk full
@@ -147,10 +160,12 @@ find /path/to/files -name "*.part" -mtime +7 -delete
 ### High memory usage
 
 **Possible causes:**
+
 - Many concurrent connections
 - Large file transfers in progress
 
 **Solutions:**
+
 1. Reduce `max_connections_per_ip`
 2. Reduce `max_transfers_per_ip`
 3. Add more RAM
@@ -160,6 +175,7 @@ find /path/to/files -name "*.part" -mtime +7 -delete
 **Cause:** Directory contains many files.
 
 **Solutions:**
+
 1. Organize files into subdirectories
 2. Archive old files
 3. Use faster storage (SSD)
@@ -171,6 +187,7 @@ find /path/to/files -name "*.part" -mtime +7 -delete
 **Cause:** The search index hasn't been rebuilt after file changes.
 
 **Solutions:**
+
 1. Wait for automatic reindex (default: every 5 minutes when files change)
 2. Use `/reindex` command as admin to force rebuild
 3. Check `file_reindex_interval` setting in Server Info panel
@@ -178,10 +195,12 @@ find /path/to/files -name "*.part" -mtime +7 -delete
 ### Search not working at all
 
 **Possible causes:**
+
 - Index file is missing or corrupted
 - Index is being rebuilt
 
 **Solutions:**
+
 1. Check if `files.idx` exists in the data directory
 2. Run `/reindex` command to rebuild
 3. Check server logs for index errors
@@ -191,6 +210,7 @@ find /path/to/files -name "*.part" -mtime +7 -delete
 **Cause:** Files added directly to filesystem (not through BBS upload) aren't indexed until next rebuild.
 
 **Solutions:**
+
 1. Run `/reindex` command after adding files via filesystem
 2. Or wait for the automatic reindex interval
 
@@ -199,6 +219,7 @@ find /path/to/files -name "*.part" -mtime +7 -delete
 **Cause:** Large number of files in the file area.
 
 **Solutions:**
+
 1. This is normal for large file collections
 2. The server remains responsive during reindex (runs in background)
 3. Searches use the old index until the new one is ready
@@ -210,6 +231,7 @@ find /path/to/files -name "*.part" -mtime +7 -delete
 **Cause:** Multiple processes accessing the database, or crashed process left lock.
 
 **Solutions:**
+
 1. Ensure only one server instance is running
 2. Stop the server and restart
 3. Check for stale lock files
@@ -217,6 +239,7 @@ find /path/to/files -name "*.part" -mtime +7 -delete
 ### Database corrupted
 
 **Solutions:**
+
 1. Restore from backup
 2. As last resort, delete and start fresh (loses all data)
 
@@ -231,6 +254,7 @@ docker logs nexusd
 ```
 
 Common causes:
+
 - Port conflict
 - Volume permission issues
 
@@ -257,6 +281,7 @@ nexusd --debug
 ```
 
 Shows:
+
 - Connection events
 - Authentication attempts
 - Error details

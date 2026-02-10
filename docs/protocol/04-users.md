@@ -52,9 +52,9 @@ Client                                        Server
 
 Request the list of users.
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `all` | boolean | No | If true, return all accounts (default: false, online only) |
+| Field | Type    | Required | Description                                                |
+| ----- | ------- | -------- | ---------------------------------------------------------- |
+| `all` | boolean | No       | If true, return all accounts (default: false, online only) |
 
 **Online users example:**
 
@@ -82,11 +82,11 @@ NX|8|UserList|a1b2c3d4e5f6|14|{"all":false}
 
 Response containing the user list.
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `success` | boolean | Yes | Whether the request succeeded |
-| `error` | string | If failure | Error message |
-| `users` | array | If success | Array of `UserInfo` objects |
+| Field     | Type    | Required   | Description                   |
+| --------- | ------- | ---------- | ----------------------------- |
+| `success` | boolean | Yes        | Whether the request succeeded |
+| `error`   | string  | If failure | Error message                 |
+| `users`   | array   | If success | Array of `UserInfo` objects   |
 
 **Success example (online users):**
 
@@ -179,9 +179,9 @@ Note: When `all: true`, `login_time` contains the account creation time, and `se
 
 Request detailed information about a specific user.
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `nickname` | string | Yes | Display name of the user to look up |
+| Field      | Type   | Required | Description                         |
+| ---------- | ------ | -------- | ----------------------------------- |
+| `nickname` | string | Yes      | Display name of the user to look up |
 
 **Example:**
 
@@ -197,11 +197,11 @@ Note: Use `nickname`, not `username`. For regular accounts these are the same, b
 
 Response containing detailed user information.
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `success` | boolean | Yes | Whether the request succeeded |
-| `error` | string | If failure | Error message |
-| `user` | object | If success | `UserInfoDetailed` object |
+| Field     | Type    | Required   | Description                   |
+| --------- | ------- | ---------- | ----------------------------- |
+| `success` | boolean | Yes        | Whether the request succeeded |
+| `error`   | string  | If failure | Error message                 |
+| `user`    | object  | If success | `UserInfoDetailed` object     |
 
 **Success example (non-admin requesting):**
 
@@ -262,9 +262,9 @@ Note: `is_admin` and `addresses` are only included when an admin is requesting i
 
 Broadcast when a user connects.
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `user` | object | Yes | `UserInfo` object for the connected user |
+| Field  | Type   | Required | Description                              |
+| ------ | ------ | -------- | ---------------------------------------- |
+| `user` | object | Yes      | `UserInfo` object for the connected user |
 
 **Example:**
 
@@ -308,10 +308,10 @@ Broadcast when a user connects.
 
 Broadcast when a user disconnects.
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `session_id` | integer | Yes | Session ID that disconnected |
-| `nickname` | string | Yes | Display name of the disconnected user |
+| Field        | Type    | Required | Description                           |
+| ------------ | ------- | -------- | ------------------------------------- |
+| `session_id` | integer | Yes      | Session ID that disconnected          |
+| `nickname`   | string  | Yes      | Display name of the disconnected user |
 
 **Example:**
 
@@ -326,10 +326,10 @@ Broadcast when a user disconnects.
 
 Broadcast when a user's account is modified (e.g., username change, admin status change).
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `previous_username` | string | Yes | Username before the update |
-| `user` | object | Yes | Updated `UserInfo` object |
+| Field               | Type   | Required | Description                |
+| ------------------- | ------ | -------- | -------------------------- |
+| `previous_username` | string | Yes      | Username before the update |
+| `user`              | object | Yes      | Updated `UserInfo` object  |
 
 **Example (username change):**
 
@@ -377,46 +377,46 @@ Broadcast when a user's account is modified (e.g., username change, admin status
 
 Basic user information returned in lists and broadcasts.
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `username` | string | Account username (database key) |
-| `nickname` | string | Display name (equals username for regular accounts) |
-| `login_time` | integer | Unix timestamp of login (or creation for `all: true`) |
-| `is_admin` | boolean | Whether user has admin privileges |
-| `is_shared` | boolean | Whether this is a shared account session |
-| `session_ids` | array | List of active session IDs |
-| `locale` | string | User's preferred locale |
-| `avatar` | string | Avatar as data URI (null if none) |
-| `is_away` | boolean | Whether user is away |
-| `status` | string | User's status message (null if none) |
+| Field         | Type    | Description                                           |
+| ------------- | ------- | ----------------------------------------------------- |
+| `username`    | string  | Account username (database key)                       |
+| `nickname`    | string  | Display name (equals username for regular accounts)   |
+| `login_time`  | integer | Unix timestamp of login (or creation for `all: true`) |
+| `is_admin`    | boolean | Whether user has admin privileges                     |
+| `is_shared`   | boolean | Whether this is a shared account session              |
+| `session_ids` | array   | List of active session IDs                            |
+| `locale`      | string  | User's preferred locale                               |
+| `avatar`      | string  | Avatar as data URI (null if none)                     |
+| `is_away`     | boolean | Whether user is away                                  |
+| `status`      | string  | User's status message (null if none)                  |
 
 ### UserInfoDetailed
 
 Extended user information for individual queries.
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `username` | string | Account username |
-| `nickname` | string | Display name |
-| `login_time` | integer | Unix timestamp of login |
-| `is_shared` | boolean | Whether this is a shared account |
-| `session_ids` | array | List of active session IDs |
-| `features` | array | Enabled client features |
-| `created_at` | integer | Account creation timestamp |
-| `locale` | string | User's preferred locale |
-| `avatar` | string | Avatar as data URI (null if none) |
-| `is_away` | boolean | Whether user is away |
-| `status` | string | User's status message (null if none) |
-| `is_admin` | boolean | Admin status (only visible to admins) |
-| `addresses` | array | IP addresses (only visible to admins) |
+| Field         | Type    | Description                           |
+| ------------- | ------- | ------------------------------------- |
+| `username`    | string  | Account username                      |
+| `nickname`    | string  | Display name                          |
+| `login_time`  | integer | Unix timestamp of login               |
+| `is_shared`   | boolean | Whether this is a shared account      |
+| `session_ids` | array   | List of active session IDs            |
+| `features`    | array   | Enabled client features               |
+| `created_at`  | integer | Account creation timestamp            |
+| `locale`      | string  | User's preferred locale               |
+| `avatar`      | string  | Avatar as data URI (null if none)     |
+| `is_away`     | boolean | Whether user is away                  |
+| `status`      | string  | User's status message (null if none)  |
+| `is_admin`    | boolean | Admin status (only visible to admins) |
+| `addresses`   | array   | IP addresses (only visible to admins) |
 
 ## Permissions
 
-| Permission | Required For |
-|------------|--------------|
-| `user_list` | `UserList` with `all: false` (online users) |
-| `user_create` OR `user_edit` OR `user_delete` | `UserList` with `all: true` (all accounts) |
-| `user_info` | `UserInfo` (individual user details) |
+| Permission                                    | Required For                                |
+| --------------------------------------------- | ------------------------------------------- |
+| `user_list`                                   | `UserList` with `all: false` (online users) |
+| `user_create` OR `user_edit` OR `user_delete` | `UserList` with `all: true` (all accounts)  |
+| `user_info`                                   | `UserInfo` (individual user details)        |
 
 Admins have all permissions automatically.
 
@@ -424,10 +424,10 @@ Admins have all permissions automatically.
 
 The protocol distinguishes between username and nickname:
 
-| Field | Description | Example (Regular) | Example (Shared) |
-|-------|-------------|-------------------|------------------|
-| `username` | Database account identifier | `alice` | `shared_acct` |
-| `nickname` | Display name shown in UI | `alice` | `Visitor` |
+| Field      | Description                 | Example (Regular) | Example (Shared) |
+| ---------- | --------------------------- | ----------------- | ---------------- |
+| `username` | Database account identifier | `alice`           | `shared_acct`    |
+| `nickname` | Display name shown in UI    | `alice`           | `Visitor`        |
 
 **Golden rule:** "Users type what they see." When users need to reference another user (e.g., for user messages, kicks, info), they use the `nickname` field.
 
@@ -438,11 +438,13 @@ For regular accounts, `nickname` always equals `username`. For shared accounts, 
 A single account can have multiple concurrent sessions (e.g., desktop and mobile).
 
 **Regular accounts:**
+
 - All sessions share the same `username` and `nickname`
 - `session_ids` array contains all active session IDs
 - User appears once in the list with multiple session IDs
 
 **Shared accounts:**
+
 - All sessions share the same `username`
 - Each session has a unique `nickname`
 - Each session appears as a separate entry in the user list
@@ -462,9 +464,9 @@ Users can set an away status and/or a status message to indicate their availabil
 
 Set the user as away, optionally with a status message.
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `message` | string | No | Optional status message (max 128 characters) |
+| Field     | Type   | Required | Description                                  |
+| --------- | ------ | -------- | -------------------------------------------- |
+| `message` | string | No       | Optional status message (max 128 characters) |
 
 **Example (away with message):**
 
@@ -486,10 +488,10 @@ Set the user as away, optionally with a status message.
 
 Response to `UserAway` request.
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `success` | boolean | Yes | Whether the request succeeded |
-| `error` | string | If failure | Error message |
+| Field     | Type    | Required   | Description                   |
+| --------- | ------- | ---------- | ----------------------------- |
+| `success` | boolean | Yes        | Whether the request succeeded |
+| `error`   | string  | If failure | Error message                 |
 
 ### UserBack (Client → Server)
 
@@ -505,18 +507,18 @@ This message has no fields:
 
 Response to `UserBack` request.
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `success` | boolean | Yes | Whether the request succeeded |
-| `error` | string | If failure | Error message |
+| Field     | Type    | Required   | Description                   |
+| --------- | ------- | ---------- | ----------------------------- |
+| `success` | boolean | Yes        | Whether the request succeeded |
+| `error`   | string  | If failure | Error message                 |
 
 ### UserStatus (Client → Server)
 
 Set or clear a status message without changing away state.
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `status` | string | No | Status message (null to clear, max 128 characters) |
+| Field    | Type   | Required | Description                                        |
+| -------- | ------ | -------- | -------------------------------------------------- |
+| `status` | string | No       | Status message (null to clear, max 128 characters) |
 
 **Example (set status):**
 
@@ -538,10 +540,10 @@ Set or clear a status message without changing away state.
 
 Response to `UserStatus` request.
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `success` | boolean | Yes | Whether the request succeeded |
-| `error` | string | If failure | Error message |
+| Field     | Type    | Required   | Description                   |
+| --------- | ------- | ---------- | ----------------------------- |
+| `success` | boolean | Yes        | Whether the request succeeded |
+| `error`   | string  | If failure | Error message                 |
 
 ### Away/Status Behavior
 
@@ -554,6 +556,7 @@ Response to `UserStatus` request.
 ### Validation
 
 Status messages must:
+
 - Be 128 characters or fewer
 - Not contain newlines
 - Not contain control characters
@@ -566,23 +569,23 @@ User lists are sorted alphabetically by nickname (case-insensitive).
 
 ### UserList Errors
 
-| Error | Cause | Connection |
-|-------|-------|------------|
-| Not logged in | Sent before authentication | Disconnected |
-| Authentication error | Invalid session | Disconnected |
-| Permission denied | Missing required permission | Stays connected |
+| Error                | Cause                       | Connection      |
+| -------------------- | --------------------------- | --------------- |
+| Not logged in        | Sent before authentication  | Disconnected    |
+| Authentication error | Invalid session             | Disconnected    |
+| Permission denied    | Missing required permission | Stays connected |
 
 ### UserInfo Errors
 
-| Error | Cause | Connection |
-|-------|-------|------------|
-| Not logged in | Sent before authentication | Disconnected |
-| Authentication error | Invalid session | Disconnected |
-| Nickname is empty | Empty nickname provided | Stays connected |
-| Nickname too long | Exceeds 32 characters | Stays connected |
-| Invalid nickname | Contains invalid characters | Stays connected |
-| User not online | Nickname not found in online users | Stays connected |
-| Permission denied | Missing `user_info` permission | Stays connected |
+| Error                | Cause                              | Connection      |
+| -------------------- | ---------------------------------- | --------------- |
+| Not logged in        | Sent before authentication         | Disconnected    |
+| Authentication error | Invalid session                    | Disconnected    |
+| Nickname is empty    | Empty nickname provided            | Stays connected |
+| Nickname too long    | Exceeds 32 characters              | Stays connected |
+| Invalid nickname     | Contains invalid characters        | Stays connected |
+| User not online      | Nickname not found in online users | Stays connected |
+| Permission denied    | Missing `user_info` permission     | Stays connected |
 
 ## Notes
 

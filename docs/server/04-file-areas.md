@@ -24,11 +24,11 @@ files/
 
 ## Default Location
 
-| Platform | Default Path |
-|----------|--------------|
-| Linux | `~/.local/share/nexusd/files/` |
-| macOS | `~/Library/Application Support/nexusd/files/` |
-| Windows | `%APPDATA%\nexusd\files\` |
+| Platform | Default Path                                  |
+| -------- | --------------------------------------------- |
+| Linux    | `~/.local/share/nexusd/files/`                |
+| macOS    | `~/Library/Application Support/nexusd/files/` |
+| Windows  | `%APPDATA%\nexusd\files\`                     |
 
 Override with the `--file-root` option:
 
@@ -69,11 +69,11 @@ Once created, those users will see their personal folder instead of the shared a
 
 Control folder behavior using name suffixes:
 
-| Suffix | Type | Users Can |
-|--------|------|-----------|
-| *(none)* | Default | Browse, download |
-| ` [NEXUS-UL]` | Upload | Browse, download, upload |
-| ` [NEXUS-DB]` | Drop Box | Upload only (blind) |
+| Suffix                 | Type          | Users Can                     |
+| ---------------------- | ------------- | ----------------------------- |
+| _(none)_               | Default       | Browse, download              |
+| ` [NEXUS-UL]`          | Upload        | Browse, download, upload      |
+| ` [NEXUS-DB]`          | Drop Box      | Upload only (blind)           |
 | ` [NEXUS-DB-username]` | User Drop Box | Upload; named user can browse |
 
 **Important:** A space is required before the bracket.
@@ -104,17 +104,18 @@ mkdir "For Alice [NEXUS-DB-alice]"
 ### Client Display
 
 Clients strip the suffix for display:
+
 - `Uploads [NEXUS-UL]` appears as "Uploads"
 - `For Alice [NEXUS-DB-alice]` appears as "For Alice"
 
 ## Drop Box Visibility
 
-| User | `[NEXUS-DB]` | `[NEXUS-DB-alice]` | `[NEXUS-DB-bob]` |
-|------|--------------|---------------------|-------------------|
-| Alice | Upload only | Full access | Upload only |
-| Bob | Upload only | Upload only | Full access |
-| Admin | Full access | Full access | Full access |
-| Others | Upload only | Upload only | Upload only |
+| User   | `[NEXUS-DB]` | `[NEXUS-DB-alice]` | `[NEXUS-DB-bob]` |
+| ------ | ------------ | ------------------ | ---------------- |
+| Alice  | Upload only  | Full access        | Upload only      |
+| Bob    | Upload only  | Upload only        | Full access      |
+| Admin  | Full access  | Full access        | Full access      |
+| Others | Upload only  | Upload only        | Upload only      |
 
 ## Example File Structure
 
@@ -156,20 +157,20 @@ Symlinks can point outside the file root. Only admins can create symlinks (via f
 
 File operations require specific permissions:
 
-| Permission | Allows |
-|------------|--------|
-| `file_list` | Browse directories |
-| `file_download` | Download files |
-| `file_upload` | Upload files (to upload folders) |
-| `file_info` | View file details |
-| `file_create_dir` | Create directories |
-| `file_rename` | Rename files/directories |
-| `file_move` | Move files/directories |
-| `file_copy` | Copy files/directories |
-| `file_delete` | Delete files/directories |
-| `file_root` | Access entire file root (admin) |
-| `file_search` | Search files by name |
-| `file_reindex` | Trigger index rebuild (admin) |
+| Permission        | Allows                           |
+| ----------------- | -------------------------------- |
+| `file_list`       | Browse directories               |
+| `file_download`   | Download files                   |
+| `file_upload`     | Upload files (to upload folders) |
+| `file_info`       | View file details                |
+| `file_create_dir` | Create directories               |
+| `file_rename`     | Rename files/directories         |
+| `file_move`       | Move files/directories           |
+| `file_copy`       | Copy files/directories           |
+| `file_delete`     | Delete files/directories         |
+| `file_root`       | Access entire file root (admin)  |
+| `file_search`     | Search files by name             |
+| `file_reindex`    | Trigger index rebuild (admin)    |
 
 Admins have all permissions automatically.
 
@@ -207,11 +208,11 @@ The server maintains a search index for fast file lookups.
 
 ### Index Location
 
-| Platform | Default Path |
-|----------|--------------|
-| Linux | `~/.local/share/nexusd/files.idx` |
-| macOS | `~/Library/Application Support/nexusd/files.idx` |
-| Windows | `%APPDATA%\nexusd\files.idx` |
+| Platform | Default Path                                     |
+| -------- | ------------------------------------------------ |
+| Linux    | `~/.local/share/nexusd/files.idx`                |
+| macOS    | `~/Library/Application Support/nexusd/files.idx` |
+| Windows  | `%APPDATA%\nexusd\files.idx`                     |
 
 ### Automatic Rebuilds
 
@@ -225,8 +226,8 @@ The index rebuilds automatically when:
 
 Configure the reindex interval via the Server Info panel (admin only) or programmatically:
 
-| Setting | Default | Description |
-|---------|---------|-------------|
+| Setting                 | Default   | Description                                                                                  |
+| ----------------------- | --------- | -------------------------------------------------------------------------------------------- |
 | `file_reindex_interval` | 5 minutes | How often to check for changes and rebuild if dirty. Set to 0 to disable automatic rebuilds. |
 
 ### Manual Rebuild
@@ -239,6 +240,7 @@ Admins with `file_reindex` permission can force a rebuild:
 ### Index Format
 
 The index is a CSV file containing:
+
 - File path (relative to file root)
 - File name
 - Size in bytes
@@ -277,6 +279,7 @@ ls -la ~/.local/share/nexusd/files/users/
 ### Drop box contents not visible
 
 Drop boxes are only visible to:
+
 - Admins (for `[NEXUS-DB]`)
 - The named user and admins (for `[NEXUS-DB-username]`)
 

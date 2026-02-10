@@ -23,10 +23,10 @@ Client                                        Server
 
 Generic error message sent when a request fails.
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `message` | string | Yes | Human-readable error message (translated) |
-| `command` | string | No | Command that caused the error |
+| Field     | Type   | Required | Description                               |
+| --------- | ------ | -------- | ----------------------------------------- |
+| `message` | string | Yes      | Human-readable error message (translated) |
+| `command` | string | No       | Command that caused the error             |
 
 **Example:**
 
@@ -57,37 +57,37 @@ NX|5|Error|a1b2c3d4e5f6|45|{"message":"Permission denied","command":"ChatSend"}
 
 Most messages have dedicated response types with `success`, `error`, and sometimes `error_kind` fields:
 
-| Message | Response Type | Has `error_kind` |
-|---------|---------------|------------------|
-| `Handshake` | `HandshakeResponse` | No |
-| `Login` | `LoginResponse` | No |
-| `ChatTopicUpdate` | `ChatTopicUpdateResponse` | No |
-| `UserList` | `UserListResponse` | No |
-| `UserInfo` | `UserInfoResponse` | No |
-| `UserCreate` | `UserCreateResponse` | No |
-| `UserEdit` | `UserEditResponse` | No |
-| `UserUpdate` | `UserUpdateResponse` | No |
-| `UserDelete` | `UserDeleteResponse` | No |
-| `UserKick` | `UserKickResponse` | No |
-| `UserMessage` | `UserMessageResponse` | No |
-| `UserBroadcast` | `UserBroadcastResponse` | No |
-| `ServerInfoUpdate` | `ServerInfoUpdateResponse` | No |
-| `NewsList` | `NewsListResponse` | No |
-| `NewsShow` | `NewsShowResponse` | No |
-| `NewsCreate` | `NewsCreateResponse` | No |
-| `NewsEdit` | `NewsEditResponse` | No |
-| `NewsUpdate` | `NewsUpdateResponse` | No |
-| `NewsDelete` | `NewsDeleteResponse` | No |
-| `FileList` | `FileListResponse` | No |
-| `FileInfo` | `FileInfoResponse` | No |
-| `FileCreateDir` | `FileCreateDirResponse` | No |
-| `FileRename` | `FileRenameResponse` | No |
-| `FileMove` | `FileMoveResponse` | ✅ Yes |
-| `FileCopy` | `FileCopyResponse` | ✅ Yes |
-| `FileDelete` | `FileDeleteResponse` | No |
-| `FileDownload` | `FileDownloadResponse` | ✅ Yes |
-| `FileUpload` | `FileUploadResponse` | ✅ Yes |
-| — | `TransferComplete` | ✅ Yes |
+| Message            | Response Type              | Has `error_kind` |
+| ------------------ | -------------------------- | ---------------- |
+| `Handshake`        | `HandshakeResponse`        | No               |
+| `Login`            | `LoginResponse`            | No               |
+| `ChatTopicUpdate`  | `ChatTopicUpdateResponse`  | No               |
+| `UserList`         | `UserListResponse`         | No               |
+| `UserInfo`         | `UserInfoResponse`         | No               |
+| `UserCreate`       | `UserCreateResponse`       | No               |
+| `UserEdit`         | `UserEditResponse`         | No               |
+| `UserUpdate`       | `UserUpdateResponse`       | No               |
+| `UserDelete`       | `UserDeleteResponse`       | No               |
+| `UserKick`         | `UserKickResponse`         | No               |
+| `UserMessage`      | `UserMessageResponse`      | No               |
+| `UserBroadcast`    | `UserBroadcastResponse`    | No               |
+| `ServerInfoUpdate` | `ServerInfoUpdateResponse` | No               |
+| `NewsList`         | `NewsListResponse`         | No               |
+| `NewsShow`         | `NewsShowResponse`         | No               |
+| `NewsCreate`       | `NewsCreateResponse`       | No               |
+| `NewsEdit`         | `NewsEditResponse`         | No               |
+| `NewsUpdate`       | `NewsUpdateResponse`       | No               |
+| `NewsDelete`       | `NewsDeleteResponse`       | No               |
+| `FileList`         | `FileListResponse`         | No               |
+| `FileInfo`         | `FileInfoResponse`         | No               |
+| `FileCreateDir`    | `FileCreateDirResponse`    | No               |
+| `FileRename`       | `FileRenameResponse`       | No               |
+| `FileMove`         | `FileMoveResponse`         | ✅ Yes           |
+| `FileCopy`         | `FileCopyResponse`         | ✅ Yes           |
+| `FileDelete`       | `FileDeleteResponse`       | No               |
+| `FileDownload`     | `FileDownloadResponse`     | ✅ Yes           |
+| `FileUpload`       | `FileUploadResponse`       | ✅ Yes           |
+| —                  | `TransferComplete`         | ✅ Yes           |
 
 ### Generic Error Messages
 
@@ -104,27 +104,27 @@ The `error_kind` field provides machine-readable error classification for progra
 
 ### File Operation Errors
 
-| Value | Description | Typical Response |
-|-------|-------------|------------------|
-| `exists` | Destination already exists | Offer overwrite option |
-| `not_found` | Source/path doesn't exist | Show error, clear clipboard |
-| `permission` | Permission denied | Show error |
-| `invalid_path` | Invalid path format | Show error |
+| Value          | Description                | Typical Response            |
+| -------------- | -------------------------- | --------------------------- |
+| `exists`       | Destination already exists | Offer overwrite option      |
+| `not_found`    | Source/path doesn't exist  | Show error, clear clipboard |
+| `permission`   | Permission denied          | Show error                  |
+| `invalid_path` | Invalid path format        | Show error                  |
 
 ### Transfer Errors
 
-| Value | Description | Typical Response |
-|-------|-------------|------------------|
-| `not_found` | Path doesn't exist | Show error |
-| `permission` | Permission denied | Show error |
-| `invalid` | Invalid input (malformed path) | Show error |
+| Value                 | Description                    | Typical Response             |
+| --------------------- | ------------------------------ | ---------------------------- |
+| `not_found`           | Path doesn't exist             | Show error                   |
+| `permission`          | Permission denied              | Show error                   |
+| `invalid`             | Invalid input (malformed path) | Show error                   |
 | `unsupported_version` | Protocol version not supported | Show incompatibility message |
-| `disk_full` | Disk full | Free space and retry |
-| `hash_mismatch` | SHA-256 verification failed | Restart transfer |
-| `io_error` | File I/O error | Show error, retry later |
-| `protocol_error` | Invalid/unexpected data | Reconnect |
-| `exists` | File already exists (upload) | Admin must delete existing |
-| `conflict` | Concurrent upload in progress | Wait and retry |
+| `disk_full`           | Disk full                      | Free space and retry         |
+| `hash_mismatch`       | SHA-256 verification failed    | Restart transfer             |
+| `io_error`            | File I/O error                 | Show error, retry later      |
+| `protocol_error`      | Invalid/unexpected data        | Reconnect                    |
+| `exists`              | File already exists (upload)   | Admin must delete existing   |
+| `conflict`            | Concurrent upload in progress  | Wait and retry               |
 
 ## Connection Behavior
 
@@ -134,24 +134,24 @@ Errors can either keep the connection open or disconnect the client:
 
 These errors terminate the connection after sending:
 
-| Category | Examples |
-|----------|----------|
-| Authentication | Not logged in, invalid session |
-| Protocol | Invalid frame, unknown message type |
-| Critical validation | Invalid handshake, malformed login |
-| Some validation | Chat message too long, broadcast validation |
+| Category            | Examples                                    |
+| ------------------- | ------------------------------------------- |
+| Authentication      | Not logged in, invalid session              |
+| Protocol            | Invalid frame, unknown message type         |
+| Critical validation | Invalid handshake, malformed login          |
+| Some validation     | Chat message too long, broadcast validation |
 
 ### Non-Disconnect Errors
 
 These errors allow the connection to continue:
 
-| Category | Examples |
-|----------|----------|
-| Permission | Permission denied |
-| Not found | User not online, file not found |
-| Validation | Topic too long, nickname invalid |
-| Conflict | Username exists, file exists |
-| Self-operation | Cannot kick yourself |
+| Category       | Examples                         |
+| -------------- | -------------------------------- |
+| Permission     | Permission denied                |
+| Not found      | User not online, file not found  |
+| Validation     | Topic too long, nickname invalid |
+| Conflict       | Username exists, file exists     |
+| Self-operation | Cannot kick yourself             |
 
 ## Error Translation
 
@@ -164,6 +164,7 @@ All human-readable error messages are translated **server-side** before being se
 **Example:** A client with `locale: "de"` receives German error messages:
 
 **English:**
+
 ```json
 {
   "message": "Permission denied",
@@ -172,6 +173,7 @@ All human-readable error messages are translated **server-side** before being se
 ```
 
 **German (same error):**
+
 ```json
 {
   "message": "Zugriff verweigert",
@@ -180,6 +182,7 @@ All human-readable error messages are translated **server-side** before being se
 ```
 
 **Japanese (same error):**
+
 ```json
 {
   "message": "権限がありません",
@@ -189,83 +192,83 @@ All human-readable error messages are translated **server-side** before being se
 
 ### Supported Locales
 
-| Code | Language |
-|------|----------|
-| `en` | English (default fallback) |
-| `de` | German |
-| `es` | Spanish |
-| `fr` | French |
-| `it` | Italian |
-| `ja` | Japanese |
-| `ko` | Korean |
-| `nl` | Dutch |
-| `pt-BR` | Portuguese (Brazil) |
-| `pt-PT` | Portuguese (Portugal) |
-| `ru` | Russian |
-| `zh-CN` | Chinese (Simplified) |
-| `zh-TW` | Chinese (Traditional) |
+| Code    | Language                   |
+| ------- | -------------------------- |
+| `en`    | English (default fallback) |
+| `de`    | German                     |
+| `es`    | Spanish                    |
+| `fr`    | French                     |
+| `it`    | Italian                    |
+| `ja`    | Japanese                   |
+| `ko`    | Korean                     |
+| `nl`    | Dutch                      |
+| `pt-BR` | Portuguese (Brazil)        |
+| `pt-PT` | Portuguese (Portugal)      |
+| `ru`    | Russian                    |
+| `zh-CN` | Chinese (Simplified)       |
+| `zh-TW` | Chinese (Traditional)      |
 
 ## Common Errors
 
 ### Authentication Errors
 
-| Error | Cause | Connection |
-|-------|-------|------------|
-| Not logged in | Request sent before `Login` | Disconnected |
-| Authentication error | Session ID not found | Disconnected |
-| Invalid username or password | Login credentials wrong | Disconnected |
-| Account is disabled | Account disabled by admin | Disconnected |
-| Guest access is not enabled | Guest account is disabled | Disconnected |
+| Error                        | Cause                       | Connection   |
+| ---------------------------- | --------------------------- | ------------ |
+| Not logged in                | Request sent before `Login` | Disconnected |
+| Authentication error         | Session ID not found        | Disconnected |
+| Invalid username or password | Login credentials wrong     | Disconnected |
+| Account is disabled          | Account disabled by admin   | Disconnected |
+| Guest access is not enabled  | Guest account is disabled   | Disconnected |
 
 ### Permission Errors
 
-| Error | Cause | Connection |
-|-------|-------|------------|
-| Permission denied | Missing required permission | Stays connected |
-| Cannot edit admin users | Non-admin editing admin | Stays connected |
-| Cannot delete admin users | Non-admin deleting admin | Stays connected |
-| Cannot kick admin users | Attempting to kick admin | Stays connected |
+| Error                     | Cause                       | Connection      |
+| ------------------------- | --------------------------- | --------------- |
+| Permission denied         | Missing required permission | Stays connected |
+| Cannot edit admin users   | Non-admin editing admin     | Stays connected |
+| Cannot delete admin users | Non-admin deleting admin    | Stays connected |
+| Cannot kick admin users   | Attempting to kick admin    | Stays connected |
 
 ### Validation Errors
 
-| Error | Cause | Connection |
-|-------|-------|------------|
-| Message cannot be empty | Empty or whitespace message | Varies |
-| Message too long | Exceeds 1024 characters | Varies |
-| Message cannot contain newlines | Contains `\n` or `\r` | Varies |
-| Invalid characters | Contains control characters | Varies |
-| Username is empty | Empty username | Stays connected |
-| Username too long | Exceeds 32 characters | Stays connected |
-| Invalid username | Invalid characters in username | Stays connected |
-| Password is empty | Empty password | Stays connected |
-| Password too long | Exceeds 256 characters | Stays connected |
+| Error                           | Cause                          | Connection      |
+| ------------------------------- | ------------------------------ | --------------- |
+| Message cannot be empty         | Empty or whitespace message    | Varies          |
+| Message too long                | Exceeds 1024 characters        | Varies          |
+| Message cannot contain newlines | Contains `\n` or `\r`          | Varies          |
+| Invalid characters              | Contains control characters    | Varies          |
+| Username is empty               | Empty username                 | Stays connected |
+| Username too long               | Exceeds 32 characters          | Stays connected |
+| Invalid username                | Invalid characters in username | Stays connected |
+| Password is empty               | Empty password                 | Stays connected |
+| Password too long               | Exceeds 256 characters         | Stays connected |
 
 ### Resource Errors
 
-| Error | Cause | Connection |
-|-------|-------|------------|
-| User not found | Account doesn't exist | Stays connected |
-| User is not online | Nickname not found online | Stays connected |
-| Username already exists | Name conflict | Stays connected |
-| News item not found | Invalid news ID | Stays connected |
-| File not found | Path doesn't exist | Stays connected |
-| Directory not found | Parent directory missing | Stays connected |
-| Directory is not empty | Delete on non-empty dir | Stays connected |
+| Error                   | Cause                     | Connection      |
+| ----------------------- | ------------------------- | --------------- |
+| User not found          | Account doesn't exist     | Stays connected |
+| User is not online      | Nickname not found online | Stays connected |
+| Username already exists | Name conflict             | Stays connected |
+| News item not found     | Invalid news ID           | Stays connected |
+| File not found          | Path doesn't exist        | Stays connected |
+| Directory not found     | Parent directory missing  | Stays connected |
+| Directory is not empty  | Delete on non-empty dir   | Stays connected |
 
 ### Self-Operation Errors
 
-| Error | Cause | Connection |
-|-------|-------|------------|
-| Cannot delete your own account | Self-deletion | Stays connected |
-| Cannot kick yourself | Self-kick | Stays connected |
-| Cannot send a message to yourself | Self-message | Stays connected |
+| Error                             | Cause         | Connection      |
+| --------------------------------- | ------------- | --------------- |
+| Cannot delete your own account    | Self-deletion | Stays connected |
+| Cannot kick yourself              | Self-kick     | Stays connected |
+| Cannot send a message to yourself | Self-message  | Stays connected |
 
 ### Protected Account Errors
 
-| Error | Cause | Connection |
-|-------|-------|------------|
-| Cannot delete the guest account | Deleting guest | Stays connected |
-| Cannot rename the guest account | Renaming guest | Stays connected |
+| Error                                    | Cause                   | Connection      |
+| ---------------------------------------- | ----------------------- | --------------- |
+| Cannot delete the guest account          | Deleting guest          | Stays connected |
+| Cannot rename the guest account          | Renaming guest          | Stays connected |
 | Cannot change the guest account password | Changing guest password | Stays connected |
 
 ## Client Error Handling
@@ -309,10 +312,10 @@ The `command` field helps with debugging:
 
 Servers log security-relevant errors:
 
-| Logged | Examples |
-|--------|----------|
+| Logged | Examples                                                                 |
+| ------ | ------------------------------------------------------------------------ |
 | ✅ Yes | Unauthenticated requests, permission denied, admin protection violations |
-| ❌ No | Validation failures, self-operation prevention, not-found errors |
+| ❌ No  | Validation failures, self-operation prevention, not-found errors         |
 
 ## Notes
 

@@ -8,30 +8,30 @@ This guide covers all command-line options for the Nexus BBS server.
 nexusd [OPTIONS]
 ```
 
-| Option | Short | Default | Description |
-|--------|-------|---------|-------------|
-| `--bind <IP>` | `-b` | `0.0.0.0` | IP address to bind to |
-| `--port <PORT>` | `-p` | `7500` | Main BBS port |
-| `--transfer-port <PORT>` | `-t` | `7501` | File transfer port |
-| `--database <PATH>` | `-d` | (platform default) | Database file path |
-| `--file-root <PATH>` | `-f` | (platform default) | File area root directory |
-| `--debug` | | `false` | Enable debug logging |
-| `--upnp` | | `false` | Enable UPnP port forwarding |
-| `--websocket` | | `false` | Enable WebSocket support |
-| `--websocket-port <PORT>` | | `7502` | WebSocket BBS port (requires `--websocket`) |
-| `--transfer-websocket-port <PORT>` | | `7503` | WebSocket transfer port (requires `--websocket`) |
-| `--help` | `-h` | | Show help message |
-| `--version` | `-V` | | Show version |
+| Option                             | Short | Default            | Description                                      |
+| ---------------------------------- | ----- | ------------------ | ------------------------------------------------ |
+| `--bind <IP>`                      | `-b`  | `0.0.0.0`          | IP address to bind to                            |
+| `--port <PORT>`                    | `-p`  | `7500`             | Main BBS port                                    |
+| `--transfer-port <PORT>`           | `-t`  | `7501`             | File transfer port                               |
+| `--database <PATH>`                | `-d`  | (platform default) | Database file path                               |
+| `--file-root <PATH>`               | `-f`  | (platform default) | File area root directory                         |
+| `--debug`                          |       | `false`            | Enable debug logging                             |
+| `--upnp`                           |       | `false`            | Enable UPnP port forwarding                      |
+| `--websocket`                      |       | `false`            | Enable WebSocket support                         |
+| `--websocket-port <PORT>`          |       | `7502`             | WebSocket BBS port (requires `--websocket`)      |
+| `--transfer-websocket-port <PORT>` |       | `7503`             | WebSocket transfer port (requires `--websocket`) |
+| `--help`                           | `-h`  |                    | Show help message                                |
+| `--version`                        | `-V`  |                    | Show version                                     |
 
 ## Network Binding
 
-| Address | Description |
-|---------|-------------|
-| `0.0.0.0` | All IPv4 interfaces (default) |
-| `::` | All IPv6 interfaces |
-| `127.0.0.1` | Localhost only (testing) |
-| `192.168.1.100` | Specific IPv4 address |
-| `200:abc:...` | Yggdrasil address |
+| Address         | Description                   |
+| --------------- | ----------------------------- |
+| `0.0.0.0`       | All IPv4 interfaces (default) |
+| `::`            | All IPv6 interfaces           |
+| `127.0.0.1`     | Localhost only (testing)      |
+| `192.168.1.100` | Specific IPv4 address         |
+| `200:abc:...`   | Yggdrasil address             |
 
 ```bash
 # IPv4 (default)
@@ -61,13 +61,13 @@ Ports below 1024 require root/admin privileges on most systems.
 
 ### Port Summary
 
-| Port | Default | Protocol | Purpose |
-|------|---------|----------|---------|
-| BBS | 7500 | TCP | Main protocol |
-| Voice | 7500 | UDP | Voice chat audio (DTLS encrypted) |
-| Transfer | 7501 | TCP | File transfers |
-| WebSocket BBS | 7502 | TCP | Main protocol (WebSocket over TLS) |
-| WebSocket Transfer | 7503 | TCP | File transfers (WebSocket over TLS) |
+| Port               | Default | Protocol | Purpose                             |
+| ------------------ | ------- | -------- | ----------------------------------- |
+| BBS                | 7500    | TCP      | Main protocol                       |
+| Voice              | 7500    | UDP      | Voice chat audio (DTLS encrypted)   |
+| Transfer           | 7501    | TCP      | File transfers                      |
+| WebSocket BBS      | 7502    | TCP      | Main protocol (WebSocket over TLS)  |
+| WebSocket Transfer | 7503    | TCP      | File transfers (WebSocket over TLS) |
 
 WebSocket ports are only active when `--websocket` is enabled. Voice chat uses the same port number as BBS but over UDP; the operating system routes packets based on protocol.
 
@@ -75,11 +75,11 @@ WebSocket ports are only active when `--websocket` is enabled. Voice chat uses t
 
 ### Default Locations
 
-| Platform | Default Path |
-|----------|--------------|
-| Linux | `~/.local/share/nexusd/nexus.db` |
-| macOS | `~/Library/Application Support/nexusd/nexus.db` |
-| Windows | `%APPDATA%\nexusd\nexus.db` |
+| Platform | Default Path                                    |
+| -------- | ----------------------------------------------- |
+| Linux    | `~/.local/share/nexusd/nexus.db`                |
+| macOS    | `~/Library/Application Support/nexusd/nexus.db` |
+| Windows  | `%APPDATA%\nexusd\nexus.db`                     |
 
 ### Custom Location
 
@@ -97,11 +97,11 @@ On Unix systems, the database file is automatically set to mode `0600` (owner re
 
 ### Default Locations
 
-| Platform | Default Path |
-|----------|--------------|
-| Linux | `~/.local/share/nexusd/files/` |
-| macOS | `~/Library/Application Support/nexusd/files/` |
-| Windows | `%APPDATA%\nexusd\files\` |
+| Platform | Default Path                                  |
+| -------- | --------------------------------------------- |
+| Linux    | `~/.local/share/nexusd/files/`                |
+| macOS    | `~/Library/Application Support/nexusd/files/` |
+| Windows  | `%APPDATA%\nexusd\files\`                     |
 
 ### Custom Location
 
@@ -128,6 +128,7 @@ nexusd --debug
 ```
 
 Debug mode shows:
+
 - User connect/disconnect events
 - Connection errors
 
@@ -142,6 +143,7 @@ nexusd --websocket
 WebSocket connections use the same TLS certificate and protocol as TCP connections. The only difference is the transport layer (WebSocket binary messages instead of raw TCP).
 
 When enabled:
+
 - Port 7502 accepts WebSocket BBS connections
 - Port 7503 accepts WebSocket file transfers
 - `ServerInfo` includes `transfer_websocket_port` for clients
@@ -158,6 +160,7 @@ nexusd --upnp --websocket
 ```
 
 UPnP behavior:
+
 - Requests port mappings for BBS and transfer ports
 - If `--websocket` is enabled, also forwards WebSocket ports
 - Lease duration: 1 hour
@@ -165,6 +168,7 @@ UPnP behavior:
 - Mappings removed on graceful shutdown
 
 **Requirements:**
+
 - Router must support UPnP
 - UPnP must be enabled on the router
 - Server must be on the same network as the router
@@ -175,15 +179,16 @@ If UPnP fails, the server continues without port forwarding and prints a warning
 
 Certificates are stored in the same directory as the database:
 
-| Platform | Certificate Location |
-|----------|---------------------|
-| Linux | `~/.local/share/nexusd/cert.pem` |
-| macOS | `~/Library/Application Support/nexusd/cert.pem` |
-| Windows | `%APPDATA%\nexusd\cert.pem` |
+| Platform | Certificate Location                            |
+| -------- | ----------------------------------------------- |
+| Linux    | `~/.local/share/nexusd/cert.pem`                |
+| macOS    | `~/Library/Application Support/nexusd/cert.pem` |
+| Windows  | `%APPDATA%\nexusd\cert.pem`                     |
 
 ### Automatic Generation
 
 On first run, the server generates:
+
 - `cert.pem` — Self-signed certificate (valid 10 years)
 - `key.pem` — Private key
 
@@ -205,16 +210,16 @@ Clients use this fingerprint for Trust On First Use (TOFU) verification.
 
 Some settings are configured at runtime by admins through the client:
 
-| Setting | Description |
-|---------|-------------|
-| Server name | Display name shown to users |
-| Server description | Description shown to users |
-| Server image | Logo/icon (max 700KB) |
-| Max connections per IP | Limit concurrent connections (default: 5) |
-| Max transfers per IP | Limit concurrent file transfers (default: 5) |
-| File reindex interval | Minutes between search index rebuilds (default: 5, 0 to disable) |
-| Persistent channels | Space-separated channel names that survive restart (default: `#nexus`) |
-| Auto-join channels | Space-separated channels users join on login (default: `#nexus`) |
+| Setting                | Description                                                            |
+| ---------------------- | ---------------------------------------------------------------------- |
+| Server name            | Display name shown to users                                            |
+| Server description     | Description shown to users                                             |
+| Server image           | Logo/icon (max 700KB)                                                  |
+| Max connections per IP | Limit concurrent connections (default: 5)                              |
+| Max transfers per IP   | Limit concurrent file transfers (default: 5)                           |
+| File reindex interval  | Minutes between search index rebuilds (default: 5, 0 to disable)       |
+| Persistent channels    | Space-separated channel names that survive restart (default: `#nexus`) |
+| Auto-join channels     | Space-separated channels users join on login (default: `#nexus`)       |
 
 These settings are stored in the database and persist across restarts.
 

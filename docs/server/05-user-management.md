@@ -10,12 +10,12 @@ The **first user to connect** to a new server automatically becomes an administr
 
 ## User Types
 
-| Type | Description |
-|------|-------------|
-| **Admin** | Full access to all features and settings |
-| **Regular** | Access controlled by assigned permissions |
-| **Shared** | Multiple people share one account with nicknames |
-| **Guest** | Built-in shared account with no password |
+| Type        | Description                                      |
+| ----------- | ------------------------------------------------ |
+| **Admin**   | Full access to all features and settings         |
+| **Regular** | Access controlled by assigned permissions        |
+| **Shared**  | Multiple people share one account with nicknames |
+| **Guest**   | Built-in shared account with no password         |
 
 ## Managing Users
 
@@ -66,70 +66,70 @@ Permissions control what actions users can perform. Admins have all permissions 
 
 ### Chat Permissions
 
-| Permission | Allows |
-|------------|--------|
-| `chat_receive` | Receive chat messages |
-| `chat_send` | Send chat messages |
-| `chat_topic` | View the chat topic |
+| Permission        | Allows                |
+| ----------------- | --------------------- |
+| `chat_receive`    | Receive chat messages |
+| `chat_send`       | Send chat messages    |
+| `chat_topic`      | View the chat topic   |
 | `chat_topic_edit` | Change the chat topic |
 
 ### User Permissions
 
-| Permission | Allows |
-|------------|--------|
-| `user_list` | See online users |
-| `user_info` | View user details |
-| `user_message` | Send user messages |
-| `user_broadcast` | Send broadcasts to all users |
-| `user_kick` | Kick users from the server |
-| `user_create` | Create new user accounts |
-| `user_edit` | Edit user accounts |
-| `user_delete` | Delete user accounts |
-| `connection_monitor` | View all active connections |
+| Permission           | Allows                       |
+| -------------------- | ---------------------------- |
+| `user_list`          | See online users             |
+| `user_info`          | View user details            |
+| `user_message`       | Send user messages           |
+| `user_broadcast`     | Send broadcasts to all users |
+| `user_kick`          | Kick users from the server   |
+| `user_create`        | Create new user accounts     |
+| `user_edit`          | Edit user accounts           |
+| `user_delete`        | Delete user accounts         |
+| `connection_monitor` | View all active connections  |
 
 ### News Permissions
 
-| Permission | Allows |
-|------------|--------|
-| `news_list` | View news posts |
-| `news_create` | Create news posts |
-| `news_edit` | Edit others' news posts |
+| Permission    | Allows                    |
+| ------------- | ------------------------- |
+| `news_list`   | View news posts           |
+| `news_create` | Create news posts         |
+| `news_edit`   | Edit others' news posts   |
 | `news_delete` | Delete others' news posts |
 
 **Note:** Users can always edit and delete their own news posts.
 
 ### File Permissions
 
-| Permission | Allows |
-|------------|--------|
-| `file_list` | Browse files and directories |
-| `file_download` | Download files |
-| `file_upload` | Upload files (to upload folders) |
-| `file_info` | View file details |
-| `file_create_dir` | Create directories |
-| `file_rename` | Rename files/directories |
-| `file_move` | Move files/directories |
-| `file_copy` | Copy files/directories |
-| `file_delete` | Delete files/directories |
-| `file_root` | Access entire file root |
-| `file_search` | Search files by name |
-| `file_reindex` | Trigger search index rebuild |
+| Permission        | Allows                           |
+| ----------------- | -------------------------------- |
+| `file_list`       | Browse files and directories     |
+| `file_download`   | Download files                   |
+| `file_upload`     | Upload files (to upload folders) |
+| `file_info`       | View file details                |
+| `file_create_dir` | Create directories               |
+| `file_rename`     | Rename files/directories         |
+| `file_move`       | Move files/directories           |
+| `file_copy`       | Copy files/directories           |
+| `file_delete`     | Delete files/directories         |
+| `file_root`       | Access entire file root          |
+| `file_search`     | Search files by name             |
+| `file_reindex`    | Trigger search index rebuild     |
 
 ### Ban Permissions
 
-| Permission | Allows |
-|------------|--------|
+| Permission   | Allows                        |
+| ------------ | ----------------------------- |
 | `ban_create` | Ban users by IP or CIDR range |
-| `ban_delete` | Remove bans |
-| `ban_list` | View active bans |
+| `ban_delete` | Remove bans                   |
+| `ban_list`   | View active bans              |
 
 ### Trust Permissions
 
-| Permission | Allows |
-|------------|--------|
+| Permission     | Allows                         |
+| -------------- | ------------------------------ |
 | `trust_create` | Trust IPs to bypass ban checks |
-| `trust_delete` | Remove trusted IPs |
-| `trust_list` | View trusted IPs |
+| `trust_delete` | Remove trusted IPs             |
+| `trust_list`   | View trusted IPs               |
 
 **Note:** Trusted IPs bypass the ban list entirely. This enables whitelist-only server configurations by banning all IPs and selectively trusting specific ones.
 
@@ -179,6 +179,7 @@ Only admins can manage other admins.
 When a non-admin creates or edits a user, they can only grant permissions they possess themselves.
 
 Example: A moderator with `[chat_send, user_kick, news_edit]` tries to grant `[chat_send, file_upload]`:
+
 - Result: Only `chat_send` is granted (they don't have `file_upload`)
 
 Admins bypass this restriction.
@@ -217,13 +218,13 @@ The guest account is a special pre-configured shared account.
 
 ### Guest Account Properties
 
-| Property | Value |
-|----------|-------|
-| Username | `guest` |
-| Password | Empty (leave blank) |
-| Type | Shared account |
-| Deletable | No |
-| Renamable | No |
+| Property  | Value               |
+| --------- | ------------------- |
+| Username  | `guest`             |
+| Password  | Empty (leave blank) |
+| Type      | Shared account      |
+| Deletable | No                  |
+| Renamable | No                  |
 
 ### Enabling Guest Access
 
@@ -258,13 +259,13 @@ You cannot delete the guest account, only disable it.
 
 Admins can configure server-wide settings through the **Server Info** panel:
 
-| Setting | Description |
-|---------|-------------|
-| Server name | Display name shown to users |
-| Description | Server description |
-| Server image | Logo/icon (max 700KB) |
-| Max connections per IP | Limit concurrent connections (default: 5) |
-| Max transfers per IP | Limit concurrent file transfers (default: 5) |
+| Setting                | Description                                  |
+| ---------------------- | -------------------------------------------- |
+| Server name            | Display name shown to users                  |
+| Description            | Server description                           |
+| Server image           | Logo/icon (max 700KB)                        |
+| Max connections per IP | Limit concurrent connections (default: 5)    |
+| Max transfers per IP   | Limit concurrent file transfers (default: 5) |
 
 ### Connection Limits
 

@@ -9,6 +9,7 @@ This guide covers common issues and their solutions when using the Nexus BBS cli
 **Cause:** The server isn't accepting connections on the specified address/port.
 
 **Solutions:**
+
 1. Verify the server address and port are correct
 2. Ensure the server is running
 3. Check if a firewall is blocking the connection
@@ -19,6 +20,7 @@ This guide covers common issues and their solutions when using the Nexus BBS cli
 **Cause:** The server is unreachable or too slow to respond.
 
 **Solutions:**
+
 1. Check your internet connection
 2. Verify the server address is correct
 3. The server may be overloaded — try again later
@@ -29,6 +31,7 @@ This guide covers common issues and their solutions when using the Nexus BBS cli
 **Cause:** The server's TLS certificate has changed since your last connection.
 
 **What to do:**
+
 1. **If expected** (server reinstall, new certificate): Click **Accept** to save the new fingerprint
 2. **If unexpected**: Contact the server operator to verify — this could indicate a security issue
 3. Click **Cancel** to disconnect without saving
@@ -36,11 +39,13 @@ This guide covers common issues and their solutions when using the Nexus BBS cli
 ### Disconnected immediately after login
 
 **Possible causes:**
+
 - Your account may be disabled
 - You may have been kicked or banned
 - The server may have connection limits
 
 **Solutions:**
+
 1. Check if you received an error message before disconnect
 2. Contact the server administrator
 3. Try a different account if available
@@ -50,6 +55,7 @@ This guide covers common issues and their solutions when using the Nexus BBS cli
 ### "Invalid username or password" error
 
 **Solutions:**
+
 1. Verify your username and password are correct
 2. Usernames are case-insensitive, but passwords are case-sensitive
 3. Check if your account exists on this server
@@ -72,6 +78,7 @@ This guide covers common issues and their solutions when using the Nexus BBS cli
 **Cause:** The server may not have guest access enabled.
 
 **Solutions:**
+
 1. Leave username and password empty, enter only a nickname
 2. Contact the server admin to verify guest access is available
 3. Create a regular account if guest access isn't enabled
@@ -83,6 +90,7 @@ This guide covers common issues and their solutions when using the Nexus BBS cli
 **Cause:** Missing font support for certain characters.
 
 **Solutions:**
+
 1. Nexus includes fonts for most languages, but some characters may not render
 2. Ensure your system has fonts installed for the language in question
 3. Report the issue if common characters aren't displaying correctly
@@ -90,6 +98,7 @@ This guide covers common issues and their solutions when using the Nexus BBS cli
 ### Theme colors look wrong
 
 **Solutions:**
+
 1. Try a different theme in Settings > General
 2. Some themes may not work well with certain display configurations
 3. The Dark or Light themes are the most widely tested
@@ -97,6 +106,7 @@ This guide covers common issues and their solutions when using the Nexus BBS cli
 ### Window is too large/small
 
 **Solutions:**
+
 1. Resize the window by dragging its edges
 2. Window size is saved automatically when you close the app
 3. If the window is off-screen, delete `~/.config/nexus/config.json` to reset
@@ -106,6 +116,7 @@ This guide covers common issues and their solutions when using the Nexus BBS cli
 ### Messages not appearing
 
 **Solutions:**
+
 1. Check that you're viewing the correct tab (channel vs. user message tabs)
 2. Scroll down — you may be viewing older messages
 3. Verify you're connected (check the server list)
@@ -113,11 +124,13 @@ This guide covers common issues and their solutions when using the Nexus BBS cli
 ### Can't send messages
 
 **Possible causes:**
+
 - You may not have `chat_send` permission
 - The message may be too long (max 4096 characters)
 - Connection may have been lost
 
 **Solutions:**
+
 1. Check for error messages in chat
 2. Verify your connection status
 3. Contact the server admin about permissions
@@ -125,6 +138,7 @@ This guide covers common issues and their solutions when using the Nexus BBS cli
 ### Notifications not working
 
 **Solutions:**
+
 1. Check Settings > Events > Enable notifications is on
 2. Verify the specific event has notifications enabled
 3. Check your system notification settings
@@ -133,6 +147,7 @@ This guide covers common issues and their solutions when using the Nexus BBS cli
 ### Sounds not playing
 
 **Solutions:**
+
 1. Check Settings > Events > Enable sound is on
 2. Verify volume is above 0%
 3. Check your system audio settings
@@ -143,10 +158,12 @@ This guide covers common issues and their solutions when using the Nexus BBS cli
 ### Downloads fail immediately
 
 **Possible causes:**
+
 - Transfer port (7501) may be blocked
 - You may not have `file_download` permission
 
 **Solutions:**
+
 1. Verify you have download permission (check with server admin)
 2. Check if port 7501 is accessible
 3. Try a different file
@@ -154,11 +171,13 @@ This guide covers common issues and their solutions when using the Nexus BBS cli
 ### Uploads fail or are rejected
 
 **Possible causes:**
+
 - Not in an upload-enabled folder
 - File too large
 - Missing `file_upload` permission
 
 **Solutions:**
+
 1. Navigate to a folder that allows uploads (look for upload indicator)
 2. Check server's file size limits
 3. Verify you have upload permission
@@ -166,6 +185,7 @@ This guide covers common issues and their solutions when using the Nexus BBS cli
 ### Transfer stuck at "Connecting"
 
 **Solutions:**
+
 1. Check your internet connection
 2. The transfer port (7501) may be blocked by firewall
 3. Try pausing and resuming the transfer
@@ -176,6 +196,7 @@ This guide covers common issues and their solutions when using the Nexus BBS cli
 **Cause:** The file was modified during transfer or data was corrupted.
 
 **Solutions:**
+
 1. Cancel the transfer and try again
 2. If it persists, the file may be changing on the server
 3. Contact the server admin
@@ -183,6 +204,7 @@ This guide covers common issues and their solutions when using the Nexus BBS cli
 ### Resumed transfer fails
 
 **Solutions:**
+
 1. Delete the partial `.part` file and start fresh
 2. The server file may have changed since you started
 3. Disable resume by deleting the transfer and starting over
@@ -210,11 +232,13 @@ This guide covers common issues and their solutions when using the Nexus BBS cli
 ### Search returns no results
 
 **Possible causes:**
+
 - No files match your query
 - The search index hasn't been rebuilt yet
 - You're searching in the wrong scope (user area vs. root)
 
 **Solutions:**
+
 1. Try different search terms
 2. Check if the file exists by browsing manually
 3. If files were recently added, the index may need time to update
@@ -225,6 +249,7 @@ This guide covers common issues and their solutions when using the Nexus BBS cli
 **Cause:** The search index is slightly out of date.
 
 **Solutions:**
+
 1. Wait for the automatic reindex (default: every 5 minutes when files change)
 2. Ask an admin to run `/reindex`
 3. The file will fail to open if you click on it — this is expected
@@ -240,6 +265,7 @@ This guide covers common issues and their solutions when using the Nexus BBS cli
 ### Proxy connection fails
 
 **Solutions:**
+
 1. Verify the proxy server is running
 2. Check the address and port are correct
 3. Test the proxy with another application
@@ -250,6 +276,7 @@ This guide covers common issues and their solutions when using the Nexus BBS cli
 **Cause:** Proxy adds latency to all connections.
 
 **Solutions:**
+
 1. This is normal behavior for proxy connections
 2. Use a faster proxy server if available
 3. Disable proxy for local/trusted servers
@@ -259,6 +286,7 @@ This guide covers common issues and their solutions when using the Nexus BBS cli
 **Cause:** The destination server may block proxy connections, or the proxy may not support certain addresses.
 
 **Solutions:**
+
 1. Try connecting directly (disable proxy temporarily)
 2. Some servers block known proxy/Tor exit nodes
 3. Contact the server operator
@@ -270,6 +298,7 @@ This guide covers common issues and their solutions when using the Nexus BBS cli
 **Cause:** Cannot write to config directory.
 
 **Solutions:**
+
 1. Check write permissions for config directory:
    - Linux/macOS: `~/.config/nexus/`
    - Windows: `%APPDATA%\nexus\`
@@ -293,10 +322,12 @@ You'll lose your settings and bookmarks, but the client will create a fresh conf
 ### Bookmarks disappeared
 
 **Possible causes:**
+
 - Config file was deleted or corrupted
 - Config directory permissions changed
 
 **Solutions:**
+
 1. Check if `config.json` exists in the config directory
 2. If corrupted, you may need to re-create bookmarks
 3. Bookmarks are stored in the config file — back it up periodically
@@ -306,20 +337,24 @@ You'll lose your settings and bookmarks, but the client will create a fresh conf
 ### Tray icon not appearing
 
 **Possible causes:**
+
 - System tray/notification area not available
 - Desktop environment doesn't support system tray
 - Missing system library
 
 **Solutions:**
+
 1. Verify your desktop environment has a system tray/notification area
 2. On Linux, ensure `libayatana-appindicator3` or `libappindicator3` is installed:
+
    ```bash
    # Debian/Ubuntu
    sudo apt-get install libayatana-appindicator3-1
-   
+
    # Fedora
    sudo dnf install libappindicator-gtk3
    ```
+
 3. Some minimal desktop environments (like tiling window managers) may not have a system tray by default — install a standalone tray application
 4. Try toggling the setting off and on again
 
@@ -328,6 +363,7 @@ You'll lose your settings and bookmarks, but the client will create a fresh conf
 **Cause:** The system tray couldn't be initialized.
 
 **Solutions:**
+
 1. Check that your desktop environment supports system tray icons
 2. On Linux with Wayland, some tray implementations may not work — try running with XWayland
 3. Restart your desktop environment or log out and back in
@@ -367,6 +403,7 @@ sudo pacman -S alsa-lib
 ### Linux: No sound
 
 **Solutions:**
+
 1. Ensure ALSA or PulseAudio is working
 2. Check that sound isn't muted at system level
 3. Verify with `aplay -l` that audio devices are detected
@@ -376,6 +413,7 @@ sudo pacman -S alsa-lib
 **Cause:** macOS Gatekeeper blocking unsigned app.
 
 **Solution:**
+
 1. Open **System Settings** > **Privacy & Security**
 2. Scroll down to the Security section
 3. You'll see a message about Nexus BBS being blocked — click **Open Anyway**

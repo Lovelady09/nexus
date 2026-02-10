@@ -92,8 +92,10 @@ impl AudioProcessor {
 
     /// Build a Config from our settings
     fn build_config(settings: &AudioProcessorSettings) -> Config {
+        let echo_cancellation = settings.echo_cancellation;
+
         Config {
-            echo_canceller: if settings.echo_cancellation {
+            echo_canceller: if echo_cancellation {
                 Some(EchoCanceller::Full {
                     stream_delay_ms: None,
                 })
@@ -111,7 +113,9 @@ impl AudioProcessor {
             noise_suppression: if settings.noise_suppression {
                 Some(NoiseSuppression {
                     level: NoiseSuppressionLevel::Moderate,
-                    ..NoiseSuppression::default()
+                    // When AEC is also active, analyze its linear output for
+                    // better noise estimation instead of the raw capture frame.
+                    analyze_linear_aec_output: echo_cancellation,
                 })
             } else {
                 None
@@ -138,6 +142,21 @@ impl AudioProcessor {
     #[cfg_attr(not(test), allow(dead_code))]
     pub fn settings(&self) -> AudioProcessorSettings {
         self.settings
+    }
+
+    /// Hint to AEC/AGC that output audio is muted (e.g., user is deafened).
+    ///
+    /// When muted, there is no speaker output and thus no echo to cancel.
+    /// This lets the processor skip unnecessary work and adapt parameters.
+    pub fn set_output_will_be_muted(&self, muted: bool) {
+        self.processor.set_output_will_be_muted(muted);
+    }
+
+    /// Hint to the transient suppressor that a key press is occurring.
+    ///
+    /// Called on PTT key press/release to help identify keyboard transients.
+    pub fn set_stream_key_pressed(&self, pressed: bool) {
+        self.processor.set_stream_key_pressed(pressed);
     }
 
     /// Check if voice was detected in the last processed capture frame

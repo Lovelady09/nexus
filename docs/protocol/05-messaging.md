@@ -44,11 +44,11 @@ The sender also receives the `ServerBroadcast` (echo).
 
 Send a message to another user.
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `to_nickname` | string | Yes | Display name of the recipient |
-| `message` | string | Yes | Message content (1-1024 characters) |
-| `action` | string | No | Action type: `"Normal"` (default) or `"Me"` |
+| Field         | Type   | Required | Description                                 |
+| ------------- | ------ | -------- | ------------------------------------------- |
+| `to_nickname` | string | Yes      | Display name of the recipient               |
+| `message`     | string | Yes      | Message content (1-1024 characters)         |
+| `action`      | string | No       | Action type: `"Normal"` (default) or `"Me"` |
 
 **Example:**
 
@@ -81,12 +81,12 @@ Note: Use `to_nickname` (the display name), not username. For regular accounts t
 
 Response to the sender indicating success or failure. On success, also indicates if the recipient is away.
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `success` | boolean | Yes | Whether the message was delivered |
-| `error` | string | If failure | Error message |
-| `is_away` | boolean | If success | Whether the recipient is away |
-| `status` | string | If success | Recipient's status message (null if none) |
+| Field     | Type    | Required   | Description                               |
+| --------- | ------- | ---------- | ----------------------------------------- |
+| `success` | boolean | Yes        | Whether the message was delivered         |
+| `error`   | string  | If failure | Error message                             |
+| `is_away` | boolean | If success | Whether the recipient is away             |
+| `status`  | string  | If success | Recipient's status message (null if none) |
 
 **Success example (recipient available):**
 
@@ -121,14 +121,14 @@ Response to the sender indicating success or failure. On success, also indicates
 
 Delivered to the recipient when a user message is sent.
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `from_nickname` | string | Yes | Sender's display name |
-| `from_admin` | boolean | Yes | Whether sender is an admin |
-| `from_shared` | boolean | Yes | Whether sender is on a shared account |
-| `to_nickname` | string | Yes | Recipient's display name |
-| `message` | string | Yes | Message content |
-| `action` | string | No | Action type: `"Normal"` (default) or `"Me"` |
+| Field           | Type    | Required | Description                                 |
+| --------------- | ------- | -------- | ------------------------------------------- |
+| `from_nickname` | string  | Yes      | Sender's display name                       |
+| `from_admin`    | boolean | Yes      | Whether sender is an admin                  |
+| `from_shared`   | boolean | Yes      | Whether sender is on a shared account       |
+| `to_nickname`   | string  | Yes      | Recipient's display name                    |
+| `message`       | string  | Yes      | Message content                             |
+| `action`        | string  | No       | Action type: `"Normal"` (default) or `"Me"` |
 
 **Example:**
 
@@ -171,9 +171,9 @@ Delivered to the recipient when a user message is sent.
 
 Send a broadcast message to all connected users.
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `message` | string | Yes | Broadcast content (1-1024 characters) |
+| Field     | Type   | Required | Description                           |
+| --------- | ------ | -------- | ------------------------------------- |
+| `message` | string | Yes      | Broadcast content (1-1024 characters) |
 
 **Example:**
 
@@ -193,10 +193,10 @@ NX|13|UserBroadcast|a1b2c3d4e5f6|46|{"message":"Server maintenance in 10 minutes
 
 Response to the sender indicating success or failure.
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `success` | boolean | Yes | Whether the broadcast was sent |
-| `error` | string | If failure | Error message |
+| Field     | Type    | Required   | Description                    |
+| --------- | ------- | ---------- | ------------------------------ |
+| `success` | boolean | Yes        | Whether the broadcast was sent |
+| `error`   | string  | If failure | Error message                  |
 
 **Success example:**
 
@@ -219,11 +219,11 @@ Response to the sender indicating success or failure.
 
 Delivered to all users when a broadcast is sent.
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `session_id` | integer | Yes | Sender's session ID |
-| `username` | string | Yes | Sender's username |
-| `message` | string | Yes | Broadcast content |
+| Field        | Type    | Required | Description         |
+| ------------ | ------- | -------- | ------------------- |
+| `session_id` | integer | Yes      | Sender's session ID |
+| `username`   | string  | Yes      | Sender's username   |
+| `message`    | string  | Yes      | Broadcast content   |
 
 **Example:**
 
@@ -237,27 +237,28 @@ Delivered to all users when a broadcast is sent.
 
 ## Permissions
 
-| Permission | Required For |
-|------------|--------------|
-| `user_message` | Sending user messages (`UserMessage`) |
-| `user_broadcast` | Sending broadcasts (`UserBroadcast`) |
+| Permission       | Required For                          |
+| ---------------- | ------------------------------------- |
+| `user_message`   | Sending user messages (`UserMessage`) |
+| `user_broadcast` | Sending broadcasts (`UserBroadcast`)  |
 
 Admins have all permissions automatically.
 
-Note: There is no permission required to *receive* user messages or broadcasts. All connected users can receive them.
+Note: There is no permission required to _receive_ user messages or broadcasts. All connected users can receive them.
 
 ## Message Validation
 
 Both user messages and broadcasts use the same validation rules:
 
-| Rule | Value | Error |
-|------|-------|-------|
-| Not empty | Must have non-whitespace content | Message cannot be empty |
-| Max length | 1024 characters | Message too long |
-| No newlines | `\n`, `\r` not allowed | Message cannot contain newlines |
-| No control chars | No ASCII control characters | Invalid characters |
+| Rule             | Value                            | Error                           |
+| ---------------- | -------------------------------- | ------------------------------- |
+| Not empty        | Must have non-whitespace content | Message cannot be empty         |
+| Max length       | 1024 characters                  | Message too long                |
+| No newlines      | `\n`, `\r` not allowed           | Message cannot contain newlines |
+| No control chars | No ASCII control characters      | Invalid characters              |
 
 Unicode is fully supported, including:
+
 - International characters (日本語, Русский, العربية)
 - Emoji (👋 🎉 ✨)
 - Mathematical symbols (∑ ∏ ∫)
@@ -266,11 +267,11 @@ Unicode is fully supported, including:
 
 The `to_nickname` field uses the same validation as usernames:
 
-| Rule | Value | Error |
-|------|-------|-------|
-| Not empty | Required field | Nickname is empty |
-| Max length | 32 characters | Nickname too long |
-| Valid chars | Alphanumeric and ASCII graphic | Invalid nickname |
+| Rule        | Value                          | Error             |
+| ----------- | ------------------------------ | ----------------- |
+| Not empty   | Required field                 | Nickname is empty |
+| Max length  | 32 characters                  | Nickname too long |
+| Valid chars | Alphanumeric and ASCII graphic | Invalid nickname  |
 
 ## User Message Routing
 
@@ -296,44 +297,44 @@ Sending a message to yourself is not allowed. The server returns:
 
 ### UserMessage Errors
 
-| Error | Cause | Connection |
-|-------|-------|------------|
-| Not logged in | Sent before authentication | Disconnected |
-| Authentication error | Invalid session | Disconnected |
-| Nickname is empty | Empty `to_nickname` field | Stays connected |
-| Nickname too long | Exceeds 32 characters | Stays connected |
-| Invalid nickname | Contains invalid characters | Stays connected |
-| Message cannot be empty | Empty or whitespace-only message | Stays connected |
-| Message too long | Exceeds 1024 characters | Stays connected |
-| Message cannot contain newlines | Contains `\n` or `\r` | Stays connected |
-| Invalid characters | Contains control characters | Stays connected |
-| Cannot send a message to yourself | `to_nickname` matches sender | Stays connected |
-| User not online | Recipient not found | Stays connected |
-| Permission denied | Missing `user_message` permission | Stays connected |
+| Error                             | Cause                             | Connection      |
+| --------------------------------- | --------------------------------- | --------------- |
+| Not logged in                     | Sent before authentication        | Disconnected    |
+| Authentication error              | Invalid session                   | Disconnected    |
+| Nickname is empty                 | Empty `to_nickname` field         | Stays connected |
+| Nickname too long                 | Exceeds 32 characters             | Stays connected |
+| Invalid nickname                  | Contains invalid characters       | Stays connected |
+| Message cannot be empty           | Empty or whitespace-only message  | Stays connected |
+| Message too long                  | Exceeds 1024 characters           | Stays connected |
+| Message cannot contain newlines   | Contains `\n` or `\r`             | Stays connected |
+| Invalid characters                | Contains control characters       | Stays connected |
+| Cannot send a message to yourself | `to_nickname` matches sender      | Stays connected |
+| User not online                   | Recipient not found               | Stays connected |
+| Permission denied                 | Missing `user_message` permission | Stays connected |
 
 ### UserBroadcast Errors
 
-| Error | Cause | Connection |
-|-------|-------|------------|
-| Not logged in | Sent before authentication | Disconnected |
-| Authentication error | Invalid session | Disconnected |
-| Message cannot be empty | Empty or whitespace-only message | Disconnected |
-| Message too long | Exceeds 1024 characters | Disconnected |
-| Message cannot contain newlines | Contains `\n` or `\r` | Disconnected |
-| Invalid characters | Contains control characters | Disconnected |
-| Permission denied | Missing `user_broadcast` permission | Stays connected |
+| Error                           | Cause                               | Connection      |
+| ------------------------------- | ----------------------------------- | --------------- |
+| Not logged in                   | Sent before authentication          | Disconnected    |
+| Authentication error            | Invalid session                     | Disconnected    |
+| Message cannot be empty         | Empty or whitespace-only message    | Disconnected    |
+| Message too long                | Exceeds 1024 characters             | Disconnected    |
+| Message cannot contain newlines | Contains `\n` or `\r`               | Disconnected    |
+| Invalid characters              | Contains control characters         | Disconnected    |
+| Permission denied               | Missing `user_broadcast` permission | Stays connected |
 
 Note: Broadcast validation errors disconnect the client (more strict), while user message validation errors keep the connection open.
 
 ## Broadcast vs Chat
 
-| Aspect | Chat | Broadcast |
-|--------|------|-----------|
-| Recipients | Users with `chat` feature | All connected users |
-| Permission to send | `chat_send` | `user_broadcast` |
-| Permission to receive | `chat_receive` | None (all receive) |
-| Typical use | General conversation | Important announcements |
-| Message type | `ChatMessage` | `ServerBroadcast` |
+| Aspect                | Chat                      | Broadcast               |
+| --------------------- | ------------------------- | ----------------------- |
+| Recipients            | Users with `chat` feature | All connected users     |
+| Permission to send    | `chat_send`               | `user_broadcast`        |
+| Permission to receive | `chat_receive`            | None (all receive)      |
+| Typical use           | General conversation      | Important announcements |
+| Message type          | `ChatMessage`             | `ServerBroadcast`       |
 
 ## Notes
 

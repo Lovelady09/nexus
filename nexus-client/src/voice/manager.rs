@@ -371,6 +371,10 @@ async fn run_voice_session(
                     Some(VoiceCommand::StartTransmitting) => {
                         if !transmitting {
                             transmitting = true;
+                            // Hint to transient suppressor that PTT key was pressed
+                            if let Some(ref proc) = processor {
+                                proc.set_stream_key_pressed(true);
+                            }
                             if let Err(e) = capture.start() {
                                 let _ = event_tx.send(VoiceEvent::AudioError(format!("Capture error: {}", e)));
                             } else {
@@ -382,6 +386,10 @@ async fn run_voice_session(
                     Some(VoiceCommand::StopTransmitting) => {
                         if transmitting {
                             transmitting = false;
+                            // Hint to transient suppressor that PTT key was released
+                            if let Some(ref proc) = processor {
+                                proc.set_stream_key_pressed(false);
+                            }
                             capture.stop();
                             // Clear mic level when stopping
                             config.mic_level.store(0f32.to_bits(), Ordering::Relaxed);
@@ -409,6 +417,10 @@ async fn run_voice_session(
                     }
                     Some(VoiceCommand::SetDeafened(deafened)) => {
                         mixer.set_deafened(deafened);
+                        // Hint to AEC/AGC: no speaker output when deafened, so no echo
+                        if let Some(ref proc) = processor {
+                            proc.set_output_will_be_muted(deafened);
+                        }
                     }
                     Some(VoiceCommand::SetQuality(quality)) => {
                         if let Err(e) = encoder.set_quality(quality) {
