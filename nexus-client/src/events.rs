@@ -3,29 +3,8 @@
 //! This module handles emitting desktop notifications for various events
 //! based on user configuration.
 
-#[cfg(all(unix, not(target_os = "macos")))]
-use std::sync::Mutex;
-#[cfg(all(unix, not(target_os = "macos")))]
-use std::time::{Duration, Instant};
-
-use notify_rust::Notification;
-#[cfg(all(unix, not(target_os = "macos")))]
-use notify_rust::NotificationHandle;
-
-// Keep notification handles alive to prevent GNOME/Cinnamon from dismissing them.
-// These desktop environments close notifications when the D-Bus connection drops,
-// so we hold onto handles until they expire naturally.
-// See: https://gitlab.gnome.org/GNOME/gnome-shell/-/issues/8797
-#[cfg(all(unix, not(target_os = "macos")))]
-pub static NOTIFICATION_HANDLES: Mutex<Vec<(Instant, NotificationHandle)>> = Mutex::new(Vec::new());
-
-/// How long to keep notification handles alive (slightly longer than the notification timeout)
-#[cfg(all(unix, not(target_os = "macos")))]
-pub const HANDLE_LIFETIME: Duration = Duration::from_secs(6);
-
 use crate::NexusApp;
 use crate::config::events::{EventType, NotificationContent};
-use crate::constants::APP_NAME;
 use crate::i18n::{t, t_args};
 use crate::types::{ActivePanel, ChatTab};
 
@@ -134,6 +113,29 @@ impl EventContext {
         self.channel = Some(channel.into());
         self
     }
+
+    /// Build a nexus:// URI for navigating to this event's context
+    ///
+    /// Returns a URI that, when opened, will navigate the app to the relevant
+    /// location (channel, DM, news, etc.) based on the event context.
+    pub fn to_navigation_uri(&self, server_addr: &str) -> Option<String> {
+        // Channel events -> /chat/#channel
+        if let Some(ref channel) = self.channel
+            && channel.starts_with('#')
+        {
+            let encoded = crate::uri::url_encode_path(channel);
+            return Some(format!("nexus://{}/chat/{}", server_addr, encoded));
+        }
+
+        // DM events -> /chat/username
+        // Username must be URL-encoded to prevent URI injection
+        if let Some(ref username) = self.username {
+            let encoded = crate::uri::url_encode_path(username);
+            return Some(format!("nexus://{}/chat/{}", server_addr, encoded));
+        }
+
+        None
+    }
 }
 
 // =============================================================================
@@ -158,28 +160,11 @@ pub fn emit_event(app: &NexusApp, event_type: EventType, context: EventContext) 
         let (summary, body) =
             build_notification_content(event_type, &context, config.notification_content);
 
-        let mut notification = Notification::new();
-        notification
-            .appname(APP_NAME)
-            .summary(&summary)
-            .body(body.as_deref().unwrap_or(""))
-            .auto_icon()
-            .timeout(notify_rust::Timeout::Milliseconds(5000));
+        // Build navigation URI for click-to-navigate (Windows/Linux)
+        let uri = build_navigation_uri(app, event_type, &context);
 
-        // On Linux, keep handle alive to prevent GNOME/Cinnamon from dismissing
-        // notifications when the D-Bus connection would otherwise be dropped.
-        #[cfg(all(unix, not(target_os = "macos")))]
-        if let Ok(handle) = notification.show()
-            && let Ok(mut handles) = NOTIFICATION_HANDLES.lock()
-        {
-            let now = Instant::now();
-            handles.retain(|(created, _)| now.duration_since(*created) < HANDLE_LIFETIME);
-            handles.push((now, handle));
-        }
-
-        // On non-Linux platforms, just show and ignore result
-        #[cfg(not(all(unix, not(target_os = "macos"))))]
-        let _ = notification.show();
+        // Show notification with click handler
+        crate::notifications::show(&summary, body.as_deref(), uri);
     }
 
     // Handle sound playback (independent of notification settings)
@@ -193,6 +178,45 @@ pub fn emit_event(app: &NexusApp, event_type: EventType, context: EventContext) 
             &app.config.settings.audio.output_device,
         );
     }
+}
+
+/// Build a nexus:// URI for navigating to the event's context
+///
+/// Returns a URI that, when opened, will navigate the app to the relevant
+/// location (channel, DM, news, etc.) based on the event type and context.
+fn build_navigation_uri(
+    app: &NexusApp,
+    event_type: EventType,
+    context: &EventContext,
+) -> Option<String> {
+    // Get the server address from the connection
+    let server_addr = context.connection_id.and_then(|conn_id| {
+        app.connections.get(&conn_id).map(|conn| {
+            let info = &conn.connection_info;
+
+            // IPv6 addresses need brackets in URIs
+            let host = if info.address.parse::<std::net::Ipv6Addr>().is_ok() {
+                format!("[{}]", info.address)
+            } else {
+                info.address.clone()
+            };
+
+            // Omit port if it's the default
+            if info.port == nexus_common::DEFAULT_PORT {
+                host
+            } else {
+                format!("{}:{}", host, info.port)
+            }
+        })
+    })?;
+
+    // Special case for news posts
+    if event_type == EventType::NewsPost {
+        return Some(format!("nexus://{}/news", server_addr));
+    }
+
+    // Use the context's URI builder for other events
+    context.to_navigation_uri(&server_addr)
 }
 
 /// Build notification content for a test notification

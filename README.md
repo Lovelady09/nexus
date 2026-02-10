@@ -17,7 +17,7 @@ A modern BBS inspired by Hotline, KDX, Carracho, and Wired. Built for the [Yggdr
 - **News** — Bulletin board with Markdown and image support
 - **Users** — 39 granular permissions, shared accounts, guest access, custom avatars
 - **Security** — Mandatory TLS, TOFU verification, Argon2id passwords, proxy support
-- **Notifications** — Desktop and sound alerts for 12 event types
+- **Notifications** — Desktop and sound alerts for 12 event types; click to navigate (Windows/Linux)
 - **Customization** — 30 themes, 13 languages, configurable UI
 - **Connectivity** — Multi-server bookmarks, auto-connect, UPnP, IPv4/IPv6/Yggdrasil
 - **Deep Links** — `nexus://` URI scheme for direct links to servers, channels, and files

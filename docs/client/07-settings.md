@@ -364,6 +364,18 @@ Notifications are automatically suppressed when:
 
 **Always play sound** bypasses this suppression for sounds only.
 
+### Click to Navigate
+
+On **Windows** and **Linux**, clicking a desktop notification opens the relevant content:
+
+- **Chat messages/mentions** — Opens the channel where the message was posted
+- **User messages** — Opens the conversation with that user
+- **News posts** — Opens the News panel
+
+This uses the `nexus://` deep link system. If Nexus is already running, it navigates to the content. If not, it launches Nexus and navigates after connecting.
+
+**Note:** Click-to-navigate is not available on macOS due to system notification API limitations.
+
 ## Saving Settings
 
 - Click **Save** to apply changes
