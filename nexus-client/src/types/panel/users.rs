@@ -1,0 +1,207 @@
+//! User management panel state
+
+use nexus_common::ALL_PERMISSIONS;
+use nexus_common::protocol::UserInfo;
+
+use super::super::ActivePanel;
+
+// =============================================================================
+// User Management State
+// =============================================================================
+
+/// Default permissions for new users
+///
+/// These permissions are enabled by default when creating a new user:
+/// - `chat_receive`: Receive chat messages
+/// - `chat_send`: Send chat messages
+/// - `chat_topic`: View chat topic
+/// - `file_list`: Browse files and directories
+/// - `news_list`: View news posts
+/// - `user_info`: View user information
+/// - `user_list`: View connected users list
+/// - `user_message`: Send user messages
+const DEFAULT_USER_PERMISSIONS: &[&str] = &[
+    "chat_receive",
+    "chat_send",
+    "chat_topic",
+    "file_info",
+    "file_list",
+    "news_list",
+    "user_info",
+    "user_list",
+    "user_message",
+];
+
+/// User management panel mode
+#[derive(Debug, Clone, PartialEq, Default)]
+pub enum UserManagementMode {
+    /// Showing list of all users
+    #[default]
+    List,
+    /// Creating a new user
+    Create,
+    /// Editing an existing user
+    Edit {
+        /// Original username (for the UserUpdate request)
+        original_username: String,
+        /// New username (editable field, pre-filled with original)
+        new_username: String,
+        /// New password (optional, empty = don't change)
+        new_password: String,
+        /// Is admin flag (editable)
+        is_admin: bool,
+        /// Is shared account flag (immutable - display only)
+        is_shared: bool,
+        /// Enabled flag (editable)
+        enabled: bool,
+        /// Permissions (editable)
+        permissions: Vec<(String, bool)>,
+    },
+    /// Confirming deletion of a user
+    ConfirmDelete {
+        /// Username to delete
+        username: String,
+    },
+}
+
+/// User management panel state (per-connection)
+#[derive(Clone)]
+pub struct UserManagementState {
+    /// Current mode (list, create, edit, confirm delete)
+    pub mode: UserManagementMode,
+    /// All users from database (None = not loaded, Some(Ok) = loaded, Some(Err) = error)
+    pub all_users: Option<Result<Vec<UserInfo>, String>>,
+    /// Panel to return to after edit (e.g., UserInfo if edit was triggered from there)
+    pub return_to_panel: Option<ActivePanel>,
+    /// Username for create user form
+    pub username: String,
+    /// Password for create user form
+    pub password: String,
+    /// Admin flag for create user form
+    pub is_admin: bool,
+    /// Shared account flag for create user form
+    pub is_shared: bool,
+    /// Enabled flag for create user form
+    pub enabled: bool,
+    /// Permissions for create user form
+    pub permissions: Vec<(String, bool)>,
+    /// Error message for create user form
+    pub create_error: Option<String>,
+    /// Error message for edit user form
+    pub edit_error: Option<String>,
+    /// Error message for list view (e.g., delete failed)
+    pub list_error: Option<String>,
+    /// Error message for delete confirmation dialog
+    pub delete_error: Option<String>,
+}
+
+impl Default for UserManagementState {
+    fn default() -> Self {
+        Self {
+            mode: UserManagementMode::List,
+            all_users: None,
+            return_to_panel: None,
+            username: String::new(),
+            password: String::new(),
+            is_admin: false,
+            is_shared: false,
+            enabled: true, // Default to enabled
+            permissions: ALL_PERMISSIONS
+                .iter()
+                .map(|s| (s.to_string(), DEFAULT_USER_PERMISSIONS.contains(s)))
+                .collect(),
+            create_error: None,
+            edit_error: None,
+            list_error: None,
+            delete_error: None,
+        }
+    }
+}
+
+impl std::fmt::Debug for UserManagementState {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("UserManagementState")
+            .field("mode", &self.mode)
+            .field("all_users", &self.all_users)
+            .field("return_to_panel", &self.return_to_panel)
+            .field("username", &self.username)
+            .field("password", &"[REDACTED]")
+            .field("is_admin", &self.is_admin)
+            .field("is_shared", &self.is_shared)
+            .field("enabled", &self.enabled)
+            .field("permissions", &self.permissions)
+            .field("create_error", &self.create_error)
+            .field("edit_error", &self.edit_error)
+            .field("list_error", &self.list_error)
+            .field("delete_error", &self.delete_error)
+            .finish()
+    }
+}
+
+impl UserManagementState {
+    /// Reset to list mode and clear all form state
+    pub fn reset_to_list(&mut self) {
+        self.mode = UserManagementMode::List;
+        self.clear_create_form();
+        self.edit_error = None;
+        self.list_error = None;
+        self.return_to_panel = None;
+    }
+
+    /// Clear the create user form fields
+    pub fn clear_create_form(&mut self) {
+        self.username.clear();
+        self.password.clear();
+        self.is_admin = false;
+        self.is_shared = false;
+        self.enabled = true; // Reset to default enabled
+        for (perm_name, enabled) in &mut self.permissions {
+            *enabled = DEFAULT_USER_PERMISSIONS.contains(&perm_name.as_str());
+        }
+        self.create_error = None;
+    }
+
+    /// Enter create mode
+    pub fn enter_create_mode(&mut self) {
+        self.clear_create_form();
+        self.mode = UserManagementMode::Create;
+    }
+
+    /// Enter edit mode for a user (with pre-populated values from server)
+    pub fn enter_edit_mode(
+        &mut self,
+        username: String,
+        is_admin: bool,
+        is_shared: bool,
+        enabled: bool,
+        permissions: Vec<String>,
+    ) {
+        // Convert permissions Vec<String> to Vec<(String, bool)>
+        let mut perm_map: Vec<(String, bool)> = ALL_PERMISSIONS
+            .iter()
+            .map(|s| (s.to_string(), false))
+            .collect();
+
+        // Mark permissions that the user has
+        for (perm_name, perm_enabled) in &mut perm_map {
+            *perm_enabled = permissions.contains(perm_name);
+        }
+
+        self.mode = UserManagementMode::Edit {
+            original_username: username.clone(),
+            new_username: username,
+            new_password: String::new(),
+            is_admin,
+            is_shared,
+            enabled,
+            permissions: perm_map,
+        };
+        self.edit_error = None;
+    }
+
+    /// Enter confirm delete mode for a user
+    pub fn enter_confirm_delete_mode(&mut self, username: String) {
+        self.mode = UserManagementMode::ConfirmDelete { username };
+        self.delete_error = None;
+    }
+}

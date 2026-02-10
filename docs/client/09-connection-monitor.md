@@ -26,12 +26,12 @@ The Connection Monitor has two tabs:
 
 The Connections tab displays a sortable table with the following columns:
 
-| Column | Description |
-|--------|-------------|
-| **Nickname** | Display name (colored for admins and shared accounts) |
-| **Username** | Account name (same as nickname for regular accounts) |
-| **IP Address** | Remote IP address (IPv4 or IPv6) |
-| **Time** | Connection duration (e.g., "5m", "2h", "3d") |
+| Column         | Description                                           |
+| -------------- | ----------------------------------------------------- |
+| **Nickname**   | Display name (colored for admins and shared accounts) |
+| **Username**   | Account name (same as nickname for regular accounts)  |
+| **IP Address** | Remote IP address (IPv4 or IPv6)                      |
+| **Time**       | Connection duration (e.g., "5m", "2h", "3d")          |
 
 ### Sorting
 
@@ -47,12 +47,12 @@ Click any column header to sort by that column. Click again to reverse the sort 
 
 Right-click any cell in a row to access the context menu:
 
-| Action | Description | Permission Required |
-|--------|-------------|---------------------|
-| **Info** | Open the User Info panel for this user | `user_info` |
-| **Copy** | Copy the cell value to clipboard | None |
-| **Kick** | Open disconnect dialog with Kick selected | `user_kick` |
-| **Ban** | Open disconnect dialog with Ban selected | `ban_create` |
+| Action   | Description                                       | Permission Required |
+| -------- | ------------------------------------------------- | ------------------- |
+| **Info** | Open the User Info panel for this user            | `user_info`         |
+| **Copy** | Copy the cell value to clipboard (toast confirms) | None                |
+| **Kick** | Open disconnect dialog with Kick selected         | `user_kick`         |
+| **Ban**  | Open disconnect dialog with Ban selected          | `ban_create`        |
 
 ### Menu Visibility
 
@@ -71,14 +71,14 @@ Both actions open the disconnect dialog where you can optionally provide a reaso
 
 The Transfers tab shows active file uploads and downloads with the following columns:
 
-| Column | Description |
-|--------|-------------|
-| **Direction** | Upload (↑) or download (↓) icon |
-| **Nickname** | Display name (colored for admins and shared accounts) |
-| **IP Address** | Remote IP address |
-| **Path** | File path being transferred |
-| **Progress** | Transfer progress as percentage (hover for bytes detail) |
-| **Time** | Transfer duration |
+| Column         | Description                                              |
+| -------------- | -------------------------------------------------------- |
+| **Direction**  | Upload (↑) or download (↓) icon                          |
+| **Nickname**   | Display name (colored for admins and shared accounts)    |
+| **IP Address** | Remote IP address                                        |
+| **Path**       | File path being transferred                              |
+| **Progress**   | Transfer progress as percentage (hover for bytes detail) |
+| **Time**       | Transfer duration                                        |
 
 ### Progress Column
 
@@ -96,28 +96,28 @@ Click the **refresh** button (circular arrow icon) to reload the connection and 
 
 When a shared account has multiple sessions, each session appears as a separate row:
 
-| Nickname | Username | IP Address | Time |
-|----------|----------|------------|------|
-| visitor1 | guests | 192.168.1.50 | 5m |
-| visitor2 | guests | 192.168.1.51 | 3m |
+| Nickname | Username | IP Address   | Time |
+| -------- | -------- | ------------ | ---- |
+| visitor1 | guests   | 192.168.1.50 | 5m   |
+| visitor2 | guests   | 192.168.1.51 | 3m   |
 
 This lets you manage individual sessions of shared accounts.
 
 ## Permissions
 
-| Permission | Allows |
-|------------|--------|
+| Permission           | Allows                            |
+| -------------------- | --------------------------------- |
 | `connection_monitor` | View the Connection Monitor panel |
-| `user_info` | Use Info action from context menu |
-| `user_kick` | Use Kick action from context menu |
-| `ban_create` | Use Ban action from context menu |
+| `user_info`          | Use Info action from context menu |
+| `user_kick`          | Use Kick action from context menu |
+| `ban_create`         | Use Ban action from context menu  |
 
 Admins automatically have all permissions.
 
 ## Keyboard Shortcuts
 
-| Shortcut | Action |
-|----------|--------|
+| Shortcut | Action                             |
+| -------- | ---------------------------------- |
 | `Escape` | Close the Connection Monitor panel |
 
 ## Troubleshooting

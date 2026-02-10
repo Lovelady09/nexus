@@ -109,11 +109,11 @@ NX|8|NewsList|a1b2c3d4e5f6|2|{}
 
 Response containing all news items.
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `success` | boolean | Yes | Whether the request succeeded |
-| `error` | string | If failure | Error message |
-| `items` | array | If success | Array of `NewsItem` objects (newest first) |
+| Field     | Type    | Required   | Description                                |
+| --------- | ------- | ---------- | ------------------------------------------ |
+| `success` | boolean | Yes        | Whether the request succeeded              |
+| `error`   | string  | If failure | Error message                              |
+| `items`   | array   | If success | Array of `NewsItem` objects (newest first) |
 
 **Success example:**
 
@@ -156,9 +156,9 @@ Response containing all news items.
 
 Request a single news item by ID.
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `id` | integer | Yes | News item ID |
+| Field | Type    | Required | Description  |
+| ----- | ------- | -------- | ------------ |
+| `id`  | integer | Yes      | News item ID |
 
 **Example:**
 
@@ -172,11 +172,11 @@ Request a single news item by ID.
 
 Response containing the requested news item.
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `success` | boolean | Yes | Whether the request succeeded |
-| `error` | string | If failure | Error message |
-| `news` | object | If success | `NewsItem` object |
+| Field     | Type    | Required   | Description                   |
+| --------- | ------- | ---------- | ----------------------------- |
+| `success` | boolean | Yes        | Whether the request succeeded |
+| `error`   | string  | If failure | Error message                 |
+| `news`    | object  | If success | `NewsItem` object             |
 
 **Success example:**
 
@@ -208,10 +208,10 @@ Response containing the requested news item.
 
 Create a new news item.
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `body` | string | No | Markdown content (max 4096 characters) |
-| `image` | string | No | Image as data URI (max 700KB) |
+| Field   | Type   | Required | Description                            |
+| ------- | ------ | -------- | -------------------------------------- |
+| `body`  | string | No       | Markdown content (max 4096 characters) |
+| `image` | string | No       | Image as data URI (max 700KB)          |
 
 At least one of `body` or `image` must be provided.
 
@@ -244,11 +244,11 @@ At least one of `body` or `image` must be provided.
 
 Response after creating a news item.
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `success` | boolean | Yes | Whether creation succeeded |
-| `error` | string | If failure | Error message |
-| `news` | object | If success | Created `NewsItem` object |
+| Field     | Type    | Required   | Description                |
+| --------- | ------- | ---------- | -------------------------- |
+| `success` | boolean | Yes        | Whether creation succeeded |
+| `error`   | string  | If failure | Error message              |
+| `news`    | object  | If success | Created `NewsItem` object  |
 
 **Success example:**
 
@@ -271,9 +271,9 @@ Response after creating a news item.
 
 Request a news item for editing.
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `id` | integer | Yes | News item ID |
+| Field | Type    | Required | Description  |
+| ----- | ------- | -------- | ------------ |
+| `id`  | integer | Yes      | News item ID |
 
 **Example:**
 
@@ -287,11 +287,11 @@ Request a news item for editing.
 
 Response containing the news item data for editing.
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `success` | boolean | Yes | Whether the request succeeded |
-| `error` | string | If failure | Error message |
-| `news` | object | If success | `NewsItem` object to edit |
+| Field     | Type    | Required   | Description                   |
+| --------- | ------- | ---------- | ----------------------------- |
+| `success` | boolean | Yes        | Whether the request succeeded |
+| `error`   | string  | If failure | Error message                 |
+| `news`    | object  | If success | `NewsItem` object to edit     |
 
 **Success example:**
 
@@ -323,11 +323,11 @@ Response containing the news item data for editing.
 
 Update an existing news item.
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `id` | integer | Yes | News item ID |
-| `body` | string | No | New markdown content |
-| `image` | string | No | New image as data URI |
+| Field   | Type    | Required | Description           |
+| ------- | ------- | -------- | --------------------- |
+| `id`    | integer | Yes      | News item ID          |
+| `body`  | string  | No       | New markdown content  |
+| `image` | string  | No       | New image as data URI |
 
 At least one of `body` or `image` must be provided after update.
 
@@ -345,11 +345,11 @@ At least one of `body` or `image` must be provided after update.
 
 Response after updating a news item.
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `success` | boolean | Yes | Whether update succeeded |
-| `error` | string | If failure | Error message |
-| `news` | object | If success | Updated `NewsItem` object |
+| Field     | Type    | Required   | Description               |
+| --------- | ------- | ---------- | ------------------------- |
+| `success` | boolean | Yes        | Whether update succeeded  |
+| `error`   | string  | If failure | Error message             |
+| `news`    | object  | If success | Updated `NewsItem` object |
 
 **Success example:**
 
@@ -372,9 +372,9 @@ Response after updating a news item.
 
 Delete a news item.
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `id` | integer | Yes | News item ID |
+| Field | Type    | Required | Description  |
+| ----- | ------- | -------- | ------------ |
+| `id`  | integer | Yes      | News item ID |
 
 **Example:**
 
@@ -388,11 +388,11 @@ Delete a news item.
 
 Response after deleting a news item.
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `success` | boolean | Yes | Whether deletion succeeded |
-| `error` | string | If failure | Error message |
-| `id` | integer | If success | Deleted news item ID |
+| Field     | Type    | Required   | Description                |
+| --------- | ------- | ---------- | -------------------------- |
+| `success` | boolean | Yes        | Whether deletion succeeded |
+| `error`   | string  | If failure | Error message              |
+| `id`      | integer | If success | Deleted news item ID       |
 
 **Success example:**
 
@@ -416,10 +416,10 @@ Response after deleting a news item.
 
 Broadcast to all users when news changes.
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `action` | string | Yes | One of: `"Created"`, `"Updated"`, `"Deleted"` |
-| `id` | integer | Yes | Affected news item ID |
+| Field    | Type    | Required | Description                                   |
+| -------- | ------- | -------- | --------------------------------------------- |
+| `action` | string  | Yes      | One of: `"Created"`, `"Updated"`, `"Deleted"` |
+| `id`     | integer | Yes      | Affected news item ID                         |
 
 **Created example:**
 
@@ -452,41 +452,41 @@ Broadcast to all users when news changes.
 
 ### NewsItem
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `id` | integer | Unique news item ID |
-| `body` | string | Markdown content (null if image-only) |
-| `image` | string | Image as data URI (null if text-only) |
-| `author` | string | Username of the creator |
-| `author_is_admin` | boolean | Whether author is an admin |
-| `created_at` | string | ISO 8601 creation timestamp |
-| `updated_at` | string | ISO 8601 last update timestamp (null if never updated) |
+| Field             | Type    | Description                                            |
+| ----------------- | ------- | ------------------------------------------------------ |
+| `id`              | integer | Unique news item ID                                    |
+| `body`            | string  | Markdown content (null if image-only)                  |
+| `image`           | string  | Image as data URI (null if text-only)                  |
+| `author`          | string  | Username of the creator                                |
+| `author_is_admin` | boolean | Whether author is an admin                             |
+| `created_at`      | string  | ISO 8601 creation timestamp                            |
+| `updated_at`      | string  | ISO 8601 last update timestamp (null if never updated) |
 
 ### NewsAction
 
-| Value | Description |
-|-------|-------------|
-| `"Created"` | A new news item was created |
+| Value       | Description                        |
+| ----------- | ---------------------------------- |
+| `"Created"` | A new news item was created        |
 | `"Updated"` | An existing news item was modified |
-| `"Deleted"` | A news item was deleted |
+| `"Deleted"` | A news item was deleted            |
 
 ## Permissions
 
-| Permission | Required For |
-|------------|--------------|
-| `news_list` | Viewing news (`NewsList`, `NewsShow`, receiving `NewsUpdated`) |
-| `news_create` | Creating news (`NewsCreate`) |
-| `news_edit` | Editing news (`NewsEdit`, `NewsUpdate`) |
-| `news_delete` | Deleting news (`NewsDelete`) |
+| Permission    | Required For                                                   |
+| ------------- | -------------------------------------------------------------- |
+| `news_list`   | Viewing news (`NewsList`, `NewsShow`, receiving `NewsUpdated`) |
+| `news_create` | Creating news (`NewsCreate`)                                   |
+| `news_edit`   | Editing news (`NewsEdit`, `NewsUpdate`)                        |
+| `news_delete` | Deleting news (`NewsDelete`)                                   |
 
 ### Ownership Rules
 
 Non-admin users can only edit/delete their own posts:
 
-| User | Can Edit | Can Delete |
-|------|----------|------------|
+| User               | Can Edit       | Can Delete     |
+| ------------------ | -------------- | -------------- |
 | Author (non-admin) | Own posts only | Own posts only |
-| Admin | All posts | All posts |
+| Admin              | All posts      | All posts      |
 
 Admins have all permissions automatically.
 
@@ -494,13 +494,14 @@ Admins have all permissions automatically.
 
 ### Body
 
-| Rule | Value | Error |
-|------|-------|-------|
-| Max length | 4096 characters | Body too long |
-| No control chars | Except `\n`, `\r`, `\t` | Invalid characters |
-| Empty allowed | Can be null if image provided | — |
+| Rule             | Value                         | Error              |
+| ---------------- | ----------------------------- | ------------------ |
+| Max length       | 4096 characters               | Body too long      |
+| No control chars | Except `\n`, `\r`, `\t`       | Invalid characters |
+| Empty allowed    | Can be null if image provided | —                  |
 
 News body supports full markdown including:
+
 - Headings (`#`, `##`, etc.)
 - Bold/italic (`**bold**`, `_italic_`)
 - Lists (ordered and unordered)
@@ -511,11 +512,11 @@ News body supports full markdown including:
 
 ### Image
 
-| Constraint | Value |
-|------------|-------|
-| Max size | 700KB (as data URI) |
-| Max decoded | 512KB (binary) |
-| Formats | PNG, WebP, JPEG, SVG |
+| Constraint    | Value                        |
+| ------------- | ---------------------------- |
+| Max size      | 700KB (as data URI)          |
+| Max decoded   | 512KB (binary)               |
+| Formats       | PNG, WebP, JPEG, SVG         |
 | Empty allowed | Can be null if body provided |
 
 Images are transmitted as data URIs:
@@ -536,17 +537,17 @@ News items are returned newest first (descending by creation date).
 
 ### Common Errors
 
-| Error | Cause | Connection |
-|-------|-------|------------|
-| Not logged in | Sent before authentication | Disconnected |
-| Permission denied | Missing required permission | Stays connected |
-| News item not found | Invalid ID | Stays connected |
-| Body too long | Exceeds 4096 characters | Stays connected |
-| Invalid characters | Control characters in body | Stays connected |
-| Image too large | Exceeds 700KB | Stays connected |
-| Invalid image format | Not PNG/WebP/JPEG/SVG | Stays connected |
-| Content required | Both body and image are empty | Stays connected |
-| You can only edit your own news posts | Non-admin editing others' posts | Stays connected |
+| Error                                   | Cause                            | Connection      |
+| --------------------------------------- | -------------------------------- | --------------- |
+| Not logged in                           | Sent before authentication       | Disconnected    |
+| Permission denied                       | Missing required permission      | Stays connected |
+| News item not found                     | Invalid ID                       | Stays connected |
+| Body too long                           | Exceeds 4096 characters          | Stays connected |
+| Invalid characters                      | Control characters in body       | Stays connected |
+| Image too large                         | Exceeds 700KB                    | Stays connected |
+| Invalid image format                    | Not PNG/WebP/JPEG/SVG            | Stays connected |
+| Content required                        | Both body and image are empty    | Stays connected |
+| You can only edit your own news posts   | Non-admin editing others' posts  | Stays connected |
 | You can only delete your own news posts | Non-admin deleting others' posts | Stays connected |
 
 ## Broadcast Behavior

@@ -25,14 +25,14 @@ Client                                        Server
 
 Sent after successful handshake to authenticate.
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `username` | string | Yes | Account username (empty string for guest) |
-| `password` | string | Yes | Account password (empty string for guest) |
-| `features` | array | Yes | Client feature flags (e.g., `["chat"]`) |
-| `locale` | string | No | Preferred locale (default: `"en"`) |
-| `nickname` | string | No | Display name for shared/guest accounts |
-| `avatar` | string | No | Avatar as data URI (max 176KB) |
+| Field      | Type   | Required | Description                               |
+| ---------- | ------ | -------- | ----------------------------------------- |
+| `username` | string | Yes      | Account username (empty string for guest) |
+| `password` | string | Yes      | Account password (empty string for guest) |
+| `features` | array  | Yes      | Client feature flags (e.g., `["chat"]`)   |
+| `locale`   | string | No       | Preferred locale (default: `"en"`)        |
+| `nickname` | string | No       | Display name for shared/guest accounts    |
+| `avatar`   | string | No       | Avatar as data URI (max 176KB)            |
 
 **Regular account example:**
 
@@ -74,19 +74,20 @@ Sent after successful handshake to authenticate.
 
 Server's response to the login attempt.
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `success` | boolean | Yes | Whether login succeeded |
-| `error` | string | If failure | Error message |
-| `session_id` | integer | If success | Unique session identifier |
-| `is_admin` | boolean | If success | Whether user has admin privileges |
-| `permissions` | array | If success | List of permission strings |
-| `server_info` | object | If success | Server information (see below) |
-| `chat_info` | object | If success | Chat state (see below) |
-| `locale` | string | If success | Confirmed locale |
-| `nickname` | string | If success | Server-confirmed display name (v0.5.2+) |
+| Field         | Type    | Required   | Description                             |
+| ------------- | ------- | ---------- | --------------------------------------- |
+| `success`     | boolean | Yes        | Whether login succeeded                 |
+| `error`       | string  | If failure | Error message                           |
+| `session_id`  | integer | If success | Unique session identifier               |
+| `is_admin`    | boolean | If success | Whether user has admin privileges       |
+| `permissions` | array   | If success | List of permission strings              |
+| `server_info` | object  | If success | Server information (see below)          |
+| `chat_info`   | object  | If success | Chat state (see below)                  |
+| `locale`      | string  | If success | Confirmed locale                        |
+| `nickname`    | string  | If success | Server-confirmed display name (v0.5.2+) |
 
 The `nickname` field contains the user's actual display name as confirmed by the server:
+
 - For regular accounts: equals the username
 - For shared accounts: the validated nickname from the login request
 
@@ -138,23 +139,23 @@ The `nickname` field contains the user's actual display name as confirmed by the
 
 Included in successful login responses.
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `name` | string | Server display name (null if not set) |
-| `description` | string | Server description (null if not set) |
-| `version` | string | Server software version (null if not set) |
-| `transfer_port` | integer | Port for file transfers (required) |
-| `max_connections_per_ip` | integer | Connection limit per IP (null if not set) |
-| `max_transfers_per_ip` | integer | Transfer connection limit per IP (null if not set) |
-| `image` | string | Server logo as data URI (null if none) |
+| Field                    | Type    | Description                                        |
+| ------------------------ | ------- | -------------------------------------------------- |
+| `name`                   | string  | Server display name (null if not set)              |
+| `description`            | string  | Server description (null if not set)               |
+| `version`                | string  | Server software version (null if not set)          |
+| `transfer_port`          | integer | Port for file transfers (required)                 |
+| `max_connections_per_ip` | integer | Connection limit per IP (null if not set)          |
+| `max_transfers_per_ip`   | integer | Transfer connection limit per IP (null if not set) |
+| `image`                  | string  | Server logo as data URI (null if none)             |
 
 ## Chat Info Object
 
 Provides current chat state.
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `topic` | string | Current chat topic (empty if none) |
+| Field          | Type   | Description                                |
+| -------------- | ------ | ------------------------------------------ |
+| `topic`        | string | Current chat topic (empty if none)         |
 | `topic_set_by` | string | Username who set the topic (empty if none) |
 
 ## Account Types
@@ -191,13 +192,13 @@ Special shared account with empty credentials.
 
 For shared and guest accounts:
 
-| Rule | Description |
-|------|-------------|
-| Required | Cannot be empty |
-| Unique | Must not match any username or active nickname |
-| Length | 1-32 characters |
-| Characters | Alphanumeric and ASCII graphic characters |
-| Case | Case-insensitive uniqueness check |
+| Rule       | Description                                    |
+| ---------- | ---------------------------------------------- |
+| Required   | Cannot be empty                                |
+| Unique     | Must not match any username or active nickname |
+| Length     | 1-32 characters                                |
+| Characters | Alphanumeric and ASCII graphic characters      |
+| Case       | Case-insensitive uniqueness check              |
 
 ## Avatar Format
 
@@ -207,11 +208,11 @@ Avatars are transmitted as [data URIs](https://developer.mozilla.org/en-US/docs/
 data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA...
 ```
 
-| Constraint | Value |
-|------------|-------|
-| Max size | 176KB (as data URI) |
-| Max decoded | 128KB (binary) |
-| Formats | PNG, WebP, JPEG, SVG |
+| Constraint  | Value                |
+| ----------- | -------------------- |
+| Max size    | 176KB (as data URI)  |
+| Max decoded | 128KB (binary)       |
+| Formats     | PNG, WebP, JPEG, SVG |
 
 If no avatar is provided, the server/client generates an identicon from the nickname.
 
@@ -227,20 +228,20 @@ All translation happens **server-side** — clients receive pre-translated strin
 
 **Supported locales:**
 
-| Code | Language |
-|------|----------|
-| `en` | English (default) |
-| `de` | German |
-| `es` | Spanish |
-| `fr` | French |
-| `it` | Italian |
-| `ja` | Japanese |
-| `ko` | Korean |
-| `nl` | Dutch |
-| `pt-BR` | Portuguese (Brazil) |
+| Code    | Language              |
+| ------- | --------------------- |
+| `en`    | English (default)     |
+| `de`    | German                |
+| `es`    | Spanish               |
+| `fr`    | French                |
+| `it`    | Italian               |
+| `ja`    | Japanese              |
+| `ko`    | Korean                |
+| `nl`    | Dutch                 |
+| `pt-BR` | Portuguese (Brazil)   |
 | `pt-PT` | Portuguese (Portugal) |
-| `ru` | Russian |
-| `zh-CN` | Chinese (Simplified) |
+| `ru`    | Russian               |
+| `zh-CN` | Chinese (Simplified)  |
 | `zh-TW` | Chinese (Traditional) |
 
 Unknown locales fall back to English.
@@ -257,13 +258,13 @@ On a fresh server with no users:
 
 Common login errors:
 
-| Error | Cause |
-|-------|-------|
-| Invalid username or password | Credentials don't match |
-| Account is disabled | Admin disabled the account |
-| Guest access is not enabled | Guest account is disabled |
-| Nickname is required | Shared/guest account without nickname |
-| Nickname is already in use | Another session has this nickname |
+| Error                              | Cause                                   |
+| ---------------------------------- | --------------------------------------- |
+| Invalid username or password       | Credentials don't match                 |
+| Account is disabled                | Admin disabled the account              |
+| Guest access is not enabled        | Guest account is disabled               |
+| Nickname is required               | Shared/guest account without nickname   |
+| Nickname is already in use         | Another session has this nickname       |
 | Nickname matches existing username | Nickname conflicts with an account name |
 
 ## Timeout
@@ -290,6 +291,7 @@ No session ID, permissions, server info, or chat info is returned on the transfe
 ## Next Step
 
 After successful login, the client can:
+
 - Send and receive [chat messages](03-chat.md)
 - View and manage [users](04-users.md)
 - Send [user messages](05-messaging.md)

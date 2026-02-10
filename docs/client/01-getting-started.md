@@ -38,14 +38,15 @@ You only need to do this once. Future launches will work normally.
 
 Choose the format that works best for your distribution:
 
-| Format | Best For | Installation |
-|--------|----------|--------------|
-| **AppImage** | Any distro | Download, `chmod +x`, run |
-| **Deb** | Debian, Ubuntu, Mint | `sudo dpkg -i nexus-client-{version}-linux-{arch}.deb` |
+| Format       | Best For             | Installation                                           |
+| ------------ | -------------------- | ------------------------------------------------------ |
+| **AppImage** | Any distro           | Download, `chmod +x`, run                              |
+| **Deb**      | Debian, Ubuntu, Mint | `sudo dpkg -i nexus-client-{version}-linux-{arch}.deb` |
 
 Both x64 and arm64 builds are available.
 
 **AppImage quick start:**
+
 ```bash
 chmod +x nexus-client-*-linux-x64.AppImage
 ./nexus-client-*-linux-x64.AppImage
@@ -71,6 +72,7 @@ yay -S nexus-client-git
 ### Building from Source
 
 Requirements:
+
 - Rust 1.91+ (2024 edition)
 - Linux only: ALSA development library
 
@@ -143,13 +145,13 @@ See [Connections](02-connections.md) for more on bookmarks, auto-connect, and pr
 
 Once connected, you'll see:
 
-| Area | Description |
-|------|-------------|
-| **Server List** (left) | Your bookmarks and active connections |
-| **Chat Area** (center) | Channel and user message tabs |
-| **User List** (right) | Online users — click for actions |
-| **Toolbar** (top) | Access to Files, News, Settings, and more |
-| **Input Field** (bottom) | Type messages or commands |
+| Area                     | Description                               |
+| ------------------------ | ----------------------------------------- |
+| **Server List** (left)   | Your bookmarks and active connections     |
+| **Chat Area** (center)   | Channel and user message tabs             |
+| **User List** (right)    | Online users — click for actions          |
+| **Toolbar** (top)        | Access to Files, News, Settings, and more |
+| **Input Field** (bottom) | Type messages or commands                 |
 
 ## Verifying Downloads
 

@@ -123,11 +123,11 @@ Client                                        Server
 
 Request directory contents.
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `path` | string | Yes | Directory path (empty or `/` for root) |
-| `root` | boolean | No | If true, path is relative to file root (default: false) |
-| `show_hidden` | boolean | No | If true, include dotfiles (default: false) |
+| Field         | Type    | Required | Description                                             |
+| ------------- | ------- | -------- | ------------------------------------------------------- |
+| `path`        | string  | Yes      | Directory path (empty or `/` for root)                  |
+| `root`        | boolean | No       | If true, path is relative to file root (default: false) |
+| `show_hidden` | boolean | No       | If true, include dotfiles (default: false)              |
 
 **List user's root:**
 
@@ -165,12 +165,12 @@ NX|8|FileList|a1b2c3d4e5f6|25|{"path":"/Documents"}
 
 Response containing directory entries.
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `success` | boolean | Yes | Whether the request succeeded |
-| `error` | string | If failure | Error message |
-| `path` | string | If success | Resolved directory path |
-| `entries` | array | If success | Array of `FileEntry` objects |
+| Field        | Type    | Required   | Description                                   |
+| ------------ | ------- | ---------- | --------------------------------------------- |
+| `success`    | boolean | Yes        | Whether the request succeeded                 |
+| `error`      | string  | If failure | Error message                                 |
+| `path`       | string  | If success | Resolved directory path                       |
+| `entries`    | array   | If success | Array of `FileEntry` objects                  |
 | `can_upload` | boolean | If success | Whether uploads are allowed in this directory |
 
 **Success example:**
@@ -218,10 +218,10 @@ Response containing directory entries.
 
 Request detailed information about a file or directory.
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `path` | string | Yes | Path to the file or directory |
-| `root` | boolean | No | If true, path is relative to file root (default: false) |
+| Field  | Type    | Required | Description                                             |
+| ------ | ------- | -------- | ------------------------------------------------------- |
+| `path` | string  | Yes      | Path to the file or directory                           |
+| `root` | boolean | No       | If true, path is relative to file root (default: false) |
 
 **Example:**
 
@@ -235,11 +235,11 @@ Request detailed information about a file or directory.
 
 Response containing detailed file information.
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `success` | boolean | Yes | Whether the request succeeded |
-| `error` | string | If failure | Error message |
-| `info` | object | If success | `FileInfoDetails` object |
+| Field     | Type    | Required   | Description                   |
+| --------- | ------- | ---------- | ----------------------------- |
+| `success` | boolean | Yes        | Whether the request succeeded |
+| `error`   | string  | If failure | Error message                 |
+| `info`    | object  | If success | `FileInfoDetails` object      |
 
 **File example:**
 
@@ -296,11 +296,11 @@ Response containing detailed file information.
 
 Create a new directory.
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `path` | string | Yes | Parent directory path |
-| `name` | string | Yes | Name of the new directory |
-| `root` | boolean | No | If true, path is relative to file root (default: false) |
+| Field  | Type    | Required | Description                                             |
+| ------ | ------- | -------- | ------------------------------------------------------- |
+| `path` | string  | Yes      | Parent directory path                                   |
+| `name` | string  | Yes      | Name of the new directory                               |
+| `root` | boolean | No       | If true, path is relative to file root (default: false) |
 
 **Example:**
 
@@ -315,11 +315,11 @@ Create a new directory.
 
 Response after creating a directory.
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `success` | boolean | Yes | Whether creation succeeded |
-| `error` | string | If failure | Error message |
-| `path` | string | If success | Full path of the created directory |
+| Field     | Type    | Required   | Description                        |
+| --------- | ------- | ---------- | ---------------------------------- |
+| `success` | boolean | Yes        | Whether creation succeeded         |
+| `error`   | string  | If failure | Error message                      |
+| `path`    | string  | If success | Full path of the created directory |
 
 **Success example:**
 
@@ -343,11 +343,11 @@ Response after creating a directory.
 
 Rename a file or directory.
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `path` | string | Yes | Current path of the item |
-| `new_name` | string | Yes | New name (filename only, not path) |
-| `root` | boolean | No | If true, path is relative to file root (default: false) |
+| Field      | Type    | Required | Description                                             |
+| ---------- | ------- | -------- | ------------------------------------------------------- |
+| `path`     | string  | Yes      | Current path of the item                                |
+| `new_name` | string  | Yes      | New name (filename only, not path)                      |
+| `root`     | boolean | No       | If true, path is relative to file root (default: false) |
 
 **Example:**
 
@@ -362,10 +362,10 @@ Rename a file or directory.
 
 Response after renaming.
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `success` | boolean | Yes | Whether rename succeeded |
-| `error` | string | If failure | Error message |
+| Field     | Type    | Required   | Description              |
+| --------- | ------- | ---------- | ------------------------ |
+| `success` | boolean | Yes        | Whether rename succeeded |
+| `error`   | string  | If failure | Error message            |
 
 **Success example:**
 
@@ -388,13 +388,13 @@ Response after renaming.
 
 Move a file or directory to a new location.
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `source_path` | string | Yes | Path of the item to move |
-| `destination_dir` | string | Yes | Destination directory |
-| `overwrite` | boolean | No | If true, overwrite existing item (default: false) |
-| `source_root` | boolean | No | If true, source path is relative to file root |
-| `destination_root` | boolean | No | If true, destination path is relative to file root |
+| Field              | Type    | Required | Description                                        |
+| ------------------ | ------- | -------- | -------------------------------------------------- |
+| `source_path`      | string  | Yes      | Path of the item to move                           |
+| `destination_dir`  | string  | Yes      | Destination directory                              |
+| `overwrite`        | boolean | No       | If true, overwrite existing item (default: false)  |
+| `source_root`      | boolean | No       | If true, source path is relative to file root      |
+| `destination_root` | boolean | No       | If true, destination path is relative to file root |
 
 **Example:**
 
@@ -419,11 +419,11 @@ Move a file or directory to a new location.
 
 Response after moving.
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `success` | boolean | Yes | Whether move succeeded |
-| `error` | string | If failure | Human-readable error message |
-| `error_kind` | string | If failure | Machine-readable error type |
+| Field        | Type    | Required   | Description                  |
+| ------------ | ------- | ---------- | ---------------------------- |
+| `success`    | boolean | Yes        | Whether move succeeded       |
+| `error`      | string  | If failure | Human-readable error message |
+| `error_kind` | string  | If failure | Machine-readable error type  |
 
 **Success example:**
 
@@ -447,13 +447,13 @@ Response after moving.
 
 Copy a file or directory to a new location.
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `source_path` | string | Yes | Path of the item to copy |
-| `destination_dir` | string | Yes | Destination directory |
-| `overwrite` | boolean | No | If true, overwrite existing item (default: false) |
-| `source_root` | boolean | No | If true, source path is relative to file root |
-| `destination_root` | boolean | No | If true, destination path is relative to file root |
+| Field              | Type    | Required | Description                                        |
+| ------------------ | ------- | -------- | -------------------------------------------------- |
+| `source_path`      | string  | Yes      | Path of the item to copy                           |
+| `destination_dir`  | string  | Yes      | Destination directory                              |
+| `overwrite`        | boolean | No       | If true, overwrite existing item (default: false)  |
+| `source_root`      | boolean | No       | If true, source path is relative to file root      |
+| `destination_root` | boolean | No       | If true, destination path is relative to file root |
 
 **Example:**
 
@@ -468,11 +468,11 @@ Copy a file or directory to a new location.
 
 Response after copying.
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `success` | boolean | Yes | Whether copy succeeded |
-| `error` | string | If failure | Human-readable error message |
-| `error_kind` | string | If failure | Machine-readable error type |
+| Field        | Type    | Required   | Description                  |
+| ------------ | ------- | ---------- | ---------------------------- |
+| `success`    | boolean | Yes        | Whether copy succeeded       |
+| `error`      | string  | If failure | Human-readable error message |
+| `error_kind` | string  | If failure | Machine-readable error type  |
 
 **Success example:**
 
@@ -486,10 +486,10 @@ Response after copying.
 
 Delete a file or empty directory.
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `path` | string | Yes | Path to delete |
-| `root` | boolean | No | If true, path is relative to file root (default: false) |
+| Field  | Type    | Required | Description                                             |
+| ------ | ------- | -------- | ------------------------------------------------------- |
+| `path` | string  | Yes      | Path to delete                                          |
+| `root` | boolean | No       | If true, path is relative to file root (default: false) |
 
 **Example:**
 
@@ -503,10 +503,10 @@ Delete a file or empty directory.
 
 Response after deletion.
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `success` | boolean | Yes | Whether deletion succeeded |
-| `error` | string | If failure | Error message |
+| Field     | Type    | Required   | Description                |
+| --------- | ------- | ---------- | -------------------------- |
+| `success` | boolean | Yes        | Whether deletion succeeded |
+| `error`   | string  | If failure | Error message              |
 
 **Success example:**
 
@@ -531,12 +531,13 @@ Search for files and directories by name.
 
 **Fields:**
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `query` | string | Yes | Search query (3-256 bytes, see Search Behavior) |
-| `root` | bool | No | Search entire file root (default: false) |
+| Field   | Type   | Required | Description                                     |
+| ------- | ------ | -------- | ----------------------------------------------- |
+| `query` | string | Yes      | Search query (3-256 bytes, see Search Behavior) |
+| `root`  | bool   | No       | Search entire file root (default: false)        |
 
 **Example - search user's area:**
+
 ```json
 {
   "type": "FileSearch",
@@ -545,6 +546,7 @@ Search for files and directories by name.
 ```
 
 **Example - search entire file root (admin):**
+
 ```json
 {
   "type": "FileSearch",
@@ -557,13 +559,14 @@ Search for files and directories by name.
 
 **Fields:**
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `success` | bool | Whether search succeeded |
-| `error` | string? | Error message if failed |
-| `results` | array? | Search results (max 100) |
+| Field     | Type    | Description              |
+| --------- | ------- | ------------------------ |
+| `success` | bool    | Whether search succeeded |
+| `error`   | string? | Error message if failed  |
+| `results` | array?  | Search results (max 100) |
 
 **Example - success:**
+
 ```json
 {
   "type": "FileSearchResponse",
@@ -588,6 +591,7 @@ Search for files and directories by name.
 ```
 
 **Example - error:**
+
 ```json
 {
   "type": "FileSearchResponse",
@@ -603,6 +607,7 @@ Trigger a file index rebuild. Requires `file_reindex` permission.
 **Fields:** None (unit message)
 
 **Example:**
+
 ```json
 {
   "type": "FileReindex"
@@ -613,12 +618,13 @@ Trigger a file index rebuild. Requires `file_reindex` permission.
 
 **Fields:**
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `success` | bool | Whether reindex was triggered |
-| `error` | string? | Error message if failed |
+| Field     | Type    | Description                   |
+| --------- | ------- | ----------------------------- |
+| `success` | bool    | Whether reindex was triggered |
+| `error`   | string? | Error message if failed       |
 
 **Example - success:**
+
 ```json
 {
   "type": "FileReindexResponse",
@@ -632,52 +638,53 @@ Trigger a file index rebuild. Requires `file_reindex` permission.
 
 ### FileEntry
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `name` | string | Filesystem name (includes folder type suffix) |
-| `size` | integer | File size in bytes (0 for directories) |
-| `modified` | integer | Last modified time (Unix timestamp) |
-| `dir_type` | string or null | Directory type (null for files, see below) |
-| `can_upload` | boolean | Whether uploads are allowed here |
+| Field        | Type           | Description                                   |
+| ------------ | -------------- | --------------------------------------------- |
+| `name`       | string         | Filesystem name (includes folder type suffix) |
+| `size`       | integer        | File size in bytes (0 for directories)        |
+| `modified`   | integer        | Last modified time (Unix timestamp)           |
+| `dir_type`   | string or null | Directory type (null for files, see below)    |
+| `can_upload` | boolean        | Whether uploads are allowed here              |
 
 ### FileSearchResult
 
 Represents a single search result.
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `path` | string | Full path relative to user's root |
-| `name` | string | Filename only |
-| `size` | u64 | File size in bytes (0 for directories) |
-| `modified` | i64 | Last modified time (Unix timestamp) |
-| `is_directory` | bool | True if directory |
+| Field          | Type   | Description                            |
+| -------------- | ------ | -------------------------------------- |
+| `path`         | string | Full path relative to user's root      |
+| `name`         | string | Filename only                          |
+| `size`         | u64    | File size in bytes (0 for directories) |
+| `modified`     | i64    | Last modified time (Unix timestamp)    |
+| `is_directory` | bool   | True if directory                      |
 
 ### FileInfoDetails
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `name` | string | File or directory name |
-| `size` | integer | Size in bytes (0 for directories) |
-| `created` | integer or null | Creation timestamp (null if unavailable) |
-| `modified` | integer | Last modified timestamp |
-| `is_directory` | boolean | True if directory |
-| `is_symlink` | boolean | True if symbolic link |
-| `mime_type` | string or null | MIME type (null for directories) |
-| `item_count` | integer or null | Number of items (null for files) |
-| `sha256` | string or null | SHA-256 hash (null for directories) |
+| Field          | Type            | Description                              |
+| -------------- | --------------- | ---------------------------------------- |
+| `name`         | string          | File or directory name                   |
+| `size`         | integer         | Size in bytes (0 for directories)        |
+| `created`      | integer or null | Creation timestamp (null if unavailable) |
+| `modified`     | integer         | Last modified timestamp                  |
+| `is_directory` | boolean         | True if directory                        |
+| `is_symlink`   | boolean         | True if symbolic link                    |
+| `mime_type`    | string or null  | MIME type (null for directories)         |
+| `item_count`   | integer or null | Number of items (null for files)         |
+| `sha256`       | string or null  | SHA-256 hash (null for directories)      |
 
 ## Directory Types
 
 Directories can have special types indicated by name suffixes:
 
-| Suffix | Type | List | Download | Upload |
-|--------|------|------|----------|--------|
-| *(none)* | `default` | ✅ | ✅ | ❌ |
-| ` [NEXUS-UL]` | `upload` | ✅ | ✅ | ✅ |
-| ` [NEXUS-DB]` | `dropbox` | Admins only | Admins only | ✅ |
-| ` [NEXUS-DB-user]` | `dropbox_user` | User + Admins | User + Admins | ✅ |
+| Suffix             | Type           | List          | Download      | Upload |
+| ------------------ | -------------- | ------------- | ------------- | ------ |
+| _(none)_           | `default`      | ✅            | ✅            | ❌     |
+| ` [NEXUS-UL]`      | `upload`       | ✅            | ✅            | ✅     |
+| ` [NEXUS-DB]`      | `dropbox`      | Admins only   | Admins only   | ✅     |
+| ` [NEXUS-DB-user]` | `dropbox_user` | User + Admins | User + Admins | ✅     |
 
 **Notes:**
+
 - Space is required before the bracket
 - Suffixes are case-insensitive
 - Client should strip suffix for display (e.g., `Uploads [NEXUS-UL]` → "Uploads")
@@ -693,10 +700,12 @@ Each user has a file area root:
 Users cannot see or access other users' areas. Paths are presented as absolute from `/`.
 
 **Example with personal area:**
+
 - User `alice` sees `/` which maps to `{file_root}/users/alice/`
 - `/Documents/file.txt` maps to `{file_root}/users/alice/Documents/file.txt`
 
 **Example with shared area:**
+
 - User `bob` (no personal folder) sees `/` which maps to `{file_root}/shared/`
 - `/Documents/file.txt` maps to `{file_root}/shared/Documents/file.txt`
 
@@ -706,40 +715,40 @@ When `root: true`, paths are relative to the file root instead of the user's are
 
 ## Permissions
 
-| Permission | Required For |
-|------------|--------------|
-| `file_list` | Browse files and directories |
-| `file_info` | View detailed file information |
-| `file_create_dir` | Create directories (in upload folders) |
-| `file_copy` | Copy files and directories |
-| `file_delete` | Delete files and empty directories |
-| `file_download` | Download files (see [transfers](08-transfers.md)) |
-| `file_upload` | Upload files (see [transfers](08-transfers.md)) |
-| `file_move` | Move files and directories |
-| `file_rename` | Rename files and directories |
-| `file_root` | Access entire file root (admin) |
-| `file_search` | Search files by name |
-| `file_reindex` | Trigger file index rebuild |
+| Permission        | Required For                                      |
+| ----------------- | ------------------------------------------------- |
+| `file_list`       | Browse files and directories                      |
+| `file_info`       | View detailed file information                    |
+| `file_create_dir` | Create directories (in upload folders)            |
+| `file_copy`       | Copy files and directories                        |
+| `file_delete`     | Delete files and empty directories                |
+| `file_download`   | Download files (see [transfers](08-transfers.md)) |
+| `file_upload`     | Upload files (see [transfers](08-transfers.md))   |
+| `file_move`       | Move files and directories                        |
+| `file_rename`     | Rename files and directories                      |
+| `file_root`       | Access entire file root (admin)                   |
+| `file_search`     | Search files by name                              |
+| `file_reindex`    | Trigger file index rebuild                        |
 
 Admins have all permissions automatically.
 
 ### Permission Combinations
 
 | Operation | Base Permission | Additional for `overwrite: true` | Additional for `root: true` |
-|-----------|-----------------|----------------------------------|----------------------------|
-| Move | `file_move` | `file_delete` | `file_root` |
-| Copy | `file_copy` | `file_delete` | `file_root` |
-| Search | `file_search` | - | `file_root` |
+| --------- | --------------- | -------------------------------- | --------------------------- |
+| Move      | `file_move`     | `file_delete`                    | `file_root`                 |
+| Copy      | `file_copy`     | `file_delete`                    | `file_root`                 |
+| Search    | `file_search`   | -                                | `file_root`                 |
 
 ## Path Validation
 
-| Rule | Description |
-|------|-------------|
-| Max length | 4096 characters |
-| No `..` | Parent directory references forbidden |
-| No null bytes | `\0` not allowed |
-| No control chars | ASCII control characters forbidden |
-| Within area | Must stay within user's file area |
+| Rule             | Description                           |
+| ---------------- | ------------------------------------- |
+| Max length       | 4096 characters                       |
+| No `..`          | Parent directory references forbidden |
+| No null bytes    | `\0` not allowed                      |
+| No control chars | ASCII control characters forbidden    |
+| Within area      | Must stay within user's file area     |
 
 ## Path Resolution
 
@@ -756,6 +765,7 @@ For each path segment:
 ### Example
 
 Given filesystem structure:
+
 ```
 /shared/
   uploads [NEXUS-UL]/
@@ -764,6 +774,7 @@ Given filesystem structure:
 ```
 
 These paths all resolve to the same file:
+
 - `uploads [NEXUS-UL]/documents/readme.txt` (exact match)
 - `uploads/documents/readme.txt` (suffix matching)
 - `/uploads/documents/readme.txt` (leading slash stripped)
@@ -784,27 +795,27 @@ These paths all resolve to the same file:
 
 The `error_kind` field in move/copy responses allows programmatic handling:
 
-| Value | Description | Client Action |
-|-------|-------------|---------------|
-| `exists` | Destination already exists | Offer overwrite option |
-| `not_found` | Source doesn't exist | Show error, clear clipboard |
-| `permission` | Permission denied | Show error |
-| `invalid_path` | Invalid path format | Show error |
+| Value          | Description                | Client Action               |
+| -------------- | -------------------------- | --------------------------- |
+| `exists`       | Destination already exists | Offer overwrite option      |
+| `not_found`    | Source doesn't exist       | Show error, clear clipboard |
+| `permission`   | Permission denied          | Show error                  |
+| `invalid_path` | Invalid path format        | Show error                  |
 
 ## Error Handling
 
 ### Common File Errors
 
-| Error | Cause | Connection |
-|-------|-------|------------|
-| Not logged in | Sent before authentication | Disconnected |
-| Permission denied | Missing required permission | Stays connected |
-| Path not found | Invalid path | Stays connected |
-| Directory not found | Parent directory doesn't exist | Stays connected |
-| Directory is not empty | Delete on non-empty directory | Stays connected |
-| File or directory already exists | Name conflict | Stays connected |
-| Cannot move/copy into itself | Circular operation | Stays connected |
-| Invalid path | Path validation failed | Stays connected |
+| Error                            | Cause                          | Connection      |
+| -------------------------------- | ------------------------------ | --------------- |
+| Not logged in                    | Sent before authentication     | Disconnected    |
+| Permission denied                | Missing required permission    | Stays connected |
+| Path not found                   | Invalid path                   | Stays connected |
+| Directory not found              | Parent directory doesn't exist | Stays connected |
+| Directory is not empty           | Delete on non-empty directory  | Stays connected |
+| File or directory already exists | Name conflict                  | Stays connected |
+| Cannot move/copy into itself     | Circular operation             | Stays connected |
+| Invalid path                     | Path validation failed         | Stays connected |
 
 ## Symlink Handling
 
@@ -819,21 +830,21 @@ The `error_kind` field in move/copy responses allows programmatic handling:
 
 The server maintains a CSV index of all files for fast searching:
 
-| Aspect | Value |
-|--------|-------|
-| Location | `~/.local/share/nexusd/files.idx` |
-| Format | CSV: `path,name,size,modified,is_directory` |
-| Rebuild | On startup, on dirty flag, via `/reindex` command |
+| Aspect   | Value                                             |
+| -------- | ------------------------------------------------- |
+| Location | `~/.local/share/nexusd/files.idx`                 |
+| Format   | CSV: `path,name,size,modified,is_directory`       |
+| Rebuild  | On startup, on dirty flag, via `/reindex` command |
 
 ### Search Behavior
 
-| Setting | Value |
-|---------|-------|
-| Max results | 100 |
+| Setting          | Value                          |
+| ---------------- | ------------------------------ |
+| Max results      | 100                            |
 | Min query length | 3 bytes total (after trimming) |
-| Max query length | 256 bytes |
-| Case sensitivity | Case-insensitive |
-| Search type | Literal (regex chars escaped) |
+| Max query length | 256 bytes                      |
+| Case sensitivity | Case-insensitive               |
+| Search type      | Literal (regex chars escaped)  |
 
 **Search modes:**
 
@@ -845,25 +856,25 @@ but Unicode characters vary (e.g., CJK characters are typically 3 bytes each).
 
 **Examples:**
 
-| Query | Mode | Terms Used |
-|-------|------|------------|
-| `test file` | AND | "test", "file" |
-| `mr carter` | AND | "mr", "carter" |
-| `a test b` | AND | "test" only (single-char filtered) |
-| `mr dj` | Literal | "mr dj" (entire phrase) |
-| `a b c` | Literal | "a b c" (entire phrase) |
-| `ab` | Invalid | Too short (< 3 bytes) |
+| Query       | Mode    | Terms Used                         |
+| ----------- | ------- | ---------------------------------- |
+| `test file` | AND     | "test", "file"                     |
+| `mr carter` | AND     | "mr", "carter"                     |
+| `a test b`  | AND     | "test" only (single-char filtered) |
+| `mr dj`     | Literal | "mr dj" (entire phrase)            |
+| `a b c`     | Literal | "a b c" (entire phrase)            |
+| `ab`        | Invalid | Too short (< 3 bytes)              |
 
 ### Reindex Triggers
 
-| Event | Action |
-|-------|--------|
-| Server start | Background reindex |
-| File upload | Mark dirty |
-| File delete | Mark dirty |
-| File rename/move/copy | Mark dirty |
-| Timer interval | Rebuild if dirty |
-| `/reindex` command | Force rebuild |
+| Event                 | Action             |
+| --------------------- | ------------------ |
+| Server start          | Background reindex |
+| File upload           | Mark dirty         |
+| File delete           | Mark dirty         |
+| File rename/move/copy | Mark dirty         |
+| Timer interval        | Rebuild if dirty   |
+| `/reindex` command    | Force rebuild      |
 
 The reindex interval is configurable via `ServerInfoUpdate` (default: 5 minutes, 0 to disable).
 

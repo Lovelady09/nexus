@@ -13,7 +13,7 @@ The client sends periodic `Ping` messages, and the server responds with `Pong`. 
 ### Ping (Client → Server)
 
 ```json
-{"type":"Ping"}
+{ "type": "Ping" }
 ```
 
 No fields. Sent by the client every 5 minutes when the connection is idle.
@@ -21,7 +21,7 @@ No fields. Sent by the client every 5 minutes when the connection is idle.
 ### Pong (Server → Client)
 
 ```json
-{"type":"Pong"}
+{ "type": "Pong" }
 ```
 
 No fields. Sent immediately by the server in response to `Ping`.

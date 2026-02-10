@@ -24,44 +24,41 @@ impl NexusApp {
         action: ChatAction,
         timestamp: u64,
     ) -> Task<Message> {
-        // Check if we were mentioned in this message
-        if let Some(conn) = self.connections.get(&connection_id) {
-            // Use server-confirmed nickname
-            let our_nickname = &conn.nickname;
+        // Extract mention/self info from connection (drop borrow before emit_event)
+        let (is_from_self, is_mention) = if let Some(conn) = self.connections.get(&connection_id) {
+            let our_nickname_lower = conn.nickname.to_lowercase();
+            let from_self = nickname.to_lowercase() == our_nickname_lower;
+            let mention = !from_self
+                && !our_nickname_lower.is_empty()
+                && contains_word(&message.to_lowercase(), &our_nickname_lower);
+            (from_self, mention)
+        } else {
+            (false, false)
+        };
 
-            // Check if message mentions our nickname (case-insensitive, word boundary)
-            // and it's not from ourselves
-            // Guard against empty nickname which would match everything
-            let our_nickname_lower = our_nickname.to_lowercase();
-            let is_from_self = nickname.to_lowercase() == our_nickname_lower;
+        // Emit ChatMessage event (with is_from_self flag for sound handling)
+        emit_event(
+            self,
+            EventType::ChatMessage,
+            EventContext::new()
+                .with_connection_id(connection_id)
+                .with_username(&nickname)
+                .with_message(&message)
+                .with_is_from_self(is_from_self)
+                .with_channel(&channel),
+        );
 
-            // Emit ChatMessage event (with is_from_self flag for sound handling)
+        // Also emit ChatMention if our nickname is mentioned (only for others' messages)
+        if is_mention {
             emit_event(
                 self,
-                EventType::ChatMessage,
+                EventType::ChatMention,
                 EventContext::new()
                     .with_connection_id(connection_id)
                     .with_username(&nickname)
                     .with_message(&message)
-                    .with_is_from_self(is_from_self)
                     .with_channel(&channel),
             );
-
-            // Also emit ChatMention if our nickname is mentioned (only for others' messages)
-            if !is_from_self
-                && !our_nickname_lower.is_empty()
-                && contains_word(&message.to_lowercase(), &our_nickname_lower)
-            {
-                emit_event(
-                    self,
-                    EventType::ChatMention,
-                    EventContext::new()
-                        .with_connection_id(connection_id)
-                        .with_username(&nickname)
-                        .with_message(&message)
-                        .with_channel(&channel),
-                );
-            }
         }
 
         // Use server timestamp if available, otherwise fall back to local time

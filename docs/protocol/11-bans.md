@@ -49,18 +49,20 @@ Client                                        Server
 
 Create or update an IP ban. The target can be a nickname, IP address, or CIDR range.
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `target` | string | Yes | Nickname, IP address, or CIDR range |
-| `duration` | string | No | Duration: "10m", "4h", "7d", etc. Null = permanent |
-| `reason` | string | No | Reason for the ban (max 2048 chars) |
+| Field      | Type   | Required | Description                                        |
+| ---------- | ------ | -------- | -------------------------------------------------- |
+| `target`   | string | Yes      | Nickname, IP address, or CIDR range                |
+| `duration` | string | No       | Duration: "10m", "4h", "7d", etc. Null = permanent |
+| `reason`   | string | No       | Reason for the ban (max 2048 chars)                |
 
 **Target formats:**
+
 - Nickname: `Spammer` - Bans the user's specific IP(s)
 - Single IP: `192.168.1.100` or `2001:db8::1`
 - CIDR range: `192.168.1.0/24` or `2001:db8::/32`
 
 **Duration format:**
+
 - `<number><unit>` where unit is `m` (minutes), `h` (hours), `d` (days)
 - `0` for permanent when followed by a reason
 - Omit or null for permanent
@@ -92,12 +94,12 @@ Create or update an IP ban. The target can be a nickname, IP address, or CIDR ra
 
 Response after creating a ban.
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `success` | boolean | Yes | Whether ban was created |
-| `error` | string | If failure | Error message |
-| `ips` | string[] | If success | IPs/CIDRs that were banned |
-| `nickname` | string | If by nickname | The nickname that was banned |
+| Field      | Type     | Required       | Description                  |
+| ---------- | -------- | -------------- | ---------------------------- |
+| `success`  | boolean  | Yes            | Whether ban was created      |
+| `error`    | string   | If failure     | Error message                |
+| `ips`      | string[] | If success     | IPs/CIDRs that were banned   |
+| `nickname` | string   | If by nickname | The nickname that was banned |
 
 **Success examples:**
 
@@ -129,11 +131,12 @@ Response after creating a ban.
 
 Remove an IP ban.
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `target` | string | Yes | Nickname, IP address, or CIDR range to unban |
+| Field    | Type   | Required | Description                                  |
+| -------- | ------ | -------- | -------------------------------------------- |
+| `target` | string | Yes      | Nickname, IP address, or CIDR range to unban |
 
 **Target resolution:**
+
 1. If target is a nickname in ban table → Remove all IPs with that nickname annotation
 2. If target is a CIDR range → Remove that range AND any single IPs/smaller ranges within it
 3. Otherwise → Treat as single IP, remove that specific ban
@@ -150,12 +153,12 @@ Remove an IP ban.
 
 Response after removing a ban.
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `success` | boolean | Yes | Whether ban was removed |
-| `error` | string | If failure | Error message |
-| `ips` | string[] | If success | IPs/CIDRs that were unbanned |
-| `nickname` | string | If by nickname | The nickname that was unbanned |
+| Field      | Type     | Required       | Description                    |
+| ---------- | -------- | -------------- | ------------------------------ |
+| `success`  | boolean  | Yes            | Whether ban was removed        |
+| `error`    | string   | If failure     | Error message                  |
+| `ips`      | string[] | If success     | IPs/CIDRs that were unbanned   |
+| `nickname` | string   | If by nickname | The nickname that was unbanned |
 
 **Success example:**
 
@@ -192,21 +195,21 @@ No fields required.
 
 Response with the list of active bans.
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `success` | boolean | Yes | Whether list was retrieved |
-| `error` | string | If failure | Error message |
-| `bans` | BanInfo[] | If success | List of active bans |
+| Field     | Type      | Required   | Description                |
+| --------- | --------- | ---------- | -------------------------- |
+| `success` | boolean   | Yes        | Whether list was retrieved |
+| `error`   | string    | If failure | Error message              |
+| `bans`    | BanInfo[] | If success | List of active bans        |
 
 **BanInfo structure:**
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `ip_address` | string | IP or CIDR (e.g., "192.168.1.0/24") |
-| `nickname` | string? | Nickname annotation (if banned by nickname) |
-| `reason` | string? | Ban reason |
-| `created_by` | string | Username of admin who created ban |
-| `created_at` | integer | Unix timestamp when ban was created |
+| Field        | Type     | Description                                        |
+| ------------ | -------- | -------------------------------------------------- |
+| `ip_address` | string   | IP or CIDR (e.g., "192.168.1.0/24")                |
+| `nickname`   | string?  | Nickname annotation (if banned by nickname)        |
+| `reason`     | string?  | Ban reason                                         |
+| `created_by` | string   | Username of admin who created ban                  |
+| `created_at` | integer  | Unix timestamp when ban was created                |
 | `expires_at` | integer? | Unix timestamp when ban expires (null = permanent) |
 
 **Success example:**
@@ -246,11 +249,11 @@ Response with the list of active bans.
 
 ## Permissions
 
-| Permission | Allows |
-|------------|--------|
+| Permission   | Allows             |
+| ------------ | ------------------ |
 | `ban_create` | Create/update bans |
-| `ban_delete` | Remove bans |
-| `ban_list` | View active bans |
+| `ban_delete` | Remove bans        |
+| `ban_list`   | View active bans   |
 
 Admins have all ban permissions implicitly.
 
@@ -296,6 +299,7 @@ Note: Admins are subject to bans when connecting (pre-TLS check applies to every
 ## Upsert Behavior
 
 `BanCreate` always upserts on `ip_address`:
+
 - IP/CIDR exists → Update duration, reason, created_by, created_at, expires_at
 - IP/CIDR doesn't exist → Insert new row
 
@@ -305,22 +309,22 @@ This allows updating the duration or reason of an existing ban.
 
 ### BanCreate Errors
 
-| Error | Cause |
-|-------|-------|
-| `err-ban-self` | Trying to ban yourself |
-| `err-ban-admin-by-nickname` | Trying to ban an admin by nickname |
-| `err-ban-admin-by-ip` | Trying to ban an IP/CIDR with admin connected |
-| `err-ban-invalid-target` | Invalid IP address or CIDR format |
-| `err-ban-invalid-duration` | Invalid duration format |
-| `err-reason-too-long` | Reason exceeds 2048 characters |
-| `err-reason-invalid` | Reason contains invalid characters |
-| `err-nickname-not-online` | Nickname not found online |
+| Error                       | Cause                                         |
+| --------------------------- | --------------------------------------------- |
+| `err-ban-self`              | Trying to ban yourself                        |
+| `err-ban-admin-by-nickname` | Trying to ban an admin by nickname            |
+| `err-ban-admin-by-ip`       | Trying to ban an IP/CIDR with admin connected |
+| `err-ban-invalid-target`    | Invalid IP address or CIDR format             |
+| `err-ban-invalid-duration`  | Invalid duration format                       |
+| `err-reason-too-long`       | Reason exceeds 2048 characters                |
+| `err-reason-invalid`        | Reason contains invalid characters            |
+| `err-nickname-not-online`   | Nickname not found online                     |
 
 ### BanDelete Errors
 
-| Error | Cause |
-|-------|-------|
-| `err-ban-not-found` | No ban found for target |
+| Error                    | Cause                             |
+| ------------------------ | --------------------------------- |
+| `err-ban-not-found`      | No ban found for target           |
 | `err-ban-invalid-target` | Invalid IP address or CIDR format |
 
 ## Notes

@@ -1,7 +1,7 @@
 # Nexus BBS
 
 [![CI](https://github.com/zquestz/nexus/workflows/CI/badge.svg)](https://github.com/zquestz/nexus/actions)
-[![Version](https://img.shields.io/badge/version-0.5.21-blue.svg)](https://github.com/zquestz/nexus)
+[![Version](https://img.shields.io/badge/version-0.5.31-blue.svg)](https://github.com/zquestz/nexus)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Rust](https://img.shields.io/badge/rust-2024-orange.svg)](https://www.rust-lang.org/)
 
@@ -19,6 +19,7 @@ A modern BBS inspired by Hotline, KDX, Carracho, and Wired. Built for the [Yggdr
 - **Security** — Mandatory TLS, TOFU verification, Argon2id passwords, proxy support
 - **Notifications** — Desktop and sound alerts for 12 event types; click to navigate (Windows/Linux)
 - **Customization** — 30 themes, 13 languages, configurable UI
+- **System Tray** — Status icons, minimize to tray, quick actions (Windows/Linux)
 - **Connectivity** — Multi-server bookmarks, auto-connect, UPnP, IPv4/IPv6/Yggdrasil
 - **Deep Links** — `nexus://` URI scheme for direct links to servers, channels, and files
 - **WebSocket** — Optional WebSocket support for web-based clients (`--websocket`)
@@ -29,22 +30,22 @@ Pre-built binaries are available on the [Releases](https://github.com/zquestz/ne
 
 ### Client
 
-| Platform | Download |
-|----------|----------|
-| macOS (Universal) | `nexus-client-{version}-macos-universal.dmg` |
-| Windows (x64) | `nexus-client-{version}-windows-x64.msi` |
-| Linux (x64) | `.AppImage` or `.deb` |
-| Linux (arm64) | `.AppImage` or `.deb` |
-| Arch Linux (AUR) | [nexus-client](https://aur.archlinux.org/packages/nexus-client) or [nexus-client-git](https://aur.archlinux.org/packages/nexus-client-git) |
+| Platform          | Download                                                                                                                                   |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| macOS (Universal) | `nexus-client-{version}-macos-universal.dmg`                                                                                               |
+| Windows (x64)     | `nexus-client-{version}-windows-x64.msi`                                                                                                   |
+| Linux (x64)       | `.AppImage` or `.deb`                                                                                                                      |
+| Linux (arm64)     | `.AppImage` or `.deb`                                                                                                                      |
+| Arch Linux (AUR)  | [nexus-client](https://aur.archlinux.org/packages/nexus-client) or [nexus-client-git](https://aur.archlinux.org/packages/nexus-client-git) |
 
 ### Server
 
-| Platform | Download |
-|----------|----------|
-| macOS | `nexusd-{version}-macos-{x64,arm64}.tar.gz` |
-| Windows | `nexusd-{version}-windows-x64.zip` |
-| Linux | `nexusd-{version}-linux-{x64,arm64}.tar.gz` |
-| Docker | `ghcr.io/zquestz/nexusd:{version}` |
+| Platform | Download                                    |
+| -------- | ------------------------------------------- |
+| macOS    | `nexusd-{version}-macos-{x64,arm64}.tar.gz` |
+| Windows  | `nexusd-{version}-windows-x64.zip`          |
+| Linux    | `nexusd-{version}-linux-{x64,arm64}.tar.gz` |
+| Docker   | `ghcr.io/zquestz/nexusd:{version}`          |
 
 See [Client Installation](docs/client/01-getting-started.md) and [Server Installation](docs/server/01-getting-started.md) for detailed instructions.
 
@@ -73,7 +74,7 @@ See [Docker Documentation](docs/server/03-docker.md) for details.
 
 ## Screenshots
 
-*Coming soon*
+_Coming soon_
 
 ## Documentation
 
@@ -83,11 +84,11 @@ See [Docker Documentation](docs/server/03-docker.md) for details.
 
 ## Architecture
 
-| Crate | Description |
-|-------|-------------|
+| Crate          | Description                   |
+| -------------- | ----------------------------- |
 | `nexus-common` | Shared protocol and utilities |
-| `nexus-server` | Server daemon (`nexusd`) |
-| `nexus-client` | GUI client (`nexus`) |
+| `nexus-server` | Server daemon (`nexusd`)      |
+| `nexus-client` | GUI client (`nexus`)          |
 
 ## Build Requirements
 
@@ -100,16 +101,19 @@ See [Docker Documentation](docs/server/03-docker.md) for details.
 Voice chat requires ALSA and WebRTC audio processing build tools:
 
 **Debian/Ubuntu:**
+
 ```bash
 sudo apt install build-essential autoconf automake libtool pkg-config clang libasound2-dev
 ```
 
 **Arch Linux:**
+
 ```bash
 sudo pacman -S base-devel autoconf automake libtool pkg-config clang alsa-lib
 ```
 
 **Fedora:**
+
 ```bash
 sudo dnf install @development-tools autoconf automake libtool pkg-config clang alsa-lib-devel
 ```

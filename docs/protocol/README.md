@@ -12,13 +12,13 @@ Nexus uses a custom framed JSON protocol over TLS. The protocol is designed to b
 
 ## Ports
 
-| Port | Purpose | Protocol | Description |
-|------|---------|----------|-------------|
-| 7500 | BBS | TCP | Main protocol (chat, users, news, file browsing) |
-| 7500 | Voice | UDP | Voice chat audio (DTLS encrypted) |
-| 7501 | Transfers | TCP | File uploads and downloads |
-| 7502 | WebSocket BBS | TCP | Main protocol over WebSocket (requires `--websocket`) |
-| 7503 | WebSocket Transfers | TCP | File transfers over WebSocket (requires `--websocket`) |
+| Port | Purpose             | Protocol | Description                                            |
+| ---- | ------------------- | -------- | ------------------------------------------------------ |
+| 7500 | BBS                 | TCP      | Main protocol (chat, users, news, file browsing)       |
+| 7500 | Voice               | UDP      | Voice chat audio (DTLS encrypted)                      |
+| 7501 | Transfers           | TCP      | File uploads and downloads                             |
+| 7502 | WebSocket BBS       | TCP      | Main protocol over WebSocket (requires `--websocket`)  |
+| 7503 | WebSocket Transfers | TCP      | File transfers over WebSocket (requires `--websocket`) |
 
 **Note:** Port 7500 is shared between TCP (BBS protocol) and UDP (voice chat). The operating system routes packets to the correct handler based on protocol.
 
@@ -37,18 +37,21 @@ Raw TCP connections with TLS. This is the standard transport used by the native 
 WebSocket connections over TLS (WSS). Enabled with the `--websocket` server flag. This transport is designed for web-based clients.
 
 **WebSocket transport:**
+
 - The server wraps WebSocket in an adapter that presents it as a byte stream
 - The same binary frame format (`NX|...|payload\n`) flows over this byte stream
 - WebSocket message boundaries are ignored - frames can span multiple WS messages
 - Clients should treat the connection as a raw byte stream, same as TCP
 
 **Connection flow (WebSocket):**
+
 1. TCP connection to port 7502 or 7503
 2. TLS handshake (same certificate as TCP ports)
 3. WebSocket handshake
 4. Nexus protocol (Handshake → Login → session)
 
 WebSocket connections go through the same security checks as TCP:
+
 - IP ban/trust verification (before TLS)
 - Connection limits (same pool as TCP)
 - Same authentication and permissions
@@ -58,6 +61,7 @@ WebSocket connections go through the same security checks as TCP:
 All connections require TLS 1.2 or higher. Servers auto-generate self-signed certificates on first run.
 
 **Certificate Verification (TOFU):**
+
 1. On first connection, client stores the server's certificate fingerprint (SHA-256)
 2. On subsequent connections, client verifies the fingerprint matches
 3. If mismatch, client warns user (possible MITM attack or certificate regeneration)
@@ -70,19 +74,19 @@ Every message uses this frame format:
 NX|<type_length>|<message_type>|<message_id>|<payload_length>|<json_payload>\n
 ```
 
-| Field | Format | Description |
-|-------|--------|-------------|
-| Magic | `NX\|` | Protocol identifier (3 bytes) |
-| Type Length | ASCII decimal | Length of message type string (1-3 digits) |
-| Delimiter | `\|` | Field separator |
-| Message Type | ASCII string | Message type (e.g., `Handshake`, `ChatSend`) |
-| Delimiter | `\|` | Field separator |
-| Message ID | Hex string | 12-character ID for request-response correlation |
-| Delimiter | `\|` | Field separator |
-| Payload Length | ASCII decimal | Length of JSON payload in bytes |
-| Delimiter | `\|` | Field separator |
-| JSON Payload | UTF-8 JSON | Message data |
-| Terminator | `\n` | Newline (1 byte) |
+| Field          | Format        | Description                                      |
+| -------------- | ------------- | ------------------------------------------------ |
+| Magic          | `NX\|`        | Protocol identifier (3 bytes)                    |
+| Type Length    | ASCII decimal | Length of message type string (1-3 digits)       |
+| Delimiter      | `\|`          | Field separator                                  |
+| Message Type   | ASCII string  | Message type (e.g., `Handshake`, `ChatSend`)     |
+| Delimiter      | `\|`          | Field separator                                  |
+| Message ID     | Hex string    | 12-character ID for request-response correlation |
+| Delimiter      | `\|`          | Field separator                                  |
+| Payload Length | ASCII decimal | Length of JSON payload in bytes                  |
+| Delimiter      | `\|`          | Field separator                                  |
+| JSON Payload   | UTF-8 JSON    | Message data                                     |
+| Terminator     | `\n`          | Newline (1 byte)                                 |
 
 ### Example
 
@@ -93,6 +97,7 @@ NX|9|Handshake|a1b2c3d4e5f6|20|{"version":"0.5.0"}\n
 ```
 
 Breaking it down:
+
 - `NX|` - Magic bytes
 - `9` - Type length ("Handshake" is 9 characters)
 - `Handshake` - Message type
@@ -148,36 +153,36 @@ The protocol version follows [Semantic Versioning](https://semver.org/):
 - **Minor** - New features (client minor ≤ server minor)
 - **Patch** - Bug fixes (ignored for compatibility)
 
-Current version: `0.5.21`
+Current version: `0.5.31`
 
 ## Documents
 
-| Document | Description |
-|----------|-------------|
-| [01-handshake.md](01-handshake.md) | Handshake and version negotiation |
-| [02-login.md](02-login.md) | Authentication and session establishment |
-| [03-chat.md](03-chat.md) | Chat messages and topics |
-| [04-users.md](04-users.md) | User list and presence |
-| [05-messaging.md](05-messaging.md) | User messages and broadcasts |
-| [06-news.md](06-news.md) | News posts |
-| [07-files.md](07-files.md) | File browsing and management |
-| [08-transfers.md](08-transfers.md) | File upload and download (port 7501) |
-| [09-admin.md](09-admin.md) | User and server administration |
-| [10-errors.md](10-errors.md) | Error handling |
-| [11-bans.md](11-bans.md) | IP bans and CIDR ranges |
-| [12-trusts.md](12-trusts.md) | IP trust list (ban bypass) |
-| [13-connection-monitor.md](13-connection-monitor.md) | Connection monitor (active sessions) |
-| [14-voice.md](14-voice.md) | Voice chat (signaling and UDP audio) |
-| [15-keepalive.md](15-keepalive.md) | Ping/pong keepalive for NAT timeout prevention |
-| [16-uri-scheme.md](16-uri-scheme.md) | `nexus://` URI scheme for deep linking |
+| Document                                             | Description                                    |
+| ---------------------------------------------------- | ---------------------------------------------- |
+| [01-handshake.md](01-handshake.md)                   | Handshake and version negotiation              |
+| [02-login.md](02-login.md)                           | Authentication and session establishment       |
+| [03-chat.md](03-chat.md)                             | Chat messages and topics                       |
+| [04-users.md](04-users.md)                           | User list and presence                         |
+| [05-messaging.md](05-messaging.md)                   | User messages and broadcasts                   |
+| [06-news.md](06-news.md)                             | News posts                                     |
+| [07-files.md](07-files.md)                           | File browsing and management                   |
+| [08-transfers.md](08-transfers.md)                   | File upload and download (port 7501)           |
+| [09-admin.md](09-admin.md)                           | User and server administration                 |
+| [10-errors.md](10-errors.md)                         | Error handling                                 |
+| [11-bans.md](11-bans.md)                             | IP bans and CIDR ranges                        |
+| [12-trusts.md](12-trusts.md)                         | IP trust list (ban bypass)                     |
+| [13-connection-monitor.md](13-connection-monitor.md) | Connection monitor (active sessions)           |
+| [14-voice.md](14-voice.md)                           | Voice chat (signaling and UDP audio)           |
+| [15-keepalive.md](15-keepalive.md)                   | Ping/pong keepalive for NAT timeout prevention |
+| [16-uri-scheme.md](16-uri-scheme.md)                 | `nexus://` URI scheme for deep linking         |
 
 ## ServerInfo Fields
 
 The `LoginResponse` includes a `ServerInfo` object with connection details:
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `transfer_port` | `u16` | TCP file transfer port (typically 7501) |
+| Field                     | Type   | Description                                                      |
+| ------------------------- | ------ | ---------------------------------------------------------------- |
+| `transfer_port`           | `u16`  | TCP file transfer port (typically 7501)                          |
 | `transfer_websocket_port` | `u16?` | WebSocket file transfer port (7503 if enabled, absent otherwise) |
 
 Clients should use `transfer_websocket_port` for file transfers when connected via WebSocket, and `transfer_port` when connected via TCP.

@@ -17,36 +17,36 @@ The file browser includes:
 
 ### Navigation
 
-| Action | How |
-|--------|-----|
-| Open folder | Double-click or click folder name |
+| Action          | How                                      |
+| --------------- | ---------------------------------------- |
+| Open folder     | Double-click or click folder name        |
 | Go up one level | Click **↑** button or breadcrumb segment |
-| Go to root | Click **Home** button |
-| Refresh | Click **Refresh** button |
+| Go to root      | Click **Home** button                    |
+| Refresh         | Click **Refresh** button                 |
 
 ### Toolbar Buttons
 
-| Button | Description |
-|--------|-------------|
-| **Home** | Go to your file area root |
-| **Root** | Toggle between your area and server root (admin) |
-| **Refresh** | Reload current directory |
-| **Eye** | Show/hide hidden files (dotfiles) |
-| **Download** | Download entire current directory |
-| **Upload** | Upload files to current directory |
-| **New Folder** | Create a new directory |
-| **Paste** | Paste cut/copied items |
-| **Up** | Go to parent directory |
+| Button         | Description                                      |
+| -------------- | ------------------------------------------------ |
+| **Home**       | Go to your file area root                        |
+| **Root**       | Toggle between your area and server root (admin) |
+| **Refresh**    | Reload current directory                         |
+| **Eye**        | Show/hide hidden files (dotfiles)                |
+| **Download**   | Download entire current directory                |
+| **Upload**     | Upload files to current directory                |
+| **New Folder** | Create a new directory                           |
+| **Paste**      | Paste cut/copied items                           |
+| **Up**         | Go to parent directory                           |
 
 Some buttons may be disabled based on your permissions or the current folder type.
 
 ### File List Columns
 
-| Column | Description |
-|--------|-------------|
-| **Name** | File or folder name (click to sort) |
-| **Size** | File size (folders show "—") |
-| **Modified** | Last modification date |
+| Column       | Description                         |
+| ------------ | ----------------------------------- |
+| **Name**     | File or folder name (click to sort) |
+| **Size**     | File size (folders show "—")        |
+| **Modified** | Last modification date              |
 
 Click a column header to sort. Click again to reverse the sort order.
 
@@ -72,12 +72,12 @@ If you have the `file_search` permission, a search bar appears below the toolbar
 
 Results display in a 4-column table:
 
-| Column | Description |
-|--------|-------------|
-| **Name** | File or folder name with icon |
-| **Path** | Parent directory location |
-| **Size** | File size (folders show "—") |
-| **Modified** | Last modification date |
+| Column       | Description                   |
+| ------------ | ----------------------------- |
+| **Name**     | File or folder name with icon |
+| **Path**     | Parent directory location     |
+| **Size**     | File size (folders show "—")  |
+| **Modified** | Last modification date        |
 
 Click any column header to sort. When sorting by Name, directories appear first.
 
@@ -136,11 +136,11 @@ Admins with `file_root` permission can toggle **Root** mode to see the entire fi
 
 Servers use special folder suffixes to control permissions:
 
-| Folder Appearance | Type | You Can |
-|-------------------|------|---------|
-| Regular folder | Default | Browse, download |
-| Folder with upload indicator | Upload | Browse, download, upload |
-| "Drop Box" | Drop Box | Upload only (can't see contents) |
+| Folder Appearance            | Type     | You Can                          |
+| ---------------------------- | -------- | -------------------------------- |
+| Regular folder               | Default  | Browse, download                 |
+| Folder with upload indicator | Upload   | Browse, download, upload         |
+| "Drop Box"                   | Drop Box | Upload only (can't see contents) |
 
 **Upload folders** — You can upload files here. Indicated visually in the file list.
 
@@ -175,15 +175,26 @@ Downloads are saved to your system's Downloads folder by default. You can change
 ## Uploading
 
 Uploading requires:
+
 1. `file_upload` permission
 2. Being in an upload-enabled folder
 
 ### Upload Files
 
+**Method 1: Upload button**
+
 1. Navigate to an upload folder
 2. Click the **Upload** button in the toolbar
 3. Select files in the file picker
 4. Files are queued for upload
+
+**Method 2: Drag and drop**
+
+1. Drag files from your file manager onto the Nexus window
+2. A drop overlay appears when you're over an upload-enabled folder
+3. Release to upload the files
+
+**Note:** The drop overlay only appears when the Files panel is active and the current folder allows uploads.
 
 ### Upload Limitations
 
@@ -195,16 +206,16 @@ Uploading requires:
 
 Right-click a file or folder for these options:
 
-| Action | Description | Permission |
-|--------|-------------|------------|
-| **Download** | Download to your computer | `file_download` |
-| **Share** | Copy a `nexus://` link to clipboard | None |
-| **Cut** | Cut for moving | `file_move` |
-| **Copy** | Copy for pasting | `file_copy` |
-| **Paste** | Paste cut/copied item (folders only) | `file_move` or `file_copy` |
-| **Info** | View detailed information | `file_info` |
-| **Rename** | Rename the item | `file_rename` |
-| **Delete** | Delete the item | `file_delete` |
+| Action       | Description                          | Permission                 |
+| ------------ | ------------------------------------ | -------------------------- |
+| **Download** | Download to your computer            | `file_download`            |
+| **Share**    | Copy a `nexus://` link to clipboard  | None                       |
+| **Cut**      | Cut for moving                       | `file_move`                |
+| **Copy**     | Copy for pasting                     | `file_copy`                |
+| **Paste**    | Paste cut/copied item (folders only) | `file_move` or `file_copy` |
+| **Info**     | View detailed information            | `file_info`                |
+| **Rename**   | Rename the item                      | `file_rename`              |
+| **Delete**   | Delete the item                      | `file_delete`              |
 
 ### Cut, Copy, and Paste
 
@@ -256,7 +267,8 @@ You can share files with other Nexus users by copying a link:
 
 1. Right-click a file or folder
 2. Select **Share**
-3. Paste the link anywhere — in Nexus chat, email, or messaging apps
+3. A toast notification confirms the link was copied
+4. Paste the link anywhere — in Nexus chat, email, or messaging apps
 
 The copied link uses the `nexus://` scheme (e.g., `nexus://example.com/files/Music/song.mp3`). When another Nexus user clicks the link:
 
@@ -271,27 +283,27 @@ View and manage active transfers by clicking the **Transfers** icon in the toolb
 
 ### Transfer States
 
-| Status | Description |
-|--------|-------------|
-| **Queued** | Waiting to start |
-| **Connecting** | Establishing connection |
+| Status           | Description                |
+| ---------------- | -------------------------- |
+| **Queued**       | Waiting to start           |
+| **Connecting**   | Establishing connection    |
 | **Transferring** | Actively transferring data |
-| **Paused** | Paused by user |
-| **Completed** | Successfully finished |
-| **Failed** | Error occurred |
+| **Paused**       | Paused by user             |
+| **Completed**    | Successfully finished      |
+| **Failed**       | Error occurred             |
 
 ### Transfer Actions
 
-| Button | Available When | Action |
-|--------|----------------|--------|
-| **Pause** | Transferring | Pause the transfer |
-| **Resume** | Paused | Resume the transfer |
-| **Retry** | Failed | Re-queue the failed transfer |
-| **Cancel** | Queued, Transferring | Cancel and remove |
-| **Open Folder** | Completed, Failed | Open download location |
-| **Remove** | Completed, Failed | Remove from list |
-| **↑ Move Up** | Queued | Move higher in queue (executes sooner) |
-| **↓ Move Down** | Queued | Move lower in queue (executes later) |
+| Button          | Available When       | Action                                 |
+| --------------- | -------------------- | -------------------------------------- |
+| **Pause**       | Transferring         | Pause the transfer                     |
+| **Resume**      | Paused               | Resume the transfer                    |
+| **Retry**       | Failed               | Re-queue the failed transfer           |
+| **Cancel**      | Queued, Transferring | Cancel and remove                      |
+| **Open Folder** | Completed, Failed    | Open download location                 |
+| **Remove**      | Completed, Failed    | Remove from list                       |
+| **↑ Move Up**   | Queued               | Move higher in queue (executes sooner) |
+| **↓ Move Down** | Queued               | Move lower in queue (executes later)   |
 
 ### Queue Reordering
 
@@ -310,6 +322,7 @@ Transfers at the top of the queue execute first. The up arrow is disabled for th
 ### Resume Support
 
 Transfers can be resumed after:
+
 - Pausing manually
 - Connection interruption
 - Application restart
@@ -328,31 +341,31 @@ Set limits to 0 for unlimited concurrent transfers.
 
 ## Keyboard Shortcuts
 
-| Shortcut | Action |
-|----------|--------|
-| `Ctrl+Tab` (`Cmd+Tab` on macOS) | Next browser tab |
-| `Ctrl+Shift+Tab` (`Cmd+Shift+Tab` on macOS) | Previous browser tab |
-| `Escape` | Cancel cut/copy, exit search mode, close dialog |
-| `Enter` | Confirm dialog, submit search |
+| Shortcut                                    | Action                                          |
+| ------------------------------------------- | ----------------------------------------------- |
+| `Ctrl+Tab` (`Cmd+Tab` on macOS)             | Next browser tab                                |
+| `Ctrl+Shift+Tab` (`Cmd+Shift+Tab` on macOS) | Previous browser tab                            |
+| `Escape`                                    | Cancel cut/copy, exit search mode, close dialog |
+| `Enter`                                     | Confirm dialog, submit search                   |
 
 ## Permissions
 
 Your available actions depend on server permissions:
 
-| Permission | Allows |
-|------------|--------|
-| `file_list` | Browse files and directories |
-| `file_download` | Download files |
-| `file_upload` | Upload files (to upload folders) |
-| `file_info` | View detailed file information |
-| `file_create_dir` | Create directories |
-| `file_rename` | Rename files and directories |
-| `file_move` | Move files and directories |
-| `file_copy` | Copy files and directories |
-| `file_delete` | Delete files and directories |
-| `file_root` | Access entire file root (admin) |
-| `file_search` | Search files across your area |
-| `file_reindex` | Trigger file index rebuild (admin) |
+| Permission        | Allows                             |
+| ----------------- | ---------------------------------- |
+| `file_list`       | Browse files and directories       |
+| `file_download`   | Download files                     |
+| `file_upload`     | Upload files (to upload folders)   |
+| `file_info`       | View detailed file information     |
+| `file_create_dir` | Create directories                 |
+| `file_rename`     | Rename files and directories       |
+| `file_move`       | Move files and directories         |
+| `file_copy`       | Copy files and directories         |
+| `file_delete`     | Delete files and directories       |
+| `file_root`       | Access entire file root (admin)    |
+| `file_search`     | Search files across your area      |
+| `file_reindex`    | Trigger file index rebuild (admin) |
 
 Admins automatically have all permissions.
 
@@ -375,6 +388,7 @@ You're not in an upload-enabled folder. Navigate to a folder that allows uploads
 ### Transfer failed
 
 Click **Resume** to retry. If it fails repeatedly:
+
 - Check available disk space
 - Verify the file still exists on the server
 - Check your connection to the server

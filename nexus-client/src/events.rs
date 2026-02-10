@@ -1,7 +1,29 @@
 //! Event notification system
 //!
-//! This module handles emitting desktop notifications for various events
-//! based on user configuration.
+//! This module handles emitting desktop notifications and toast notifications
+//! for various events based on user configuration.
+
+#[cfg(all(unix, not(target_os = "macos")))]
+use std::sync::Mutex;
+#[cfg(all(unix, not(target_os = "macos")))]
+use std::time::{Duration, Instant};
+
+use notify_rust::Notification;
+#[cfg(all(unix, not(target_os = "macos")))]
+use notify_rust::NotificationHandle;
+
+// Keep notification handles alive to prevent GNOME/Cinnamon from dismissing them.
+// These desktop environments close notifications when the D-Bus connection drops,
+// so we hold onto handles until they expire naturally.
+// See: https://gitlab.gnome.org/GNOME/gnome-shell/-/issues/8797
+#[cfg(all(unix, not(target_os = "macos")))]
+pub static NOTIFICATION_HANDLES: Mutex<Vec<(Instant, NotificationHandle)>> = Mutex::new(Vec::new());
+
+/// How long to keep notification handles alive (slightly longer than the notification timeout)
+#[cfg(all(unix, not(target_os = "macos")))]
+pub const HANDLE_LIFETIME: Duration = Duration::from_secs(6);
+
+use iced_toasts::{ToastLevel, toast};
 
 use crate::NexusApp;
 use crate::config::events::{EventType, NotificationContent};
@@ -142,14 +164,14 @@ impl EventContext {
 // Notification Emission
 // =============================================================================
 
-/// Emit an event, potentially showing a notification and/or playing a sound
+/// Emit an event, potentially showing a notification, toast, and/or playing a sound
 ///
 /// This function checks the user's event configuration and current application
-/// state to determine whether a notification should be displayed and/or a
-/// sound should be played. Notifications and sounds are handled independently.
-pub fn emit_event(app: &NexusApp, event_type: EventType, context: EventContext) {
-    let config = app.config.settings.event_settings.get(event_type);
-    let suppressed = !should_show_notification(app, event_type, &context);
+/// state to determine whether a notification, toast, and/or sound should be
+/// triggered. Each channel is handled independently.
+pub fn emit_event(app: &mut NexusApp, event_type: EventType, context: EventContext) {
+    let config = app.config.settings.event_settings.get(event_type).clone();
+    let suppressed = !should_show_event(app, event_type, &context);
 
     // Handle desktop notification (skip for self-triggered events)
     if app.config.settings.notifications_enabled
@@ -158,13 +180,27 @@ pub fn emit_event(app: &NexusApp, event_type: EventType, context: EventContext) 
         && !context.is_from_self
     {
         let (summary, body) =
-            build_notification_content(event_type, &context, config.notification_content);
+            build_event_content(event_type, &context, config.notification_content);
 
         // Build navigation URI for click-to-navigate (Windows/Linux)
         let uri = build_navigation_uri(app, event_type, &context);
 
         // Show notification with click handler
         crate::notifications::show(&summary, body.as_deref(), uri);
+    }
+
+    // Handle toast notification (skip for self-triggered events)
+    if config.show_toast && !suppressed && !context.is_from_self {
+        let (summary, body) = build_event_content(event_type, &context, config.toast_content);
+
+        // Combine summary and body into a single toast string
+        let toast_text = if let Some(body) = body {
+            format!("{}: {}", summary, body)
+        } else {
+            summary
+        };
+
+        app.toasts.push(toast(&toast_text).level(ToastLevel::Info));
     }
 
     // Handle sound playback (independent of notification settings)
@@ -180,49 +216,10 @@ pub fn emit_event(app: &NexusApp, event_type: EventType, context: EventContext) 
     }
 }
 
-/// Build a nexus:// URI for navigating to the event's context
-///
-/// Returns a URI that, when opened, will navigate the app to the relevant
-/// location (channel, DM, news, etc.) based on the event type and context.
-fn build_navigation_uri(
-    app: &NexusApp,
-    event_type: EventType,
-    context: &EventContext,
-) -> Option<String> {
-    // Get the server address from the connection
-    let server_addr = context.connection_id.and_then(|conn_id| {
-        app.connections.get(&conn_id).map(|conn| {
-            let info = &conn.connection_info;
-
-            // IPv6 addresses need brackets in URIs
-            let host = if info.address.parse::<std::net::Ipv6Addr>().is_ok() {
-                format!("[{}]", info.address)
-            } else {
-                info.address.clone()
-            };
-
-            // Omit port if it's the default
-            if info.port == nexus_common::DEFAULT_PORT {
-                host
-            } else {
-                format!("{}:{}", host, info.port)
-            }
-        })
-    })?;
-
-    // Special case for news posts
-    if event_type == EventType::NewsPost {
-        return Some(format!("nexus://{}/news", server_addr));
-    }
-
-    // Use the context's URI builder for other events
-    context.to_navigation_uri(&server_addr)
-}
-
-/// Build notification content for a test notification
+/// Build event content for a test notification or toast
 ///
 /// Returns (summary, body) with sample content for the given event type.
-pub fn build_test_notification_content(
+pub fn build_test_event_content(
     event_type: EventType,
     content_level: NotificationContent,
 ) -> (String, Option<String>) {
@@ -239,14 +236,14 @@ pub fn build_test_notification_content(
         channel: Some("#general".to_string()),
     };
 
-    build_notification_content(event_type, &context, content_level)
+    build_event_content(event_type, &context, content_level)
 }
 
-/// Determine if a notification should be shown based on app state
+/// Determine if an event should trigger notifications, toasts, or sounds
 ///
-/// This checks conditions beyond just "is notification enabled" - for example,
+/// This checks whether the event is suppressed based on app state - for example,
 /// whether the user is already viewing the relevant content.
-fn should_show_notification(app: &NexusApp, event_type: EventType, context: &EventContext) -> bool {
+fn should_show_event(app: &NexusApp, event_type: EventType, context: &EventContext) -> bool {
     match event_type {
         EventType::UserMessage => {
             // Don't notify if window is focused AND this connection is active AND we're viewing that user's message tab
@@ -381,8 +378,8 @@ fn should_show_notification(app: &NexusApp, event_type: EventType, context: &Eve
     }
 }
 
-/// Build notification summary and body based on content level
-fn build_notification_content(
+/// Build event summary and body based on content level
+fn build_event_content(
     event_type: EventType,
     context: &EventContext,
     content_level: NotificationContent,

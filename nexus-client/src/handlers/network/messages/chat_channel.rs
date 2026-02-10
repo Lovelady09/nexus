@@ -143,12 +143,15 @@ impl NexusApp {
         error: Option<String>,
         channel: Option<String>,
     ) -> Task<Message> {
-        let Some(conn) = self.connections.get_mut(&connection_id) else {
-            return Task::none();
-        };
+        // Scope conn borrow so it's dropped before emit_event
+        {
+            let Some(conn) = self.connections.get_mut(&connection_id) else {
+                return Task::none();
+            };
 
-        // Clear pending leave state
-        conn.pending_channel_leave = None;
+            // Clear pending leave state
+            conn.pending_channel_leave = None;
+        }
 
         if !success {
             let error_msg = error.unwrap_or_else(|| t("err-unknown"));

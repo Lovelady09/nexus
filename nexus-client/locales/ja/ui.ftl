@@ -821,6 +821,8 @@ settings-sound-play = サウンドを再生
 settings-sound-always-play = 常に再生
 settings-sound-test = テスト
 settings-notification-test = テスト
+event-settings-show-toast = トーストを表示
+settings-toast-test = テスト
 
 # Sound names
 sound-none = なし
@@ -1021,9 +1023,19 @@ audio-testing = テスト中…
 audio-stop-test = テストを停止
 # Audio processing
 audio-noise-suppression = ノイズ抑制
+noise-level-off = オフ
+noise-level-low = 低
+noise-level-moderate = 中
+noise-level-high = 高
+noise-level-very-high = 最高
 audio-echo-cancellation = エコーキャンセル
 audio-agc = 自動ゲイン制御
 audio-transient-suppression = キーボードノイズ低減
+audio-mic-boost = マイクブースト
+mic-boost-off = オフ
+mic-boost-6db = +6 dB
+mic-boost-12db = +12 dB
+mic-boost-18db = +18 dB
 
 # =============================================================================
 # System Tray (Windows/Linux only)
@@ -1049,3 +1061,16 @@ tray-tooltip-disconnected = Nexus BBS - 切断中
 tray-tooltip-voice = Nexus BBS - ボイス中: { $target }
 tray-tooltip-voice-muted = Nexus BBS - ボイス中 (ミュート): { $target }
 tray-tooltip-unread = Nexus BBS - 未読の会話 { $count } 件
+
+# =============================================================================
+# Toast Notifications
+# =============================================================================
+
+toast-link-copied = リンクをクリップボードにコピーしました
+toast-copied = クリップボードにコピーしました
+toast-download-started = { $filename } をダウンロード中
+toast-download-queued = ダウンロード待ち: { $filename }
+toast-upload-started = { $filename } をアップロード中
+toast-upload-queued = アップロード待ち: { $filename }
+toast-uploads-started = { $count } 個のファイルをアップロード中
+toast-uploads-queued = { $count } 個のアップロード待ち

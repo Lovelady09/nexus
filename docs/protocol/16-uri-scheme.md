@@ -8,39 +8,39 @@ Nexus supports the `nexus://` URI scheme for deep linking to servers and resourc
 nexus://[user[:password]@]host[:port][/path]
 ```
 
-| Component | Required | Description |
-|-----------|----------|-------------|
-| `user` | No | Username for authentication |
-| `password` | No | Password (only valid with user) |
-| `host` | Yes | Server hostname or IP address (IPv6 in brackets) |
-| `port` | No | Server port (default: 7500) |
-| `path` | No | Resource path (intent) |
+| Component  | Required | Description                                      |
+| ---------- | -------- | ------------------------------------------------ |
+| `user`     | No       | Username for authentication                      |
+| `password` | No       | Password (only valid with user)                  |
+| `host`     | Yes      | Server hostname or IP address (IPv6 in brackets) |
+| `port`     | No       | Server port (default: 7500)                      |
+| `path`     | No       | Resource path (intent)                           |
 
 ## Connection Examples
 
-| URI | Behavior |
-|-----|----------|
-| `nexus://server.com` | Connect using matching bookmark credentials, or guest login |
-| `nexus://server.com:8500` | Connect to custom port |
-| `nexus://[::1]:7500` | Connect to IPv6 address |
-| `nexus://alice@server.com` | Connect as alice (uses bookmark password if saved) |
-| `nexus://shared:pass@server.com` | Connect with explicit credentials |
+| URI                              | Behavior                                                    |
+| -------------------------------- | ----------------------------------------------------------- |
+| `nexus://server.com`             | Connect using matching bookmark credentials, or guest login |
+| `nexus://server.com:8500`        | Connect to custom port                                      |
+| `nexus://[::1]:7500`             | Connect to IPv6 address                                     |
+| `nexus://alice@server.com`       | Connect as alice (uses bookmark password if saved)          |
+| `nexus://shared:pass@server.com` | Connect with explicit credentials                           |
 
 ## Path Intents
 
 Paths specify what to open after connecting. They are intents, not commands — if already at the destination, the client focuses it.
 
-| Path | Intent |
-|------|--------|
-| (none) | Connect only |
-| `/chat` | Focus chat panel (no tab change) |
-| `/chat/#general` | Join/focus #general channel |
-| `/chat/alice` | Open/focus user message tab with alice |
-| `/files` | Open Files panel |
-| `/files/Music` | Open Files panel to Music folder |
+| Path                    | Intent                                         |
+| ----------------------- | ---------------------------------------------- |
+| (none)                  | Connect only                                   |
+| `/chat`                 | Focus chat panel (no tab change)               |
+| `/chat/#general`        | Join/focus #general channel                    |
+| `/chat/alice`           | Open/focus user message tab with alice         |
+| `/files`                | Open Files panel                               |
+| `/files/Music`          | Open Files panel to Music folder               |
 | `/files/Music/song.mp3` | Navigate to Music folder and download song.mp3 |
-| `/news` | Open News panel |
-| `/info` | Open Server Info panel |
+| `/news`                 | Open News panel                                |
+| `/info`                 | Open Server Info panel                         |
 
 ### Path Details
 
@@ -54,11 +54,11 @@ Paths specify what to open after connecting. They are intents, not commands — 
 
 When processing a URI, the client determines whether to reuse an existing connection or create a new one:
 
-| URI Pattern | Behavior |
-|-------------|----------|
-| `nexus://server.com/...` | Reuse any existing connection to host:port, or connect using bookmark/guest |
-| `nexus://user@server.com/...` | Reuse connection with matching host:port AND username |
-| `nexus://user:pass@server.com/...` | Reuse or create connection with those credentials |
+| URI Pattern                        | Behavior                                                                    |
+| ---------------------------------- | --------------------------------------------------------------------------- |
+| `nexus://server.com/...`           | Reuse any existing connection to host:port, or connect using bookmark/guest |
+| `nexus://user@server.com/...`      | Reuse connection with matching host:port AND username                       |
+| `nexus://user:pass@server.com/...` | Reuse or create connection with those credentials                           |
 
 Matching is case-insensitive for host and username.
 
@@ -97,6 +97,7 @@ When connecting from a URI, the client resolves credentials in this order:
 The `nexus://` scheme is recognized in chat messages and displayed as clickable links, similar to `http://` and `https://` URLs.
 
 When clicked:
+
 - `nexus://` links navigate internally (handled by the client)
 - Other URLs open in the system browser
 
@@ -104,7 +105,21 @@ News posts render links via Markdown syntax.
 
 ## Single Instance
 
-When a `nexus://` URI is opened and Nexus is already running, the URI is passed to the existing instance via IPC:
+### macOS — Apple Events
+
+On macOS, the OS handles single-instance routing natively for URL scheme clicks. When a user clicks a `nexus://` link in a browser or Finder:
+
+1. macOS delivers the URL via Apple Events (`kInternetEventClass` / `kAEGetURL`)
+2. If the app is not running, macOS launches it and delivers the event after initialization
+3. If the app is already running, macOS activates it and delivers the event immediately
+
+The client registers a handler with `NSAppleEventManager` to receive these events and forwards URLs to the Iced event loop via a crossbeam channel.
+
+IPC (below) is still used on macOS for CLI invocations (e.g., `nexus "nexus://..."`).
+
+### IPC (All Platforms)
+
+When a `nexus://` URI is opened via command line and Nexus is already running, the URI is passed to the existing instance via IPC:
 
 1. New instance attempts to connect to IPC socket/pipe
 2. If successful: sends URI, waits for acknowledgment, exits
@@ -112,13 +127,14 @@ When a `nexus://` URI is opened and Nexus is already running, the URI is passed 
 
 ### IPC Socket Paths
 
-| Platform | Path |
-|----------|------|
-| Linux | `$XDG_RUNTIME_DIR/nexus-{username}` |
-| macOS | `$TMPDIR/nexus-{username}` |
-| Windows | Named pipe `\\.\pipe\nexus-{username}` |
+| Platform       | Path                          |
+| -------------- | ----------------------------- |
+| Linux          | `$XDG_RUNTIME_DIR/nexus.sock` |
+| macOS          | `$TMPDIR/nexus.sock`          |
+| Linux fallback | `/tmp/nexus-{username}.sock`  |
+| Windows        | Named pipe `nexus-{username}` |
 
-The `{username}` suffix ensures per-user isolation.
+On Linux and macOS, the socket lives inside a per-user directory (`XDG_RUNTIME_DIR`, `TMPDIR`), providing user isolation without a username suffix. The `/tmp` fallback and Windows named pipe include `{username}` explicitly.
 
 ### IPC Protocol
 
@@ -132,13 +148,11 @@ Timeout: 5 seconds (Unix only)
 
 Nexus registers as a handler for the `nexus://` scheme via cargo-bundle metadata:
 
-| Platform | Method | Status |
-|----------|--------|--------|
-| Linux | `linux_mime_types = ["x-scheme-handler/nexus"]` | ✅ |
-| macOS | `osx_url_schemes = ["nexus"]` | ✅ |
-| Windows | Registry entries in MSI | ❌ TODO |
-
-**Windows TODO:** `cargo-bundle` doesn't support `windows_url_schemes`. Need to either fork cargo-bundle to add support, or add registry entries directly in the MSI build workflow.
+| Platform | Method                                          | Status |
+| -------- | ----------------------------------------------- | ------ |
+| Linux    | `linux_mime_types = ["x-scheme-handler/nexus"]` | ✅     |
+| macOS    | `osx_url_schemes = ["nexus"]`                   | ✅     |
+| Windows  | `windows_url_schemes = ["nexus"]`               | ✅     |
 
 ### Desktop File (Linux)
 
@@ -170,13 +184,13 @@ The client decodes these when parsing.
 
 ## Error Handling
 
-| Condition | Behavior |
-|-----------|----------|
-| Invalid URI format | Parse error, not processed |
-| Connection failed | Error shown in current console or connection form |
-| Channel join failed | Server error shown in console |
-| File not found | Server error shown in console |
-| Permission denied | Server error shown in console |
+| Condition           | Behavior                                          |
+| ------------------- | ------------------------------------------------- |
+| Invalid URI format  | Parse error, not processed                        |
+| Connection failed   | Error shown in current console or connection form |
+| Channel join failed | Server error shown in console                     |
+| File not found      | Server error shown in console                     |
+| Permission denied   | Server error shown in console                     |
 
 ## Examples
 

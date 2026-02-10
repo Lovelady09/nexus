@@ -267,11 +267,16 @@ impl TrayManager {
 
 impl Drop for TrayManager {
     fn drop(&mut self) {
-        // Shutdown the ksni tray service to remove the icon
+        // Shutdown the ksni tray service to remove the icon.
+        // Use try_current() because the tokio runtime may already be
+        // shut down when Drop runs during app exit. If no runtime is
+        // available, the tray icon is cleaned up when the process exits.
         let handle = self.handle.clone();
-        tokio::spawn(async move {
-            handle.shutdown().await;
-        });
+        if let Ok(rt) = tokio::runtime::Handle::try_current() {
+            rt.spawn(async move {
+                handle.shutdown().await;
+            });
+        }
     }
 }
 

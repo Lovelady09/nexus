@@ -164,8 +164,8 @@ pub struct ViewConfig<'a> {
     /// Error message from microphone test (e.g., device not found)
     pub mic_error: Option<&'a str>,
 
-    /// Enable noise suppression
-    pub noise_suppression: bool,
+    /// Noise suppression level
+    pub noise_suppression_level: crate::config::audio::NoiseSuppressionLevel,
 
     /// Enable echo cancellation
     pub echo_cancellation: bool,
@@ -175,6 +175,9 @@ pub struct ViewConfig<'a> {
 
     /// Enable transient suppression (keyboard/click noise reduction)
     pub transient_suppression: bool,
+
+    /// Microphone boost level
+    pub mic_boost: crate::config::audio::MicBoost,
 
     /// Whether local user is currently transmitting (PTT active)
     pub is_local_speaking: bool,

@@ -14,10 +14,10 @@ Channel names must start with `#` (e.g., `#general`, `#support`). The default ch
 
 ### Channel Types
 
-| Type | Created By | Survives Restart | Can Leave | Deleted When Empty |
-|------|------------|------------------|-----------|-------------------|
-| Persistent | Admin config | Yes | No | No |
-| Ephemeral | User `/join` | No | Yes | Yes |
+| Type       | Created By   | Survives Restart | Can Leave | Deleted When Empty |
+| ---------- | ------------ | ---------------- | --------- | ------------------ |
+| Persistent | Admin config | Yes              | No        | No                 |
+| Ephemeral  | User `/join` | No               | Yes       | Yes                |
 
 ## Flow
 
@@ -105,9 +105,9 @@ Client                                        Server
 
 Join or create a channel.
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `channel` | string | Yes | Channel name (e.g., `#general`) |
+| Field     | Type   | Required | Description                     |
+| --------- | ------ | -------- | ------------------------------- |
+| `channel` | string | Yes      | Channel name (e.g., `#general`) |
 
 **Example:**
 
@@ -121,16 +121,16 @@ Join or create a channel.
 
 Response to join request with full channel data on success.
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `success` | boolean | Yes | Whether the join succeeded |
-| `error` | string | If failure | Error message |
-| `channel` | string | If success | Channel name |
-| `topic` | string | If success | Current topic (null if none) |
-| `topic_set_by` | string | If success | Who set the topic (null if none) |
-| `secret` | boolean | If success | Whether channel is secret |
-| `members` | array | If success | List of member nicknames |
-| `voiced` | array | If success | Nicknames in voice chat (only if requester has `voice_listen`) |
+| Field          | Type    | Required   | Description                                                    |
+| -------------- | ------- | ---------- | -------------------------------------------------------------- |
+| `success`      | boolean | Yes        | Whether the join succeeded                                     |
+| `error`        | string  | If failure | Error message                                                  |
+| `channel`      | string  | If success | Channel name                                                   |
+| `topic`        | string  | If success | Current topic (null if none)                                   |
+| `topic_set_by` | string  | If success | Who set the topic (null if none)                               |
+| `secret`       | boolean | If success | Whether channel is secret                                      |
+| `members`      | array   | If success | List of member nicknames                                       |
+| `voiced`       | array   | If success | Nicknames in voice chat (only if requester has `voice_listen`) |
 
 **Success example:**
 
@@ -161,9 +161,9 @@ The `voiced` field is only included if the joining user has the `voice_listen` p
 
 Leave a channel.
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `channel` | string | Yes | Channel name |
+| Field     | Type   | Required | Description  |
+| --------- | ------ | -------- | ------------ |
+| `channel` | string | Yes      | Channel name |
 
 **Example:**
 
@@ -177,11 +177,11 @@ Leave a channel.
 
 Response to leave request.
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `success` | boolean | Yes | Whether the leave succeeded |
-| `error` | string | If failure | Error message |
-| `channel` | string | If success | Channel that was left |
+| Field     | Type    | Required   | Description                 |
+| --------- | ------- | ---------- | --------------------------- |
+| `success` | boolean | Yes        | Whether the leave succeeded |
+| `error`   | string  | If failure | Error message               |
+| `channel` | string  | If success | Channel that was left       |
 
 **Success example:**
 
@@ -217,20 +217,20 @@ No fields required.
 
 List of visible channels.
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `success` | boolean | Yes | Whether the request succeeded |
-| `error` | string | If failure | Error message |
-| `channels` | array | If success | List of channel info objects |
+| Field      | Type    | Required   | Description                   |
+| ---------- | ------- | ---------- | ----------------------------- |
+| `success`  | boolean | Yes        | Whether the request succeeded |
+| `error`    | string  | If failure | Error message                 |
+| `channels` | array   | If success | List of channel info objects  |
 
 Each channel info object:
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `name` | string | Channel name |
-| `topic` | string | Channel topic (null if none) |
-| `member_count` | integer | Number of members |
-| `secret` | boolean | Whether channel is secret |
+| Field          | Type    | Description                  |
+| -------------- | ------- | ---------------------------- |
+| `name`         | string  | Channel name                 |
+| `topic`        | string  | Channel topic (null if none) |
+| `member_count` | integer | Number of members            |
+| `secret`       | boolean | Whether channel is secret    |
 
 **Example:**
 
@@ -260,10 +260,10 @@ Secret channels are hidden from non-members unless the user is an admin.
 
 Toggle secret mode on a channel.
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `channel` | string | Yes | Channel name |
-| `secret` | boolean | Yes | Whether to make the channel secret |
+| Field     | Type    | Required | Description                        |
+| --------- | ------- | -------- | ---------------------------------- |
+| `channel` | string  | Yes      | Channel name                       |
+| `secret`  | boolean | Yes      | Whether to make the channel secret |
 
 **Example:**
 
@@ -278,10 +278,10 @@ Toggle secret mode on a channel.
 
 Response to secret mode toggle.
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `success` | boolean | Yes | Whether the toggle succeeded |
-| `error` | string | If failure | Error message |
+| Field     | Type    | Required   | Description                  |
+| --------- | ------- | ---------- | ---------------------------- |
+| `success` | boolean | Yes        | Whether the toggle succeeded |
+| `error`   | string  | If failure | Error message                |
 
 **Success example:**
 
@@ -295,11 +295,11 @@ Response to secret mode toggle.
 
 Send a chat message to a channel.
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `message` | string | Yes | Message content (1-1024 characters) |
-| `action` | string | No | Action type: `"Normal"` (default) or `"Me"` |
-| `channel` | string | Yes | Target channel |
+| Field     | Type   | Required | Description                                 |
+| --------- | ------ | -------- | ------------------------------------------- |
+| `message` | string | Yes      | Message content (1-1024 characters)         |
+| `action`  | string | No       | Action type: `"Normal"` (default) or `"Me"` |
+| `channel` | string | Yes      | Target channel                              |
 
 **Example:**
 
@@ -324,15 +324,15 @@ Send a chat message to a channel.
 
 Broadcast to channel members when a chat message is sent.
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `session_id` | integer | Yes | Sender's session ID |
-| `nickname` | string | Yes | Sender's display name |
-| `is_admin` | boolean | Yes | Whether sender is an admin |
-| `is_shared` | boolean | Yes | Whether sender is on a shared account |
-| `message` | string | Yes | Message content |
-| `action` | string | No | Action type: `"Normal"` (default) or `"Me"` |
-| `channel` | string | Yes | Channel the message was sent to |
+| Field        | Type    | Required | Description                                 |
+| ------------ | ------- | -------- | ------------------------------------------- |
+| `session_id` | integer | Yes      | Sender's session ID                         |
+| `nickname`   | string  | Yes      | Sender's display name                       |
+| `is_admin`   | boolean | Yes      | Whether sender is an admin                  |
+| `is_shared`  | boolean | Yes      | Whether sender is on a shared account       |
+| `message`    | string  | Yes      | Message content                             |
+| `action`     | string  | No       | Action type: `"Normal"` (default) or `"Me"` |
+| `channel`    | string  | Yes      | Channel the message was sent to             |
 
 **Example:**
 
@@ -351,12 +351,12 @@ Broadcast to channel members when a chat message is sent.
 
 Broadcast to existing channel members when a user joins.
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `channel` | string | Yes | Channel name |
-| `nickname` | string | Yes | Nickname of user who joined |
-| `is_admin` | boolean | Yes | Whether the user is an admin |
-| `is_shared` | boolean | Yes | Whether the user is on a shared account |
+| Field       | Type    | Required | Description                             |
+| ----------- | ------- | -------- | --------------------------------------- |
+| `channel`   | string  | Yes      | Channel name                            |
+| `nickname`  | string  | Yes      | Nickname of user who joined             |
+| `is_admin`  | boolean | Yes      | Whether the user is an admin            |
+| `is_shared` | boolean | Yes      | Whether the user is on a shared account |
 
 **Example:**
 
@@ -375,10 +375,10 @@ Note: Not broadcast during login auto-join (UserConnected already notifies about
 
 Broadcast to remaining channel members when a user leaves.
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `channel` | string | Yes | Channel name |
-| `nickname` | string | Yes | Nickname of user who left |
+| Field      | Type   | Required | Description               |
+| ---------- | ------ | -------- | ------------------------- |
+| `channel`  | string | Yes      | Channel name              |
+| `nickname` | string | Yes      | Nickname of user who left |
 
 **Example:**
 
@@ -389,16 +389,14 @@ Broadcast to remaining channel members when a user leaves.
 }
 ```
 
-
-
 ### ChatTopicUpdate (Client → Server)
 
 Update a channel's topic.
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `topic` | string | Yes | New topic (0-256 characters, empty to clear) |
-| `channel` | string | Yes | Target channel |
+| Field     | Type   | Required | Description                                  |
+| --------- | ------ | -------- | -------------------------------------------- |
+| `topic`   | string | Yes      | New topic (0-256 characters, empty to clear) |
+| `channel` | string | Yes      | Target channel                               |
 
 **Set topic example:**
 
@@ -422,10 +420,10 @@ Update a channel's topic.
 
 Response to the topic update request.
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `success` | boolean | Yes | Whether the update succeeded |
-| `error` | string | If failure | Error message |
+| Field     | Type    | Required   | Description                  |
+| --------- | ------- | ---------- | ---------------------------- |
+| `success` | boolean | Yes        | Whether the update succeeded |
+| `error`   | string  | If failure | Error message                |
 
 **Success example:**
 
@@ -439,11 +437,11 @@ Response to the topic update request.
 
 Broadcast to channel members when the topic changes.
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `topic` | string | Yes | The new topic (empty if cleared) |
-| `nickname` | string | Yes | Nickname of user who set the topic |
-| `channel` | string | Yes | Channel whose topic changed |
+| Field      | Type   | Required | Description                        |
+| ---------- | ------ | -------- | ---------------------------------- |
+| `topic`    | string | Yes      | The new topic (empty if cleared)   |
+| `nickname` | string | Yes      | Nickname of user who set the topic |
+| `channel`  | string | Yes      | Channel whose topic changed        |
 
 **Example:**
 
@@ -459,10 +457,10 @@ Broadcast to channel members when the topic changes.
 
 Chat messages support action formatting via the `action` field:
 
-| Action | Input | Rendered |
-|--------|-------|----------|
-| `Normal` (default) | `Hello!` | `<alice> Hello!` |
-| `Me` | `/me waves` | `*** alice waves` (italic) |
+| Action             | Input       | Rendered                   |
+| ------------------ | ----------- | -------------------------- |
+| `Normal` (default) | `Hello!`    | `<alice> Hello!`           |
+| `Me`               | `/me waves` | `*** alice waves` (italic) |
 
 Action messages are rendered in italic with `***` prefix instead of the usual `<nickname>:` format. The nickname retains its color (admin red, shared muted, or normal).
 
@@ -470,16 +468,16 @@ When `action` is omitted, it defaults to `Normal`.
 
 ## Permissions
 
-| Permission | Required For |
-|------------|--------------|
-| `chat_join` | Joining existing channels (`ChatJoin`) |
-| `chat_create` | Creating new channels (`ChatJoin` when channel doesn't exist) |
-| `chat_list` | Listing available channels (`ChatList`) |
-| `chat_send` | Sending chat messages (`ChatSend`) |
-| `chat_receive` | Receiving chat messages (`ChatMessage` broadcasts) |
-| `chat_topic` | Viewing topic updates (`ChatUpdated` broadcasts) |
-| `chat_topic_edit` | Changing channel topics (`ChatTopicUpdate`) |
-| `chat_secret` | Toggling secret mode (`ChatSecret`) |
+| Permission        | Required For                                                  |
+| ----------------- | ------------------------------------------------------------- |
+| `chat_join`       | Joining existing channels (`ChatJoin`)                        |
+| `chat_create`     | Creating new channels (`ChatJoin` when channel doesn't exist) |
+| `chat_list`       | Listing available channels (`ChatList`)                       |
+| `chat_send`       | Sending chat messages (`ChatSend`)                            |
+| `chat_receive`    | Receiving chat messages (`ChatMessage` broadcasts)            |
+| `chat_topic`      | Viewing topic updates (`ChatUpdated` broadcasts)              |
+| `chat_topic_edit` | Changing channel topics (`ChatTopicUpdate`)                   |
+| `chat_secret`     | Toggling secret mode (`ChatSecret`)                           |
 
 **Note:** Creating a channel requires both `chat_join` and `chat_create` permissions.
 
@@ -490,6 +488,7 @@ Admins have all permissions automatically.
 In addition to permissions, users must have the `chat` feature enabled to participate in chat. Features are specified at login time.
 
 Users without the `chat` feature:
+
 - Cannot send messages (even with `chat_send` permission)
 - Cannot join channels
 - Do not receive `ChatMessage` broadcasts
@@ -497,40 +496,41 @@ Users without the `chat` feature:
 
 ## Channel Validation
 
-| Rule | Value | Error |
-|------|-------|-------|
-| Prefix | Must start with `#` | Channel name must start with '#' |
-| Min length | 2 characters (including `#`) | Channel name too short |
-| Max length | 32 characters | Channel name too long |
-| Characters | Letters, numbers, `-`, `_` | Invalid characters |
-| No spaces | Spaces not allowed | Invalid characters |
-| No path chars | `/`, `\`, `:`, `.` not allowed | Invalid characters |
-| Case | Case-insensitive matching | — |
+| Rule          | Value                          | Error                            |
+| ------------- | ------------------------------ | -------------------------------- |
+| Prefix        | Must start with `#`            | Channel name must start with '#' |
+| Min length    | 2 characters (including `#`)   | Channel name too short           |
+| Max length    | 32 characters                  | Channel name too long            |
+| Characters    | Letters, numbers, `-`, `_`     | Invalid characters               |
+| No spaces     | Spaces not allowed             | Invalid characters               |
+| No path chars | `/`, `\`, `:`, `.` not allowed | Invalid characters               |
+| Case          | Case-insensitive matching      | —                                |
 
 Unicode letters are supported (e.g., `#日本語`, `#Россия`).
 
 ## Message Validation
 
-| Rule | Value | Error |
-|------|-------|-------|
-| Not empty | Must have non-whitespace content | Message cannot be empty |
-| Max length | 1024 characters | Message too long |
-| No newlines | `\n`, `\r` not allowed | Message cannot contain newlines |
-| No control chars | No ASCII control characters | Invalid characters |
+| Rule             | Value                            | Error                           |
+| ---------------- | -------------------------------- | ------------------------------- |
+| Not empty        | Must have non-whitespace content | Message cannot be empty         |
+| Max length       | 1024 characters                  | Message too long                |
+| No newlines      | `\n`, `\r` not allowed           | Message cannot contain newlines |
+| No control chars | No ASCII control characters      | Invalid characters              |
 
 Unicode is fully supported, including:
+
 - International characters (日本語, Русский, العربية)
 - Emoji (👋 🎉 ✨)
 - Mathematical symbols (∑ ∏ ∫)
 
 ## Topic Validation
 
-| Rule | Value | Error |
-|------|-------|-------|
-| Max length | 256 characters | Topic too long |
-| No newlines | `\n`, `\r` not allowed | Topic cannot contain newlines |
-| No control chars | No ASCII control characters | Invalid characters |
-| Empty allowed | Empty string clears topic | — |
+| Rule             | Value                       | Error                         |
+| ---------------- | --------------------------- | ----------------------------- |
+| Max length       | 256 characters              | Topic too long                |
+| No newlines      | `\n`, `\r` not allowed      | Topic cannot contain newlines |
+| No control chars | No ASCII control characters | Invalid characters            |
+| Empty allowed    | Empty string clears topic   | —                             |
 
 ## Initial Channels
 
@@ -563,66 +563,66 @@ Secret channels are hidden from `ChatList` for non-members. Only members and adm
 
 ## Resource Limits
 
-| Limit | Value | Purpose |
-|-------|-------|---------|
-| Max channels per user | 100 | Prevent resource exhaustion |
+| Limit                 | Value | Purpose                     |
+| --------------------- | ----- | --------------------------- |
+| Max channels per user | 100   | Prevent resource exhaustion |
 
 ## Error Handling
 
 ### ChatJoin Errors
 
-| Error | Cause | Connection |
-|-------|-------|------------|
-| Not logged in | Sent before authentication | Disconnected |
-| Channel name validation | Invalid channel format | Stays connected |
-| Permission denied | Missing `chat_join` permission | Stays connected |
-| Chat feature not enabled | Missing `chat` feature | Stays connected |
-| Already a member | User already in channel | Stays connected |
-| Channel limit exceeded | User in 100+ channels | Stays connected |
+| Error                    | Cause                          | Connection      |
+| ------------------------ | ------------------------------ | --------------- |
+| Not logged in            | Sent before authentication     | Disconnected    |
+| Channel name validation  | Invalid channel format         | Stays connected |
+| Permission denied        | Missing `chat_join` permission | Stays connected |
+| Chat feature not enabled | Missing `chat` feature         | Stays connected |
+| Already a member         | User already in channel        | Stays connected |
+| Channel limit exceeded   | User in 100+ channels          | Stays connected |
 
 ### ChatLeave Errors
 
-| Error | Cause | Connection |
-|-------|-------|------------|
-| Not logged in | Sent before authentication | Disconnected |
-| Channel name validation | Invalid channel format | Stays connected |
+| Error                        | Cause                              | Connection      |
+| ---------------------------- | ---------------------------------- | --------------- |
+| Not logged in                | Sent before authentication         | Disconnected    |
+| Channel name validation      | Invalid channel format             | Stays connected |
 | Cannot leave server channels | Trying to leave persistent channel | Stays connected |
-| Not a member | User not in channel | Stays connected |
-| Chat feature not enabled | Missing `chat` feature | Stays connected |
+| Not a member                 | User not in channel                | Stays connected |
+| Chat feature not enabled     | Missing `chat` feature             | Stays connected |
 
 ### ChatSend Errors
 
-| Error | Cause | Connection |
-|-------|-------|------------|
-| Not logged in | Sent before authentication | Disconnected |
-| Message cannot be empty | Empty or whitespace-only | Disconnected |
-| Message too long | Exceeds 1024 characters | Disconnected |
-| Message cannot contain newlines | Contains `\n` or `\r` | Disconnected |
-| Invalid characters | Contains control characters | Disconnected |
-| Chat feature not enabled | Missing `chat` feature | Disconnected |
-| Permission denied | Missing `chat_send` permission | Stays connected |
-| Channel not found | Channel doesn't exist or not a member | Stays connected |
+| Error                           | Cause                                 | Connection      |
+| ------------------------------- | ------------------------------------- | --------------- |
+| Not logged in                   | Sent before authentication            | Disconnected    |
+| Message cannot be empty         | Empty or whitespace-only              | Disconnected    |
+| Message too long                | Exceeds 1024 characters               | Disconnected    |
+| Message cannot contain newlines | Contains `\n` or `\r`                 | Disconnected    |
+| Invalid characters              | Contains control characters           | Disconnected    |
+| Chat feature not enabled        | Missing `chat` feature                | Disconnected    |
+| Permission denied               | Missing `chat_send` permission        | Stays connected |
+| Channel not found               | Channel doesn't exist or not a member | Stays connected |
 
 ### ChatTopicUpdate Errors
 
-| Error | Cause | Connection |
-|-------|-------|------------|
-| Not logged in | Sent before authentication | Stays connected |
-| Topic too long | Exceeds 256 characters | Stays connected |
-| Topic cannot contain newlines | Contains `\n` or `\r` | Stays connected |
-| Invalid characters | Contains control characters | Stays connected |
-| Permission denied | Missing `chat_topic_edit` permission | Stays connected |
-| Channel not found | Channel doesn't exist or not a member | Stays connected |
+| Error                         | Cause                                 | Connection      |
+| ----------------------------- | ------------------------------------- | --------------- |
+| Not logged in                 | Sent before authentication            | Stays connected |
+| Topic too long                | Exceeds 256 characters                | Stays connected |
+| Topic cannot contain newlines | Contains `\n` or `\r`                 | Stays connected |
+| Invalid characters            | Contains control characters           | Stays connected |
+| Permission denied             | Missing `chat_topic_edit` permission  | Stays connected |
+| Channel not found             | Channel doesn't exist or not a member | Stays connected |
 
 ### ChatSecret Errors
 
-| Error | Cause | Connection |
-|-------|-------|------------|
-| Not logged in | Sent before authentication | Disconnected |
-| Channel name validation | Invalid channel format | Stays connected |
-| Permission denied | Missing `chat_secret` permission | Stays connected |
-| Chat feature not enabled | Missing `chat` feature | Stays connected |
-| Channel not found | Channel doesn't exist or not a member | Stays connected |
+| Error                    | Cause                                 | Connection      |
+| ------------------------ | ------------------------------------- | --------------- |
+| Not logged in            | Sent before authentication            | Disconnected    |
+| Channel name validation  | Invalid channel format                | Stays connected |
+| Permission denied        | Missing `chat_secret` permission      | Stays connected |
+| Chat feature not enabled | Missing `chat` feature                | Stays connected |
+| Channel not found        | Channel doesn't exist or not a member | Stays connected |
 
 ## Notes
 
@@ -639,10 +639,10 @@ Secret channels are hidden from `ChatList` for non-members. Only members and adm
 
 Admins can configure channels via `ServerInfoUpdate`:
 
-| Setting | Description |
-|---------|-------------|
-| `persistent_channels` | Space-separated list of persistent channel names |
-| `auto_join_channels` | Space-separated list of channels users auto-join on login |
+| Setting               | Description                                               |
+| --------------------- | --------------------------------------------------------- |
+| `persistent_channels` | Space-separated list of persistent channel names          |
+| `auto_join_channels`  | Space-separated list of channels users auto-join on login |
 
 Both settings are independent—persistent channels don't have to be auto-joined, and auto-join channels don't have to be persistent.
 

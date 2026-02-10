@@ -449,12 +449,12 @@ impl NexusApp {
         action: NewsAction,
         id: i64,
     ) -> Task<Message> {
-        let Some(conn) = self.connections.get_mut(&connection_id) else {
-            return Task::none();
-        };
-
-        // Check if we have a cached news list
-        let has_cache = matches!(conn.news_management.news_items, Some(Ok(_)));
+        // Extract cache state before emit_event (which needs &mut self)
+        let has_cache = self
+            .connections
+            .get(&connection_id)
+            .map(|c| matches!(c.news_management.news_items, Some(Ok(_))))
+            .unwrap_or(false);
 
         // If no cache, emit simple notification for new posts and return
         // (we'll get fresh data when user opens the News panel)
@@ -468,6 +468,11 @@ impl NexusApp {
             }
             return Task::none();
         }
+
+        // Re-borrow conn after emit_event check
+        let Some(conn) = self.connections.get_mut(&connection_id) else {
+            return Task::none();
+        };
 
         // We have a cached list - keep it in sync
         match action {

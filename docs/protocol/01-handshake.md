@@ -23,9 +23,9 @@ Client                                        Server
 
 Sent immediately after TLS connection is established.
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `version` | string | Yes | Client's protocol version (e.g., `"0.5.0"`) |
+| Field     | Type   | Required | Description                                 |
+| --------- | ------ | -------- | ------------------------------------------- |
+| `version` | string | Yes      | Client's protocol version (e.g., `"0.5.0"`) |
 
 **Example:**
 
@@ -45,11 +45,11 @@ NX|9|Handshake|a1b2c3d4e5f6|20|{"version":"0.5.0"}
 
 Server's response indicating whether the handshake succeeded.
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `success` | boolean | Yes | Whether the handshake succeeded |
-| `version` | string | If success | Server's protocol version |
-| `error` | string | If failure | Error message explaining the failure |
+| Field     | Type    | Required   | Description                          |
+| --------- | ------- | ---------- | ------------------------------------ |
+| `success` | boolean | Yes        | Whether the handshake succeeded      |
+| `version` | string  | If success | Server's protocol version            |
+| `error`   | string  | If failure | Error message explaining the failure |
 
 **Success example:**
 
@@ -73,22 +73,22 @@ Server's response indicating whether the handshake succeeded.
 
 The protocol uses [Semantic Versioning](https://semver.org/) for compatibility checks:
 
-| Component | Rule |
-|-----------|------|
-| Major | Must match exactly |
-| Minor | Client ≤ Server |
-| Patch | Ignored |
+| Component | Rule               |
+| --------- | ------------------ |
+| Major     | Must match exactly |
+| Minor     | Client ≤ Server    |
+| Patch     | Ignored            |
 
 **Examples:**
 
-| Client | Server | Compatible | Reason |
-|--------|--------|------------|--------|
-| 0.5.0 | 0.5.0 | ✅ Yes | Exact match |
-| 0.5.0 | 0.5.1 | ✅ Yes | Patch difference ignored |
-| 0.4.0 | 0.5.0 | ✅ Yes | Client minor ≤ server minor |
-| 0.5.0 | 0.4.0 | ❌ No | Client minor > server minor |
-| 1.0.0 | 0.5.0 | ❌ No | Major version mismatch |
-| 0.5.0 | 1.0.0 | ❌ No | Major version mismatch |
+| Client | Server | Compatible | Reason                      |
+| ------ | ------ | ---------- | --------------------------- |
+| 0.5.0  | 0.5.0  | ✅ Yes     | Exact match                 |
+| 0.5.0  | 0.5.1  | ✅ Yes     | Patch difference ignored    |
+| 0.4.0  | 0.5.0  | ✅ Yes     | Client minor ≤ server minor |
+| 0.5.0  | 0.4.0  | ❌ No      | Client minor > server minor |
+| 1.0.0  | 0.5.0  | ❌ No      | Major version mismatch      |
+| 0.5.0  | 1.0.0  | ❌ No      | Major version mismatch      |
 
 ## Error Handling
 
@@ -100,10 +100,10 @@ If the handshake fails:
 
 Common errors:
 
-| Error | Cause |
-|-------|-------|
-| Unsupported protocol version | Version incompatibility |
-| Invalid handshake | Malformed message or missing fields |
+| Error                        | Cause                               |
+| ---------------------------- | ----------------------------------- |
+| Unsupported protocol version | Version incompatibility             |
+| Invalid handshake            | Malformed message or missing fields |
 
 ## Timeout
 
@@ -113,10 +113,10 @@ Once handshake and login complete, authenticated users can idle indefinitely. Th
 
 **Timeout behavior:**
 
-| State | First Byte Timeout | Frame Completion Timeout |
-|-------|-------------------|--------------------------|
-| Before login | 30 seconds | 60 seconds |
-| After login | Indefinite (idle allowed) | 60 seconds |
+| State        | First Byte Timeout        | Frame Completion Timeout |
+| ------------ | ------------------------- | ------------------------ |
+| Before login | 30 seconds                | 60 seconds               |
+| After login  | Indefinite (idle allowed) | 60 seconds               |
 
 This prevents resource exhaustion from unauthenticated connections while allowing legitimate users to idle in chat.
 

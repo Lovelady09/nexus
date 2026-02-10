@@ -27,6 +27,9 @@ mod widgets;
 #[cfg(not(target_os = "macos"))]
 mod tray;
 
+#[cfg(target_os = "macos")]
+mod macos_url;
+
 use std::sync::Arc;
 use std::sync::atomic::AtomicU32;
 
@@ -39,8 +42,12 @@ use uuid::Uuid;
 
 use iced::widget::{Id, operation, text_editor};
 use iced::{Element, Subscription, Task, Theme};
+use iced_toasts::{ToastContainer, ToastLevel, toast, toast_container};
+
+use style::toast_style;
 
 use config::events::EventType;
+
 use style::{WINDOW_HEIGHT_MIN, WINDOW_TITLE, WINDOW_WIDTH_MIN};
 use types::{
     BookmarkEditState, ConnectionFormState, FingerprintMismatch, InputId, Message,
@@ -69,9 +76,9 @@ fn get_ipc_socket_path() -> String {
     }
     #[cfg(windows)]
     {
-        // Windows: use named pipe
+        // Windows: use named pipe (full path required for connect_by_path)
         let username = std::env::var("USERNAME").unwrap_or_else(|_| "user".to_string());
-        format!("nexus-{}", username)
+        format!(r"\\.\pipe\nexus-{}", username)
     }
 }
 
@@ -351,6 +358,12 @@ struct NexusApp {
     /// System tray manager (None on macOS or if tray creation failed)
     #[cfg(not(target_os = "macos"))]
     tray_manager: Option<tray::TrayManager>,
+
+    // -------------------------------------------------------------------------
+    // Toasts
+    // -------------------------------------------------------------------------
+    /// Toast notification container for transient feedback messages
+    toasts: ToastContainer<'static, Message>,
 }
 
 impl Default for NexusApp {
@@ -405,6 +418,10 @@ impl Default for NexusApp {
             // System Tray (Windows/Linux only)
             #[cfg(not(target_os = "macos"))]
             tray_manager: None,
+            // Toasts
+            toasts: toast_container(Message::ToastDismiss)
+                .timeout(std::time::Duration::from_secs(style::TOAST_TIMEOUT_SECS))
+                .style(toast_style),
         }
     }
 }
@@ -430,6 +447,10 @@ impl NexusApp {
             // If tray creation fails on startup, silently continue without it
             // (user can toggle the setting to see the error)
         }
+
+        // Install macOS URL scheme delegate to receive nexus:// links via Apple Events
+        #[cfg(target_os = "macos")]
+        macos_url::install();
 
         // Check for startup URI
         let startup_uri = STARTUP_URI.lock().unwrap().take();
@@ -516,6 +537,10 @@ impl NexusApp {
                 {
                     let _ = std::fs::remove_file(get_ipc_socket_path());
                 }
+
+                // Signal macOS URL stream to stop so tokio runtime can shut down cleanly
+                #[cfg(target_os = "macos")]
+                macos_url::shutdown();
 
                 iced::window::close(id)
             }
@@ -716,6 +741,13 @@ impl NexusApp {
                 self.handle_event_notification_content_selected(content)
             }
             Message::TestNotification => self.handle_test_notification(),
+            Message::EventShowToastToggled(enabled) => {
+                self.handle_event_show_toast_toggled(enabled)
+            }
+            Message::EventToastContentSelected(content) => {
+                self.handle_event_toast_content_selected(content)
+            }
+            Message::TestToast => self.handle_test_toast(),
             Message::ToggleSoundEnabled(enabled) => {
                 self.config.settings.sound_enabled = enabled;
                 Task::none()
@@ -866,8 +898,8 @@ impl NexusApp {
             Message::NetworkError(connection_id, error) => {
                 self.handle_network_error(connection_id, error)
             }
-            Message::ServerMessageReceived(connection_id, message_id, msg) => {
-                self.handle_server_message_received(connection_id, message_id, msg)
+            Message::ServerMessageReceived(connection_id, message_id, msg, timestamp) => {
+                self.handle_server_message_received(connection_id, message_id, msg, timestamp)
             }
 
             // News management
@@ -993,8 +1025,9 @@ impl NexusApp {
             Message::AudioTestMicStop => self.handle_audio_test_mic_stop(),
             Message::AudioMicLevel(level) => self.handle_audio_mic_level(level),
             Message::AudioMicError(error) => self.handle_audio_mic_error(error),
-            Message::AudioNoiseSuppression(enabled) => {
-                self.config.settings.audio.noise_suppression = enabled;
+            Message::AudioNoiseSuppressionLevel(level) => {
+                self.config.settings.audio.noise_suppression_level = level;
+                self.config.settings.audio.noise_suppression = level.is_enabled();
                 let _ = self.config.save();
                 self.update_voice_processor_settings();
                 Task::none()
@@ -1015,6 +1048,22 @@ impl NexusApp {
                 self.config.settings.audio.transient_suppression = enabled;
                 let _ = self.config.save();
                 self.update_voice_processor_settings();
+                Task::none()
+            }
+            Message::AudioMicBoost(level) => {
+                self.config.settings.audio.mic_boost = level;
+                let _ = self.config.save();
+                self.update_voice_processor_settings();
+                Task::none()
+            }
+
+            // Toasts
+            Message::ToastDismiss(id) => {
+                self.toasts.dismiss(id);
+                Task::none()
+            }
+            Message::ShowToast(text) => {
+                self.toasts.push(toast(&text).level(ToastLevel::Success));
                 Task::none()
             }
 
@@ -1063,7 +1112,7 @@ impl NexusApp {
                 self.config.settings.minimize_to_tray = enabled;
                 Task::none()
             }
-            #[cfg(not(target_os = "macos"))]
+            #[cfg(target_os = "linux")]
             Message::TrayServiceClosed => {
                 // ksni service died (D-Bus connection dropped, e.g., after system sleep)
                 // Drop the dead manager and let update_tray_from_settings() recreate it
@@ -1109,6 +1158,10 @@ impl NexusApp {
             // IPC listener for receiving URIs from other instances
             Subscription::run(ipc_listener_stream),
         ];
+
+        // Listen for macOS URL scheme events (Apple Events from clicking nexus:// links)
+        #[cfg(target_os = "macos")]
+        subscriptions.push(Subscription::run(macos_url::url_stream));
 
         // Subscribe to all active connections
         for conn in self.connections.values() {
@@ -1346,10 +1399,11 @@ impl NexusApp {
             mic_testing,
             mic_level,
             mic_error,
-            noise_suppression: self.config.settings.audio.noise_suppression,
+            noise_suppression_level: self.config.settings.audio.noise_suppression_level,
             echo_cancellation: self.config.settings.audio.echo_cancellation,
             agc: self.config.settings.audio.agc,
             transient_suppression: self.config.settings.audio.transient_suppression,
+            mic_boost: self.config.settings.audio.mic_boost,
             is_local_speaking: self.is_local_speaking,
             is_deafened: self.is_deafened,
             // System Tray settings
@@ -1364,7 +1418,8 @@ impl NexusApp {
             return views::fingerprint_mismatch_dialog(mismatch);
         }
 
-        main_view
+        // Wrap with toast container for transient notifications
+        self.toasts.view(main_view)
     }
 
     fn theme(&self) -> Theme {
@@ -1439,7 +1494,7 @@ fn ipc_listener_stream() -> impl iced::futures::Stream<Item = Message> {
         {
             use interprocess::os::windows::named_pipe::{
                 PipeListenerOptions, PipeMode, pipe_mode,
-                tokio::{PipeListener, PipeListenerOptionsExt, PipeStream as TokioPipeStream},
+                tokio::{PipeListener, PipeStream as TokioPipeStream},
             };
             use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 

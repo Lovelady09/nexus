@@ -103,10 +103,10 @@ Client                                        Server
 
 Request to download a file or directory.
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `path` | string | Yes | Path to download (file or directory) |
-| `root` | boolean | No | If true, path is relative to file root (default: false) |
+| Field  | Type    | Required | Description                                             |
+| ------ | ------- | -------- | ------------------------------------------------------- |
+| `path` | string  | Yes      | Path to download (file or directory)                    |
+| `root` | boolean | No       | If true, path is relative to file root (default: false) |
 
 **Single file:**
 
@@ -137,14 +137,14 @@ Request to download a file or directory.
 
 Response to download request.
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `success` | boolean | Yes | Whether the request succeeded |
-| `error` | string | If failure | Human-readable error message |
-| `error_kind` | string | If failure | Machine-readable error type |
-| `size` | integer | If success | Total size of all files in bytes |
-| `file_count` | integer | If success | Number of files to transfer |
-| `transfer_id` | string | If success | Transfer ID for logging (8 hex chars) |
+| Field         | Type    | Required   | Description                           |
+| ------------- | ------- | ---------- | ------------------------------------- |
+| `success`     | boolean | Yes        | Whether the request succeeded         |
+| `error`       | string  | If failure | Human-readable error message          |
+| `error_kind`  | string  | If failure | Machine-readable error type           |
+| `size`        | integer | If success | Total size of all files in bytes      |
+| `file_count`  | integer | If success | Number of files to transfer           |
+| `transfer_id` | string  | If success | Transfer ID for logging (8 hex chars) |
 
 **Success example:**
 
@@ -182,12 +182,12 @@ Response to download request.
 
 Request to upload files.
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `destination` | string | Yes | Destination directory on server |
-| `file_count` | integer | Yes | Number of files to upload |
-| `total_size` | integer | Yes | Total size of all files in bytes |
-| `root` | boolean | No | If true, destination is relative to file root |
+| Field         | Type    | Required | Description                                   |
+| ------------- | ------- | -------- | --------------------------------------------- |
+| `destination` | string  | Yes      | Destination directory on server               |
+| `file_count`  | integer | Yes      | Number of files to upload                     |
+| `total_size`  | integer | Yes      | Total size of all files in bytes              |
+| `root`        | boolean | No       | If true, destination is relative to file root |
 
 **Example:**
 
@@ -203,12 +203,12 @@ Request to upload files.
 
 Response to upload request.
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `success` | boolean | Yes | Whether the request is accepted |
-| `error` | string | If failure | Human-readable error message |
-| `error_kind` | string | If failure | Machine-readable error type |
-| `transfer_id` | string | If success | Transfer ID for logging (8 hex chars) |
+| Field         | Type    | Required   | Description                           |
+| ------------- | ------- | ---------- | ------------------------------------- |
+| `success`     | boolean | Yes        | Whether the request is accepted       |
+| `error`       | string  | If failure | Human-readable error message          |
+| `error_kind`  | string  | If failure | Machine-readable error type           |
+| `transfer_id` | string  | If success | Transfer ID for logging (8 hex chars) |
 
 **Success example:**
 
@@ -233,11 +233,11 @@ Response to upload request.
 
 Announces a file to transfer. Sent by server for downloads, by client for uploads.
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `path` | string | Yes | Relative path (e.g., `"subdir/file.txt"`) |
-| `size` | integer | Yes | File size in bytes |
-| `sha256` | string | Yes | SHA-256 hash of complete file |
+| Field    | Type    | Required | Description                               |
+| -------- | ------- | -------- | ----------------------------------------- |
+| `path`   | string  | Yes      | Relative path (e.g., `"subdir/file.txt"`) |
+| `size`   | integer | Yes      | File size in bytes                        |
+| `sha256` | string  | Yes      | SHA-256 hash of complete file             |
 
 **Example:**
 
@@ -250,6 +250,7 @@ Announces a file to transfer. Sent by server for downloads, by client for upload
 ```
 
 **Notes:**
+
 - Path is relative (no leading slash)
 - Path uses forward slashes regardless of OS
 - 0-byte files are valid (sha256 is the empty file hash)
@@ -258,10 +259,10 @@ Announces a file to transfer. Sent by server for downloads, by client for upload
 
 Reports local file state for resume. Sent by client for downloads, by server for uploads.
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `size` | integer | Yes | Size of local file (0 if none exists) |
-| `sha256` | string | If size > 0 | SHA-256 hash of local file |
+| Field    | Type    | Required    | Description                           |
+| -------- | ------- | ----------- | ------------------------------------- |
+| `size`   | integer | Yes         | Size of local file (0 if none exists) |
+| `sha256` | string  | If size > 0 | SHA-256 hash of local file            |
 
 **No local file:**
 
@@ -308,9 +309,9 @@ NX|8|FileData|a1b2c3d4e5f6|65536|[binary data]
 
 Keepalive sent while computing SHA-256 hash for large files.
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `file` | string | Yes | File being hashed (for logging) |
+| Field  | Type   | Required | Description                     |
+| ------ | ------ | -------- | ------------------------------- |
+| `file` | string | Yes      | File being hashed (for logging) |
 
 **Example:**
 
@@ -326,11 +327,11 @@ This message is sent every 10 seconds during hash computation to prevent idle ti
 
 Signals transfer completion.
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `success` | boolean | Yes | Whether transfer succeeded |
-| `error` | string | If failure | Human-readable error message |
-| `error_kind` | string | If failure | Machine-readable error type |
+| Field        | Type    | Required   | Description                  |
+| ------------ | ------- | ---------- | ---------------------------- |
+| `success`    | boolean | Yes        | Whether transfer succeeded   |
+| `error`      | string  | If failure | Human-readable error message |
+| `error_kind` | string  | If failure | Machine-readable error type  |
 
 **Success:**
 
@@ -386,41 +387,42 @@ Signals transfer completion.
 
 ## Error Kinds
 
-| Value | Description |
-|-------|-------------|
-| `not_found` | Path doesn't exist |
-| `permission` | Permission denied |
-| `invalid` | Invalid input (malformed path) |
-| `unsupported_version` | Protocol version not supported |
-| `disk_full` | Disk full |
-| `hash_mismatch` | SHA-256 verification failed |
-| `io_error` | File I/O error |
-| `protocol_error` | Invalid/unexpected data |
-| `exists` | File already exists (upload only) |
-| `conflict` | Concurrent upload in progress |
+| Value                 | Description                       |
+| --------------------- | --------------------------------- |
+| `not_found`           | Path doesn't exist                |
+| `permission`          | Permission denied                 |
+| `invalid`             | Invalid input (malformed path)    |
+| `unsupported_version` | Protocol version not supported    |
+| `disk_full`           | Disk full                         |
+| `hash_mismatch`       | SHA-256 verification failed       |
+| `io_error`            | File I/O error                    |
+| `protocol_error`      | Invalid/unexpected data           |
+| `exists`              | File already exists (upload only) |
+| `conflict`            | Concurrent upload in progress     |
 
 ## Timeouts
 
-| Context | Timeout | Description |
-|---------|---------|-------------|
-| Connection | 30 seconds | TLS handshake must complete |
-| Idle | 30 seconds | Time waiting for first byte of frame |
-| Frame | 60 seconds | Frame must complete within 60s of first byte |
-| FileData progress | 60 seconds | Must receive some bytes within 60s |
+| Context           | Timeout    | Description                                  |
+| ----------------- | ---------- | -------------------------------------------- |
+| Connection        | 30 seconds | TLS handshake must complete                  |
+| Idle              | 30 seconds | Time waiting for first byte of frame         |
+| Frame             | 60 seconds | Frame must complete within 60s of first byte |
+| FileData progress | 60 seconds | Must receive some bytes within 60s           |
 
 **Note:** Unlike port 7500, port 7501 does not allow indefinite idle connections.
 
 ## Permissions
 
-| Permission | Required For |
-|------------|--------------|
-| `file_download` | Downloading files |
-| `file_upload` | Uploading files |
-| `file_root` | Using `root: true` for file root access |
+| Permission      | Required For                            |
+| --------------- | --------------------------------------- |
+| `file_download` | Downloading files                       |
+| `file_upload`   | Uploading files                         |
+| `file_root`     | Using `root: true` for file root access |
 
 ### Upload Destination Requirements
 
 Uploads are only allowed to:
+
 - `[NEXUS-UL]` folders (upload folders)
 - `[NEXUS-DB]` folders (dropbox folders)
 
@@ -430,10 +432,10 @@ The server creates parent directories automatically if they don't exist (within 
 
 The login flow on port 7501 is identical to port 7500, but `LoginResponse` only includes:
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `success` | boolean | Whether login succeeded |
-| `error` | string | Error message (if failed) |
+| Field     | Type    | Description               |
+| --------- | ------- | ------------------------- |
+| `success` | boolean | Whether login succeeded   |
+| `error`   | string  | Error message (if failed) |
 
 No `session_id`, `permissions`, `server_info`, or `chat_info` is returned on the transfer port.
 
@@ -469,6 +471,7 @@ No `session_id`, `permissions`, `server_info`, or `chat_info` is returned on the
 ### No Overwrite
 
 If a file already exists with different content:
+
 - Upload fails with `error_kind: "exists"`
 - Admin must delete existing file for replacement
 

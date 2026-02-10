@@ -2,13 +2,14 @@
 
 use iced::Theme;
 use iced::widget::{markdown, text_editor};
+use iced_toasts::ToastId;
 use uuid::Uuid;
 
 use nexus_common::framing::MessageId;
 use nexus_common::protocol::FileSearchResult;
 use nexus_common::voice::VoiceQuality;
 
-use super::form::{FileSortColumn, SettingsTab, TabId};
+use super::panel::{FileSortColumn, SettingsTab, TabId};
 use super::{ChatTab, NetworkConnection, ServerMessage};
 use crate::config::audio::{PttMode, PttReleaseDelay};
 use crate::config::events::{EventType, NotificationContent, SoundChoice};
@@ -165,8 +166,9 @@ pub enum Message {
     SendMessagePressed,
     /// Connection form: Server address field changed
     ServerAddressChanged(String),
-    /// Network: Message received from server (connection_id, message_id, message)
-    ServerMessageReceived(usize, MessageId, ServerMessage),
+    /// Network: Message received from server (connection_id, message_id, message, receive_timestamp)
+    /// The timestamp is Some(Instant) for Pong messages (for accurate ping measurement), None otherwise
+    ServerMessageReceived(usize, MessageId, ServerMessage, Option<std::time::Instant>),
     /// Connection form: Server name field changed
     ServerNameChanged(String),
     /// Connection form: Nickname field changed
@@ -227,6 +229,12 @@ pub enum Message {
     EventNotificationContentSelected(NotificationContent),
     /// Settings panel (Events tab): Test notification button pressed
     TestNotification,
+    /// Settings panel (Events tab): Show toast checkbox toggled
+    EventShowToastToggled(bool),
+    /// Settings panel (Events tab): Toast content level selected
+    EventToastContentSelected(NotificationContent),
+    /// Settings panel (Events tab): Test toast button pressed
+    TestToast,
     /// Settings panel (Events tab): Global sound toggle
     ToggleSoundEnabled(bool),
     /// Settings panel (Events tab): Sound volume slider changed
@@ -595,14 +603,22 @@ pub enum Message {
     /// Audio: Microphone test error
     #[allow(dead_code)] // Will be emitted by mic test subscription
     AudioMicError(String),
-    /// Audio: Toggle noise suppression
-    AudioNoiseSuppression(bool),
+    /// Audio: Change noise suppression level
+    AudioNoiseSuppressionLevel(crate::config::audio::NoiseSuppressionLevel),
     /// Audio: Toggle echo cancellation
     AudioEchoCancellation(bool),
     /// Audio: Toggle automatic gain control
     AudioAgc(bool),
     /// Audio: Toggle transient suppression (keyboard/click noise reduction)
     AudioTransientSuppression(bool),
+    /// Audio: Change microphone boost level
+    AudioMicBoost(crate::config::audio::MicBoost),
+
+    // ==================== Toasts ====================
+    /// Toast: Dismiss a toast notification
+    ToastDismiss(ToastId),
+    /// Toast: Show a toast notification (triggered after async operations like clipboard write)
+    ShowToast(String),
 
     // ==================== System Tray (Windows/Linux only) ====================
     /// Tray: Periodic poll for tray events (also pumps GTK on Linux)
@@ -642,7 +658,7 @@ pub enum Message {
     #[cfg(not(target_os = "macos"))]
     MinimizeToTrayToggled(bool),
     /// Tray: Service has closed (D-Bus connection dropped, e.g., after system sleep)
-    #[cfg(not(target_os = "macos"))]
+    #[cfg(target_os = "linux")]
     TrayServiceClosed,
 
     // ==================== URI Scheme ====================

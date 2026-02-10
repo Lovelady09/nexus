@@ -5,12 +5,27 @@
 //! - Noise Suppression (NS)
 //! - Echo Cancellation (AEC)
 
-use nexus_common::voice::{VOICE_CHANNELS, VOICE_SAMPLES_PER_FRAME};
-use webrtc_audio_processing::{
-    Config, EchoCancellation, EchoCancellationSuppressionLevel, GainControl, GainControlMode,
-    InitializationConfig, NoiseSuppression, NoiseSuppressionLevel, Processor, VoiceDetection,
-    VoiceDetectionLikelihood,
+use nexus_common::voice::{VOICE_SAMPLE_RATE, VOICE_SAMPLES_PER_FRAME};
+use webrtc_audio_processing::Processor;
+use webrtc_audio_processing::config::{
+    CaptureAmplifier, CaptureLevelAdjustment, Config, EchoCanceller, GainController,
+    GainController2, HighPassFilter, NoiseSuppression, NoiseSuppressionLevel as WebrtcNsLevel,
 };
+
+use crate::config::audio::{MicBoost, NoiseSuppressionLevel};
+
+// =============================================================================
+// Silence Gate Constants
+// =============================================================================
+
+/// RMS threshold below which a processed frame is considered silence.
+/// Post-AGC speech typically has RMS 0.05–0.3; post-NS silence is below 0.005.
+const SILENCE_RMS_THRESHOLD: f32 = 0.01;
+
+/// Number of consecutive silent frames before gating transmission in toggle mode.
+/// At 10ms per frame, 20 frames = 200ms holdover after last detected speech.
+/// This prevents clipping word endings without transmitting too much silence.
+const SILENCE_HOLDOVER_FRAMES: u32 = 20;
 
 // =============================================================================
 // Audio Processor Settings
@@ -28,6 +43,8 @@ pub struct AudioProcessorSettings {
     /// Enable noise suppression (default: true)
     /// Removes steady-state background noise (fans, AC, etc.)
     pub noise_suppression: bool,
+    /// Noise suppression aggressiveness (default: Moderate)
+    pub noise_suppression_level: NoiseSuppressionLevel,
     /// Enable echo cancellation (default: false)
     /// Only needed when using speakers instead of headphones.
     /// Adds latency and CPU overhead, so disabled by default.
@@ -39,15 +56,20 @@ pub struct AudioProcessorSettings {
     /// Reduces keyboard clicks, mouse clicks, and other sudden noises.
     /// Can occasionally clip the start of words, so disabled by default.
     pub transient_suppression: bool,
+    /// Microphone pre-gain boost (default: Off)
+    /// Amplifies quiet mics before processing so AGC/NS have more signal.
+    pub mic_boost: MicBoost,
 }
 
 impl Default for AudioProcessorSettings {
     fn default() -> Self {
         Self {
             noise_suppression: true,
+            noise_suppression_level: NoiseSuppressionLevel::default(),
             echo_cancellation: false,
             agc: true,
             transient_suppression: false,
+            mic_boost: MicBoost::default(),
         }
     }
 }
@@ -65,6 +87,8 @@ pub struct AudioProcessor {
     processor: Processor,
     /// Current settings
     settings: AudioProcessorSettings,
+    /// Consecutive frames below silence threshold (for RMS-based silence gate)
+    silence_frames: u32,
 }
 
 impl AudioProcessor {
@@ -77,16 +101,8 @@ impl AudioProcessor {
     /// * `Ok(AudioProcessor)` - Processor ready for use
     /// * `Err(String)` - Error message if initialization failed
     pub fn new(settings: AudioProcessorSettings) -> Result<Self, String> {
-        // WebRTC processor is hardcoded to 48kHz, 10ms frames (480 samples)
-        // which matches our VOICE_* constants exactly
-        let init_config = InitializationConfig {
-            num_capture_channels: VOICE_CHANNELS as i32,
-            num_render_channels: VOICE_CHANNELS as i32,
-            ..InitializationConfig::default()
-        };
-
-        let mut processor =
-            Processor::new(&init_config).map_err(|e| format!("Failed to create processor: {e}"))?;
+        let processor = Processor::new(VOICE_SAMPLE_RATE)
+            .map_err(|e| format!("Failed to create processor: {e}"))?;
 
         // Apply initial settings
         let config = Self::build_config(&settings);
@@ -95,44 +111,66 @@ impl AudioProcessor {
         Ok(Self {
             processor,
             settings,
+            silence_frames: 0,
         })
     }
 
     /// Build a Config from our settings
     fn build_config(settings: &AudioProcessorSettings) -> Config {
+        let echo_cancellation = settings.echo_cancellation;
+
         Config {
-            echo_cancellation: if settings.echo_cancellation {
-                Some(EchoCancellation {
-                    suppression_level: EchoCancellationSuppressionLevel::Moderate,
-                    enable_extended_filter: true,
-                    enable_delay_agnostic: true,
+            capture_amplifier: if settings.mic_boost != MicBoost::Off {
+                Some(CaptureAmplifier::CaptureLevelAdjustment(
+                    CaptureLevelAdjustment {
+                        pre_gain_factor: settings.mic_boost.gain_factor(),
+                        ..CaptureLevelAdjustment::default()
+                    },
+                ))
+            } else {
+                None
+            },
+            echo_canceller: if echo_cancellation {
+                Some(EchoCanceller::Full {
                     stream_delay_ms: None,
                 })
             } else {
                 None
             },
-            gain_control: if settings.agc {
-                Some(GainControl {
-                    mode: GainControlMode::AdaptiveDigital,
-                    target_level_dbfs: 3,
-                    compression_gain_db: 9,
-                    enable_limiter: true,
-                })
+            gain_controller: if settings.agc {
+                Some(GainController::GainController2(GainController2 {
+                    adaptive_digital: Some(Default::default()),
+                    ..GainController2::default()
+                }))
             } else {
                 None
             },
-            noise_suppression: if settings.noise_suppression {
-                Some(NoiseSuppression {
-                    suppression_level: NoiseSuppressionLevel::Moderate,
-                })
-            } else {
-                None
+            // Gate on both the bool and the level for backward compat:
+            // old configs may have noise_suppression=false with level
+            // defaulting to Moderate (serde default). The bool ensures
+            // those users don't get NS silently re-enabled on upgrade.
+            noise_suppression: match settings.noise_suppression_level {
+                NoiseSuppressionLevel::Off => None,
+                _ if !settings.noise_suppression => None,
+                level => Some(NoiseSuppression {
+                    level: match level {
+                        NoiseSuppressionLevel::Low => WebrtcNsLevel::Low,
+                        NoiseSuppressionLevel::Moderate => WebrtcNsLevel::Moderate,
+                        NoiseSuppressionLevel::High => WebrtcNsLevel::High,
+                        NoiseSuppressionLevel::VeryHigh => WebrtcNsLevel::VeryHigh,
+                        NoiseSuppressionLevel::Off => unreachable!(),
+                    },
+                    // NOTE: analyze_linear_aec_output crashes AEC3 when enabled
+                    // via set_config (null BlockFramer in ProcessCapture). The
+                    // linear output framer isn't created when AEC is enabled
+                    // after Processor construction. Keep false until we can
+                    // create the Processor with AEC3 config upfront.
+                    analyze_linear_aec_output: false,
+                }),
             },
-            voice_detection: Some(VoiceDetection {
-                detection_likelihood: VoiceDetectionLikelihood::High,
-            }),
-            enable_transient_suppressor: settings.transient_suppression,
-            enable_high_pass_filter: true,
+            high_pass_filter: Some(HighPassFilter::default()),
+            transient_suppression: settings.transient_suppression,
+            ..Config::default()
         }
     }
 
@@ -154,11 +192,38 @@ impl AudioProcessor {
         self.settings
     }
 
-    /// Check if voice was detected in the last processed capture frame
+    /// Hint to AEC/AGC that output audio is muted (e.g., user is deafened).
     ///
+    /// When muted, there is no speaker output and thus no echo to cancel.
+    /// This lets the processor skip unnecessary work and adapt parameters.
+    pub fn set_output_will_be_muted(&self, muted: bool) {
+        self.processor.set_output_will_be_muted(muted);
+    }
+
+    /// Hint to the transient suppressor that a key press is occurring.
+    ///
+    /// Called on PTT key press/release to help identify keyboard transients.
+    pub fn set_stream_key_pressed(&self, pressed: bool) {
+        self.processor.set_stream_key_pressed(pressed);
+    }
+
+    /// Check if the processed capture frame contains speech.
+    ///
+    /// Uses an RMS-based silence gate since WebRTC 2.0 removed runtime VAD.
+    /// Returns true if the frame is above the silence threshold, or if we're
+    /// still within the holdover period after the last speech frame.
     /// Used for VAD-gated transmission in toggle PTT mode.
-    pub fn has_voice(&self) -> bool {
-        self.processor.get_stats().has_voice.unwrap_or(false)
+    pub fn has_voice(&mut self, frame: &[f32]) -> bool {
+        let sum_squares: f64 = frame.iter().map(|&s| (s as f64) * (s as f64)).sum();
+        let rms = (sum_squares / frame.len() as f64).sqrt() as f32;
+
+        if rms > SILENCE_RMS_THRESHOLD {
+            self.silence_frames = 0;
+            true
+        } else {
+            self.silence_frames = self.silence_frames.saturating_add(1);
+            self.silence_frames <= SILENCE_HOLDOVER_FRAMES
+        }
     }
 
     /// Process a capture (microphone) frame
@@ -178,19 +243,21 @@ impl AudioProcessor {
         }
 
         self.processor
-            .process_capture_frame(frame)
+            .process_capture_frame([frame])
             .map_err(|e| format!("Capture processing error: {e}"))
     }
 
-    /// Process a render (speaker) frame
+    /// Analyze a render (speaker) frame for echo cancellation reference
     ///
     /// This should be called on audio before playback. Required for
     /// echo cancellation to work - the processor needs to know what
     /// audio is being played to remove it from the microphone signal.
     ///
+    /// Unlike `process_render_frame`, this does not modify the audio data.
+    ///
     /// # Arguments
     /// * `frame` - Audio frame (must be VOICE_SAMPLES_PER_FRAME samples)
-    pub fn process_render_frame(&mut self, frame: &mut [f32]) -> Result<(), String> {
+    pub fn analyze_render_frame(&self, frame: &[f32]) -> Result<(), String> {
         if frame.len() != VOICE_SAMPLES_PER_FRAME as usize {
             return Err(format!(
                 "Expected {} samples, got {}",
@@ -200,8 +267,8 @@ impl AudioProcessor {
         }
 
         self.processor
-            .process_render_frame(frame)
-            .map_err(|e| format!("Render processing error: {e}"))
+            .analyze_render_frame([frame])
+            .map_err(|e| format!("Render analysis error: {e}"))
     }
 }
 
@@ -218,8 +285,13 @@ mod tests {
     fn test_default_settings() {
         let settings = AudioProcessorSettings::default();
         assert!(settings.noise_suppression);
+        assert_eq!(
+            settings.noise_suppression_level,
+            NoiseSuppressionLevel::Moderate
+        );
         assert!(!settings.echo_cancellation);
         assert!(settings.agc);
+        assert_eq!(settings.mic_boost, MicBoost::Off);
     }
 
     // Serialize WebRTC processor tests - the library has global state that isn't
@@ -243,11 +315,11 @@ mod tests {
 
     #[test]
     #[serial]
-    fn test_process_render_frame() {
-        let mut processor = AudioProcessor::new(AudioProcessorSettings::default()).unwrap();
-        let mut frame = vec![0.0f32; VOICE_SAMPLES_PER_FRAME as usize];
+    fn test_analyze_render_frame() {
+        let processor = AudioProcessor::new(AudioProcessorSettings::default()).unwrap();
+        let frame = vec![0.0f32; VOICE_SAMPLES_PER_FRAME as usize];
 
-        let result = processor.process_render_frame(&mut frame);
+        let result = processor.analyze_render_frame(&frame);
         assert!(result.is_ok());
     }
 
@@ -258,7 +330,7 @@ mod tests {
         let mut frame = vec![0.0f32; 100]; // Wrong size
 
         assert!(processor.process_capture_frame(&mut frame).is_err());
-        assert!(processor.process_render_frame(&mut frame).is_err());
+        assert!(processor.analyze_render_frame(&frame).is_err());
     }
 
     #[test]
@@ -268,9 +340,11 @@ mod tests {
 
         let new_settings = AudioProcessorSettings {
             noise_suppression: false,
+            noise_suppression_level: NoiseSuppressionLevel::High,
             echo_cancellation: true,
             agc: false,
             transient_suppression: true,
+            mic_boost: MicBoost::Plus6dB,
         };
 
         processor.update_settings(new_settings);
@@ -280,13 +354,13 @@ mod tests {
     #[test]
     #[serial]
     fn test_signal_processing() {
-        use nexus_common::voice::VOICE_SAMPLE_RATE;
-
         let mut processor = AudioProcessor::new(AudioProcessorSettings {
             noise_suppression: true,
+            noise_suppression_level: NoiseSuppressionLevel::default(),
             echo_cancellation: false,
             agc: true,
             transient_suppression: false,
+            mic_boost: MicBoost::default(),
         })
         .unwrap();
 
@@ -307,5 +381,61 @@ mod tests {
         // Frame should still have reasonable values
         let max_val = frame.iter().map(|&x| x.abs()).fold(0.0f32, f32::max);
         assert!(max_val <= 1.5, "Output should be reasonably bounded");
+    }
+
+    #[test]
+    fn test_has_voice_detects_speech() {
+        let mut processor = AudioProcessor::new(AudioProcessorSettings::default()).unwrap();
+
+        // A loud sine wave should be detected as speech
+        let frame: Vec<f32> = (0..VOICE_SAMPLES_PER_FRAME)
+            .map(|i| {
+                let t = i as f32 / VOICE_SAMPLE_RATE as f32;
+                f32::sin(2.0 * std::f32::consts::PI * 440.0 * t) * 0.3
+            })
+            .collect();
+
+        assert!(processor.has_voice(&frame));
+    }
+
+    #[test]
+    fn test_has_voice_silence_gate() {
+        let mut processor = AudioProcessor::new(AudioProcessorSettings::default()).unwrap();
+
+        let silence = vec![0.0f32; VOICE_SAMPLES_PER_FRAME as usize];
+
+        // First silent frames should return true (holdover period)
+        assert!(processor.has_voice(&silence));
+
+        // After enough silent frames, should return false
+        for _ in 0..SILENCE_HOLDOVER_FRAMES + 1 {
+            processor.has_voice(&silence);
+        }
+        assert!(!processor.has_voice(&silence));
+    }
+
+    #[test]
+    fn test_has_voice_holdover_resets_on_speech() {
+        let mut processor = AudioProcessor::new(AudioProcessorSettings::default()).unwrap();
+
+        let silence = vec![0.0f32; VOICE_SAMPLES_PER_FRAME as usize];
+        let speech: Vec<f32> = (0..VOICE_SAMPLES_PER_FRAME)
+            .map(|i| {
+                let t = i as f32 / VOICE_SAMPLE_RATE as f32;
+                f32::sin(2.0 * std::f32::consts::PI * 440.0 * t) * 0.3
+            })
+            .collect();
+
+        // Drain holdover with silence
+        for _ in 0..SILENCE_HOLDOVER_FRAMES + 5 {
+            processor.has_voice(&silence);
+        }
+        assert!(!processor.has_voice(&silence));
+
+        // Speech resets the gate
+        assert!(processor.has_voice(&speech));
+
+        // Holdover starts fresh — silence should return true again
+        assert!(processor.has_voice(&silence));
     }
 }

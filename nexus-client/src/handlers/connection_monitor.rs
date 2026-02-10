@@ -99,7 +99,8 @@ impl NexusApp {
 
     /// Copy a value to the clipboard
     pub fn handle_connection_monitor_copy(&mut self, value: String) -> Task<Message> {
-        iced::clipboard::write(value)
+        let toast_text = t("toast-copied");
+        iced::clipboard::write(value).chain(Task::done(Message::ShowToast(toast_text)))
     }
 
     /// Open User Info panel for the selected user

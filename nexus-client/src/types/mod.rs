@@ -4,8 +4,8 @@ mod bookmark;
 mod channel;
 pub mod connection;
 mod display;
-mod form;
 mod message;
+mod panel;
 mod pending;
 mod ui;
 mod view_config;
@@ -18,7 +18,9 @@ pub use connection::{
     ConnectionInfo, NetworkConnection, ServerConnection, ServerConnectionParams, TabCompletionState,
 };
 pub use display::{ChatMessage, ChatTab, MessageType, ScrollState, UserInfo};
-pub use form::{
+pub use message::Message;
+pub use nexus_common::protocol::ServerMessage;
+pub use panel::{
     BanDuration, ClipboardItem, ClipboardOperation, ConnectionFormState,
     ConnectionMonitorSortColumn, ConnectionMonitorState, ConnectionMonitorTab, DisconnectAction,
     DisconnectDialogState, FileSortColumn, FileTab, FilesManagementState, NewsManagementMode,
@@ -26,8 +28,6 @@ pub use form::{
     ServerInfoParams, ServerInfoTab, SettingsFormState, SettingsTab, TabId, TransferSortColumn,
     UserManagementMode, UserManagementState,
 };
-pub use message::Message;
-pub use nexus_common::protocol::ServerMessage;
 pub use pending::{PendingRequests, ResponseRouting};
 pub use ui::{
     ActivePanel, FingerprintMismatch, FingerprintMismatchDetails, InputId, ScrollableId, UiState,

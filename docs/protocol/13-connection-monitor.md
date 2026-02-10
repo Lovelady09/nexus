@@ -97,33 +97,34 @@ Response containing all active connections.
 
 ## Connection Info Fields
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `nickname` | `string` | Display name (equals username for regular accounts) |
-| `username` | `string` | Account username (database key) |
-| `ip` | `string` | Remote IP address (IPv4 or IPv6) |
-| `port` | `u16` | Remote port number |
-| `login_time` | `i64` | Unix timestamp when session logged in |
-| `is_admin` | `bool` | Whether the user has admin privileges |
-| `is_shared` | `bool` | Whether this is a shared account session |
+| Field        | Type     | Description                                         |
+| ------------ | -------- | --------------------------------------------------- |
+| `nickname`   | `string` | Display name (equals username for regular accounts) |
+| `username`   | `string` | Account username (database key)                     |
+| `ip`         | `string` | Remote IP address (IPv4 or IPv6)                    |
+| `port`       | `u16`    | Remote port number                                  |
+| `login_time` | `i64`    | Unix timestamp when session logged in               |
+| `is_admin`   | `bool`   | Whether the user has admin privileges               |
+| `is_shared`  | `bool`   | Whether this is a shared account session            |
 
 ## Transfer Info Fields
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `nickname` | `string` | Display name (equals username for regular accounts) |
-| `username` | `string` | Account username (database key) |
-| `ip` | `string` | Remote IP address (IPv4 or IPv6) |
-| `port` | `u16` | Remote port (7501 for TCP, 7503 for WebSocket) |
-| `is_admin` | `bool` | Whether the user has admin privileges |
-| `is_shared` | `bool` | Whether this is a shared account session |
-| `direction` | `string` | Transfer direction: `"download"` or `"upload"` |
-| `path` | `string` | File path being transferred |
-| `total_size` | `u64` | Total file size in bytes (0 if unknown) |
-| `bytes_transferred` | `u64` | Bytes transferred so far |
-| `started_at` | `i64` | Unix timestamp when transfer started |
+| Field               | Type     | Description                                         |
+| ------------------- | -------- | --------------------------------------------------- |
+| `nickname`          | `string` | Display name (equals username for regular accounts) |
+| `username`          | `string` | Account username (database key)                     |
+| `ip`                | `string` | Remote IP address (IPv4 or IPv6)                    |
+| `port`              | `u16`    | Remote port (7501 for TCP, 7503 for WebSocket)      |
+| `is_admin`          | `bool`   | Whether the user has admin privileges               |
+| `is_shared`         | `bool`   | Whether this is a shared account session            |
+| `direction`         | `string` | Transfer direction: `"download"` or `"upload"`      |
+| `path`              | `string` | File path being transferred                         |
+| `total_size`        | `u64`    | Total file size in bytes (0 if unknown)             |
+| `bytes_transferred` | `u64`    | Bytes transferred so far                            |
+| `started_at`        | `i64`    | Unix timestamp when transfer started                |
 
 **Note:** The `direction` field is from the server's perspective:
+
 - `"download"` = server sending to client (client is downloading)
 - `"upload"` = client sending to server (client is uploading)
 
@@ -162,9 +163,9 @@ Example with a shared account "guests" having two sessions:
 
 ## Error Handling
 
-| Error | Cause |
-|-------|-------|
-| Not logged in | Request sent without valid session |
+| Error             | Cause                                      |
+| ----------------- | ------------------------------------------ |
+| Not logged in     | Request sent without valid session         |
 | Permission denied | User lacks `connection_monitor` permission |
 
 ## Notes

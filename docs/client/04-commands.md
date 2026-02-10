@@ -13,9 +13,9 @@ Nexus uses IRC-style slash commands for various actions. Type commands in the ch
 
 To send a message that starts with `/` without it being treated as a command:
 
-| Input | Result |
-|-------|--------|
-| `//hello` | Sends `/hello` as a message |
+| Input     | Result                                      |
+| --------- | ------------------------------------------- |
+| `//hello` | Sends `/hello` as a message                 |
 | ` /hello` | Sends `/hello` as a message (leading space) |
 
 ## Available Commands
@@ -31,6 +31,7 @@ Show available commands or get help for a specific command.
 **Permission:** None
 
 **Usage:**
+
 ```
 /help              # List all available commands
 /help broadcast    # Show help for the broadcast command
@@ -45,6 +46,7 @@ Set yourself as away, optionally with a status message. Away users are shown wit
 **Permission:** None
 
 **Usage:**
+
 ```
 /away                           # Set as away (no message)
 /away grabbing lunch            # Set as away with status
@@ -60,6 +62,7 @@ Clear your away status and status message.
 **Permission:** None
 
 **Usage:**
+
 ```
 /back
 /b
@@ -74,6 +77,7 @@ Ban a user by IP address, CIDR range, or online nickname.
 **Permission:** `ban_create`
 
 **Usage:**
+
 ```
 /ban Spammer                       # Permanent ban, no reason
 /ban Spammer 1h                    # 1 hour ban
@@ -96,6 +100,7 @@ List all active bans on the server.
 **Permission:** `ban_list`
 
 **Usage:**
+
 ```
 /bans
 /banlist
@@ -110,6 +115,7 @@ Send a broadcast message to all connected users. Broadcasts appear prominently t
 **Permission:** `user_broadcast`
 
 **Usage:**
+
 ```
 /broadcast Server maintenance in 10 minutes
 /b Welcome everyone!
@@ -124,6 +130,7 @@ List available channels on the server.
 **Permission:** `chat_list`
 
 **Usage:**
+
 ```
 /channels
 /ch
@@ -140,6 +147,7 @@ Clear the chat history for the current tab. This only affects your local view �
 **Permission:** None
 
 **Usage:**
+
 ```
 /clear
 ```
@@ -153,6 +161,7 @@ Switch focus to a channel or user message tab.
 **Permission:** None
 
 **Usage:**
+
 ```
 /focus #general     # Switch to #general channel
 /focus alice        # Switch to (or open) Alice's message tab
@@ -171,6 +180,7 @@ Show information about a user. Opens the user info panel with details like usern
 **Permission:** `user_info`
 
 **Usage:**
+
 ```
 /info alice
 /whois bob
@@ -185,6 +195,7 @@ Join or create a channel.
 **Permission:** `chat_join` (join existing), `chat_create` (create new)
 
 **Usage:**
+
 ```
 /join #general      # Join #general (creates if doesn't exist)
 /join #support      # Join #support
@@ -202,6 +213,7 @@ Kick a user from the server, disconnecting them immediately.
 **Permission:** `user_kick`
 
 **Usage:**
+
 ```
 /kick alice
 /kick alice Please stop spamming
@@ -219,6 +231,7 @@ Leave the current channel or a specified channel.
 **Permission:** None
 
 **Usage:**
+
 ```
 /leave              # Leave the current channel
 /leave #general     # Leave #general specifically
@@ -236,12 +249,14 @@ Show connected users or all registered users.
 **Permission:** `user_list` (basic), plus `user_edit` or `user_delete` for `all`
 
 **Usage:**
+
 ```
 /list              # Show currently connected users
 /list all          # Show all registered users (requires permission)
 ```
 
 The output uses IRC-style formatting with `@` prefix for administrators:
+
 ```
 Users online: @alice bob charlie (3 users)
 ```
@@ -255,12 +270,14 @@ Send an action message (like IRC). Action messages are displayed in italics with
 **Permission:** `chat_send`
 
 **Usage:**
+
 ```
 /me waves hello
 /me is thinking...
 ```
 
 **Result:**
+
 ```
 *** alice waves hello
 *** alice is thinking...
@@ -277,6 +294,7 @@ Send a message to a user.
 **Permission:** `user_message`
 
 **Usage:**
+
 ```
 /message alice Hello there!
 /msg bob How are you?
@@ -294,6 +312,7 @@ Measure the round-trip latency to the server.
 **Permission:** None
 
 **Usage:**
+
 ```
 /ping
 ```
@@ -309,6 +328,7 @@ Trigger a file index rebuild on the server. This is useful if files were added o
 **Permission:** `file_reindex`
 
 **Usage:**
+
 ```
 /reindex
 ```
@@ -324,6 +344,7 @@ Trust a user by IP address, CIDR range, or online nickname. Trusted IPs bypass t
 **Permission:** `trust_create`
 
 **Usage:**
+
 ```
 /trust alice                       # Permanent trust, no reason
 /trust alice 30d                   # 30 day trust
@@ -346,6 +367,7 @@ List all trusted IPs on the server.
 **Permission:** `trust_list`
 
 **Usage:**
+
 ```
 /trusted
 /trustlist
@@ -360,6 +382,7 @@ View or set secret mode on the current channel. Secret channels are hidden from 
 **Permission:** None (view), `chat_secret` (change)
 
 **Usage:**
+
 ```
 /secret             # Show current secret mode state
 /secret on          # Enable secret mode
@@ -377,12 +400,14 @@ Show information about the connected server.
 **Permission:** None
 
 **Usage:**
+
 ```
 /sinfo
 /serverinfo
 ```
 
 Displays:
+
 - Server name
 - Server description (if set)
 - Server version
@@ -397,6 +422,7 @@ Set or clear your status message without changing your away state.
 **Permission:** None
 
 **Usage:**
+
 ```
 /status                         # Clear status message
 /status working on project      # Set status message
@@ -412,6 +438,7 @@ View or set the current channel's topic.
 **Permission:** `chat_topic` (view), `chat_topic_edit` (set/clear)
 
 **Usage:**
+
 ```
 /topic                           # View current topic
 /topic set Welcome to my BBS!    # Set a new topic
@@ -429,6 +456,7 @@ Remove an IP ban.
 **Permission:** `ban_delete`
 
 **Usage:**
+
 ```
 /unban Spammer                   # Unban by nickname (removes all IPs for that user)
 /unban 192.168.1.100             # Unban single IP
@@ -446,6 +474,7 @@ Remove a trusted IP entry.
 **Permission:** `trust_delete`
 
 **Usage:**
+
 ```
 /untrust alice                   # Untrust by nickname (removes all IPs for that user)
 /untrust 192.168.1.100           # Untrust single IP
@@ -463,6 +492,7 @@ Manage chat tabs (channels and user message conversations).
 **Permission:** None
 
 **Usage:**
+
 ```
 /window              # List all open tabs
 /window next         # Switch to next tab
@@ -475,45 +505,46 @@ Manage chat tabs (channels and user message conversations).
 
 ## Command Reference Table
 
-| Command | Aliases | Permission | Description |
-|---------|---------|------------|-------------|
-| `/away` | `/a` | None | Set yourself as away |
-| `/back` | `/b` | None | Clear away status |
-| `/ban` | — | `ban_create` | Ban a user by IP, CIDR, or nickname |
-| `/bans` | `/banlist` | `ban_list` | List active bans |
-| `/broadcast` | `/bc` | `user_broadcast` | Send a broadcast to all users |
-| `/channels` | `/ch` | `chat_list` | List available channels |
-| `/clear` | — | None | Clear chat history for current tab |
-| `/focus` | `/f` | None | Focus a channel or user message tab |
-| `/help` | `/h`, `/?` | None | Show available commands |
-| `/info` | `/i`, `/userinfo`, `/whois` | `user_info` | Show information about a user |
-| `/join` | `/j` | `chat_join` / `chat_create` | Join or create a channel |
-| `/kick` | `/k`, `/userkick` | `user_kick` | Kick a user from the server |
-| `/leave` | `/part` | None | Leave a channel |
-| `/list` | `/l`, `/userlist` | `user_list` | Show connected/all users |
-| `/me` | — | `chat_send` | Send an action message |
-| `/message` | `/m`, `/msg` | `user_message` | Send a message to a user |
-| `/reindex` | — | `file_reindex` | Trigger file index rebuild |
-| `/secret` | — | `chat_secret` | Toggle channel secret mode |
-| `/sinfo` | `/si`, `/serverinfo` | None | Show server information |
-| `/status` | `/s` | None | Set or clear status message |
-| `/topic` | `/t` | `chat_topic` / `chat_topic_edit` | View or set channel topic |
-| `/trust` | — | `trust_create` | Trust a user by IP, CIDR, or nickname |
-| `/trusted` | `/trustlist` | `trust_list` | List trusted IPs |
-| `/unban` | — | `ban_delete` | Remove an IP ban |
-| `/untrust` | — | `trust_delete` | Remove a trusted IP entry |
-| `/window` | `/w` | None | Manage chat tabs |
+| Command      | Aliases                     | Permission                       | Description                           |
+| ------------ | --------------------------- | -------------------------------- | ------------------------------------- |
+| `/away`      | `/a`                        | None                             | Set yourself as away                  |
+| `/back`      | `/b`                        | None                             | Clear away status                     |
+| `/ban`       | —                           | `ban_create`                     | Ban a user by IP, CIDR, or nickname   |
+| `/bans`      | `/banlist`                  | `ban_list`                       | List active bans                      |
+| `/broadcast` | `/bc`                       | `user_broadcast`                 | Send a broadcast to all users         |
+| `/channels`  | `/ch`                       | `chat_list`                      | List available channels               |
+| `/clear`     | —                           | None                             | Clear chat history for current tab    |
+| `/focus`     | `/f`                        | None                             | Focus a channel or user message tab   |
+| `/help`      | `/h`, `/?`                  | None                             | Show available commands               |
+| `/info`      | `/i`, `/userinfo`, `/whois` | `user_info`                      | Show information about a user         |
+| `/join`      | `/j`                        | `chat_join` / `chat_create`      | Join or create a channel              |
+| `/kick`      | `/k`, `/userkick`           | `user_kick`                      | Kick a user from the server           |
+| `/leave`     | `/part`                     | None                             | Leave a channel                       |
+| `/list`      | `/l`, `/userlist`           | `user_list`                      | Show connected/all users              |
+| `/me`        | —                           | `chat_send`                      | Send an action message                |
+| `/message`   | `/m`, `/msg`                | `user_message`                   | Send a message to a user              |
+| `/ping`      | —                           | None                             | Measure server latency                |
+| `/reindex`   | —                           | `file_reindex`                   | Trigger file index rebuild            |
+| `/secret`    | —                           | `chat_secret`                    | Toggle channel secret mode            |
+| `/sinfo`     | `/si`, `/serverinfo`        | None                             | Show server information               |
+| `/status`    | `/s`                        | None                             | Set or clear status message           |
+| `/topic`     | `/t`                        | `chat_topic` / `chat_topic_edit` | View or set channel topic             |
+| `/trust`     | —                           | `trust_create`                   | Trust a user by IP, CIDR, or nickname |
+| `/trusted`   | `/trustlist`                | `trust_list`                     | List trusted IPs                      |
+| `/unban`     | —                           | `ban_delete`                     | Remove an IP ban                      |
+| `/untrust`   | —                           | `trust_delete`                   | Remove a trusted IP entry             |
+| `/window`    | `/w`                        | None                             | Manage chat tabs                      |
 
 ## Keyboard Shortcuts
 
 These shortcuts work without typing a command:
 
-| Shortcut | Action |
-|----------|--------|
-| `Ctrl+Tab` (`Cmd+Tab` on macOS) | Next chat tab |
-| `Ctrl+Shift+Tab` (`Cmd+Shift+Tab` on macOS) | Previous chat tab |
-| `Tab` | Complete commands, channels, or nicknames |
-| `Escape` | Close current panel |
+| Shortcut                                    | Action                                    |
+| ------------------------------------------- | ----------------------------------------- |
+| `Ctrl+Tab` (`Cmd+Tab` on macOS)             | Next chat tab                             |
+| `Ctrl+Shift+Tab` (`Cmd+Shift+Tab` on macOS) | Previous chat tab                         |
+| `Tab`                                       | Complete commands, channels, or nicknames |
+| `Escape`                                    | Close current panel                       |
 
 ## Next Steps
 

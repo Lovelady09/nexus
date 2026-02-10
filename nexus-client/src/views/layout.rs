@@ -126,14 +126,16 @@ struct ServerContentContext<'a> {
     pub mic_level: f32,
     /// Error message from microphone test (e.g., device not found)
     pub mic_error: Option<&'a str>,
-    /// Enable noise suppression
-    pub noise_suppression: bool,
+    /// Noise suppression level
+    pub noise_suppression_level: crate::config::audio::NoiseSuppressionLevel,
     /// Enable echo cancellation
     pub echo_cancellation: bool,
     /// Enable automatic gain control
     pub agc: bool,
     /// Enable transient suppression (keyboard/click noise reduction)
     pub transient_suppression: bool,
+    /// Microphone boost level
+    pub mic_boost: crate::config::audio::MicBoost,
     /// Whether local user is currently transmitting (PTT active)
     pub is_local_speaking: bool,
     /// Whether local user has deafened (muted all incoming voice audio)
@@ -326,10 +328,11 @@ pub fn main_layout<'a>(config: ViewConfig<'a>) -> Element<'a, Message> {
                 mic_testing: config.mic_testing,
                 mic_level: config.mic_level,
                 mic_error: config.mic_error,
-                noise_suppression: config.noise_suppression,
+                noise_suppression_level: config.noise_suppression_level,
                 echo_cancellation: config.echo_cancellation,
                 agc: config.agc,
                 transient_suppression: config.transient_suppression,
+                mic_boost: config.mic_boost,
                 is_local_speaking: config.is_local_speaking,
                 is_deafened: config.is_deafened,
                 show_tray_icon: config.show_tray_icon,
@@ -383,10 +386,11 @@ pub fn main_layout<'a>(config: ViewConfig<'a>) -> Element<'a, Message> {
                         mic_testing: config.mic_testing,
                         mic_level: config.mic_level,
                         mic_error: config.mic_error,
-                        noise_suppression: config.noise_suppression,
+                        noise_suppression_level: config.noise_suppression_level,
                         echo_cancellation: config.echo_cancellation,
                         agc: config.agc,
                         transient_suppression: config.transient_suppression,
+                        mic_boost: config.mic_boost,
                         show_tray_icon: config.show_tray_icon,
                         minimize_to_tray: config.minimize_to_tray,
                     })
@@ -880,10 +884,11 @@ fn server_content_view<'a>(ctx: ServerContentContext<'a>) -> Element<'a, Message
                 mic_testing: ctx.mic_testing,
                 mic_level: ctx.mic_level,
                 mic_error: ctx.mic_error,
-                noise_suppression: ctx.noise_suppression,
+                noise_suppression_level: ctx.noise_suppression_level,
                 echo_cancellation: ctx.echo_cancellation,
                 agc: ctx.agc,
                 transient_suppression: ctx.transient_suppression,
+                mic_boost: ctx.mic_boost,
                 show_tray_icon: ctx.show_tray_icon,
                 minimize_to_tray: ctx.minimize_to_tray,
             })
