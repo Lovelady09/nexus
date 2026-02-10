@@ -4471,7 +4471,7 @@ checksum = "650eef8c711430f1a879fdd01d4745a7deea475becfb90269c06775983bbf086"
 
 [[package]]
 name = "nexus-client"
-version = "0.5.29"
+version = "0.5.30"
 dependencies = [
  "async-trait",
  "audioadapter-buffers",
@@ -4527,7 +4527,7 @@ dependencies = [
 
 [[package]]
 name = "nexus-common"
-version = "0.5.29"
+version = "0.5.30"
 dependencies = [
  "hex",
  "rand 0.10.0",
@@ -4542,7 +4542,7 @@ dependencies = [
 
 [[package]]
 name = "nexus-server"
-version = "0.5.29"
+version = "0.5.30"
 dependencies = [
  "argon2",
  "chrono",

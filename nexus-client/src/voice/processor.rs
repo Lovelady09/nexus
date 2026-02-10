@@ -113,9 +113,12 @@ impl AudioProcessor {
             noise_suppression: if settings.noise_suppression {
                 Some(NoiseSuppression {
                     level: NoiseSuppressionLevel::Moderate,
-                    // When AEC is also active, analyze its linear output for
-                    // better noise estimation instead of the raw capture frame.
-                    analyze_linear_aec_output: echo_cancellation,
+                    // NOTE: analyze_linear_aec_output crashes AEC3 when enabled
+                    // via set_config (null BlockFramer in ProcessCapture). The
+                    // linear output framer isn't created when AEC is enabled
+                    // after Processor construction. Keep false until we can
+                    // create the Processor with AEC3 config upfront.
+                    analyze_linear_aec_output: false,
                 })
             } else {
                 None

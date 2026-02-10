@@ -13,7 +13,7 @@ use std::time::Duration;
 use tokio::sync::mpsc;
 use uuid::Uuid;
 
-use nexus_common::voice::VoiceQuality;
+use nexus_common::voice::{VOICE_SAMPLES_PER_FRAME, VoiceQuality};
 
 use crate::config::audio::PttMode;
 
@@ -254,8 +254,13 @@ async fn run_voice_session(
 
     // State tracking
     let mut transmitting = false;
+    let mut deafened = false;
     let mut muted_users: HashSet<String> = HashSet::new();
     let ptt_mode = config.ptt_mode;
+
+    // Pre-allocated buffer for mixing render audio (AEC reference).
+    // Reused each tick to avoid per-frame allocation.
+    let mut render_mix = vec![0.0f32; VOICE_SAMPLES_PER_FRAME as usize];
 
     // Audio processing interval
     let mut audio_interval =
@@ -281,10 +286,6 @@ async fn run_voice_session(
                 if transmitting && capture.is_active()
                     && let Some(mut samples) = capture.take_frame()
                 {
-                    // Calculate mic level from captured samples for VU meter display
-                    let level = calculate_rms_level(&samples);
-                    config.mic_level.store(level.to_bits(), Ordering::Relaxed);
-
                     // Apply audio processing (noise suppression, AGC) to capture
                     if let Some(ref mut proc) = processor {
                         let _ = proc.process_capture_frame(&mut samples);
@@ -295,6 +296,11 @@ async fn run_voice_session(
                             continue;
                         }
                     }
+
+                    // Calculate mic level after processing so the VU meter
+                    // reflects what others actually hear (post-AGC/NS)
+                    let level = calculate_rms_level(&samples);
+                    config.mic_level.store(level.to_bits(), Ordering::Relaxed);
                     if let Ok(encoded) = encoder.encode(&samples) {
                         let _ = dtls_command_tx.send(VoiceDtlsCommand::SendVoice(encoded));
                     }
@@ -303,8 +309,12 @@ async fn run_voice_session(
                     config.mic_level.store(0f32.to_bits(), Ordering::Relaxed);
                 }
 
-                // Process jitter buffers and play audio
-                // Iterate directly over buffers to avoid Vec allocation
+                // Process jitter buffers and play audio.
+                // Accumulate all users into render_mix so the AEC sees the
+                // combined signal that actually plays through the speakers.
+                let mut has_render_audio = false;
+                render_mix.fill(0.0);
+
                 for (sender, buffer) in jitter_pool.iter_mut() {
                     // Skip muted users
                     if muted_users.contains(sender) {
@@ -314,20 +324,29 @@ async fn run_voice_session(
                     // Check for packet loss and use PLC
                     if buffer.has_loss() {
                         if let Ok(samples) = decoder_pool.decode_lost(sender) {
-                            // Apply audio processing to render path (for echo cancellation reference)
-                            if let Some(ref proc) = processor {
-                                let _ = proc.analyze_render_frame(&samples);
+                            for (i, &s) in samples.iter().enumerate() {
+                                render_mix[i] += s;
                             }
+                            has_render_audio = true;
                             mixer.queue_audio(sender, &samples);
                         }
                         // Pop to advance the jitter buffer
                         let _ = buffer.pop();
                     } else if let Some(samples) = buffer.pop() {
-                        // Apply audio processing to render path (for echo cancellation reference)
-                        if let Some(ref proc) = processor {
-                            let _ = proc.analyze_render_frame(&samples);
+                        for (i, &s) in samples.iter().enumerate() {
+                            render_mix[i] += s;
                         }
+                        has_render_audio = true;
                         mixer.queue_audio(sender, &samples);
+                    }
+                }
+
+                // Feed the mixed render output to the AEC so it can
+                // subtract speaker echo from the microphone signal.
+                // Skip when deafened (no speaker output means no echo).
+                if has_render_audio && !deafened {
+                    if let Some(ref proc) = processor {
+                        let _ = proc.analyze_render_frame(&render_mix);
                     }
                 }
             }
@@ -415,11 +434,12 @@ async fn run_voice_session(
                         jitter_pool.remove(&nickname);
                         decoder_pool.remove(&nickname);
                     }
-                    Some(VoiceCommand::SetDeafened(deafened)) => {
-                        mixer.set_deafened(deafened);
+                    Some(VoiceCommand::SetDeafened(is_deafened)) => {
+                        deafened = is_deafened;
+                        mixer.set_deafened(is_deafened);
                         // Hint to AEC/AGC: no speaker output when deafened, so no echo
                         if let Some(ref proc) = processor {
-                            proc.set_output_will_be_muted(deafened);
+                            proc.set_output_will_be_muted(is_deafened);
                         }
                     }
                     Some(VoiceCommand::SetQuality(quality)) => {
