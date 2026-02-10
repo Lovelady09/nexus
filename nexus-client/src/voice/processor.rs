@@ -5,11 +5,11 @@
 //! - Noise Suppression (NS)
 //! - Echo Cancellation (AEC)
 
-use nexus_common::voice::{VOICE_CHANNELS, VOICE_SAMPLES_PER_FRAME};
-use webrtc_audio_processing::{
-    Config, EchoCancellation, EchoCancellationSuppressionLevel, GainControl, GainControlMode,
-    InitializationConfig, NoiseSuppression, NoiseSuppressionLevel, Processor, VoiceDetection,
-    VoiceDetectionLikelihood,
+use nexus_common::voice::{VOICE_SAMPLE_RATE, VOICE_SAMPLES_PER_FRAME};
+use webrtc_audio_processing::Processor;
+use webrtc_audio_processing::config::{
+    Config, EchoCanceller, GainController, GainController2, HighPassFilter, NoiseSuppression,
+    NoiseSuppressionLevel,
 };
 
 // =============================================================================
@@ -77,16 +77,8 @@ impl AudioProcessor {
     /// * `Ok(AudioProcessor)` - Processor ready for use
     /// * `Err(String)` - Error message if initialization failed
     pub fn new(settings: AudioProcessorSettings) -> Result<Self, String> {
-        // WebRTC processor is hardcoded to 48kHz, 10ms frames (480 samples)
-        // which matches our VOICE_* constants exactly
-        let init_config = InitializationConfig {
-            num_capture_channels: VOICE_CHANNELS as i32,
-            num_render_channels: VOICE_CHANNELS as i32,
-            ..InitializationConfig::default()
-        };
-
-        let mut processor =
-            Processor::new(&init_config).map_err(|e| format!("Failed to create processor: {e}"))?;
+        let processor = Processor::new(VOICE_SAMPLE_RATE)
+            .map_err(|e| format!("Failed to create processor: {e}"))?;
 
         // Apply initial settings
         let config = Self::build_config(&settings);
@@ -101,38 +93,32 @@ impl AudioProcessor {
     /// Build a Config from our settings
     fn build_config(settings: &AudioProcessorSettings) -> Config {
         Config {
-            echo_cancellation: if settings.echo_cancellation {
-                Some(EchoCancellation {
-                    suppression_level: EchoCancellationSuppressionLevel::Moderate,
-                    enable_extended_filter: true,
-                    enable_delay_agnostic: true,
+            echo_canceller: if settings.echo_cancellation {
+                Some(EchoCanceller::Full {
                     stream_delay_ms: None,
                 })
             } else {
                 None
             },
-            gain_control: if settings.agc {
-                Some(GainControl {
-                    mode: GainControlMode::AdaptiveDigital,
-                    target_level_dbfs: 3,
-                    compression_gain_db: 9,
-                    enable_limiter: true,
-                })
+            gain_controller: if settings.agc {
+                Some(GainController::GainController2(GainController2 {
+                    adaptive_digital: Some(Default::default()),
+                    ..GainController2::default()
+                }))
             } else {
                 None
             },
             noise_suppression: if settings.noise_suppression {
                 Some(NoiseSuppression {
-                    suppression_level: NoiseSuppressionLevel::Moderate,
+                    level: NoiseSuppressionLevel::Moderate,
+                    ..NoiseSuppression::default()
                 })
             } else {
                 None
             },
-            voice_detection: Some(VoiceDetection {
-                detection_likelihood: VoiceDetectionLikelihood::High,
-            }),
-            enable_transient_suppressor: settings.transient_suppression,
-            enable_high_pass_filter: true,
+            high_pass_filter: Some(HighPassFilter::default()),
+            transient_suppression: settings.transient_suppression,
+            ..Config::default()
         }
     }
 
@@ -158,7 +144,7 @@ impl AudioProcessor {
     ///
     /// Used for VAD-gated transmission in toggle PTT mode.
     pub fn has_voice(&self) -> bool {
-        self.processor.get_stats().has_voice.unwrap_or(false)
+        self.processor.get_stats().voice_detected.unwrap_or(true)
     }
 
     /// Process a capture (microphone) frame
@@ -178,19 +164,21 @@ impl AudioProcessor {
         }
 
         self.processor
-            .process_capture_frame(frame)
+            .process_capture_frame([frame])
             .map_err(|e| format!("Capture processing error: {e}"))
     }
 
-    /// Process a render (speaker) frame
+    /// Analyze a render (speaker) frame for echo cancellation reference
     ///
     /// This should be called on audio before playback. Required for
     /// echo cancellation to work - the processor needs to know what
     /// audio is being played to remove it from the microphone signal.
     ///
+    /// Unlike `process_render_frame`, this does not modify the audio data.
+    ///
     /// # Arguments
     /// * `frame` - Audio frame (must be VOICE_SAMPLES_PER_FRAME samples)
-    pub fn process_render_frame(&mut self, frame: &mut [f32]) -> Result<(), String> {
+    pub fn analyze_render_frame(&self, frame: &[f32]) -> Result<(), String> {
         if frame.len() != VOICE_SAMPLES_PER_FRAME as usize {
             return Err(format!(
                 "Expected {} samples, got {}",
@@ -200,8 +188,8 @@ impl AudioProcessor {
         }
 
         self.processor
-            .process_render_frame(frame)
-            .map_err(|e| format!("Render processing error: {e}"))
+            .analyze_render_frame([frame])
+            .map_err(|e| format!("Render analysis error: {e}"))
     }
 }
 
@@ -243,11 +231,11 @@ mod tests {
 
     #[test]
     #[serial]
-    fn test_process_render_frame() {
-        let mut processor = AudioProcessor::new(AudioProcessorSettings::default()).unwrap();
-        let mut frame = vec![0.0f32; VOICE_SAMPLES_PER_FRAME as usize];
+    fn test_analyze_render_frame() {
+        let processor = AudioProcessor::new(AudioProcessorSettings::default()).unwrap();
+        let frame = vec![0.0f32; VOICE_SAMPLES_PER_FRAME as usize];
 
-        let result = processor.process_render_frame(&mut frame);
+        let result = processor.analyze_render_frame(&frame);
         assert!(result.is_ok());
     }
 
@@ -258,7 +246,7 @@ mod tests {
         let mut frame = vec![0.0f32; 100]; // Wrong size
 
         assert!(processor.process_capture_frame(&mut frame).is_err());
-        assert!(processor.process_render_frame(&mut frame).is_err());
+        assert!(processor.analyze_render_frame(&frame).is_err());
     }
 
     #[test]
@@ -280,8 +268,6 @@ mod tests {
     #[test]
     #[serial]
     fn test_signal_processing() {
-        use nexus_common::voice::VOICE_SAMPLE_RATE;
-
         let mut processor = AudioProcessor::new(AudioProcessorSettings {
             noise_suppression: true,
             echo_cancellation: false,

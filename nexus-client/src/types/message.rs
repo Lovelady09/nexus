@@ -656,7 +656,7 @@ pub enum Message {
     #[cfg(not(target_os = "macos"))]
     MinimizeToTrayToggled(bool),
     /// Tray: Service has closed (D-Bus connection dropped, e.g., after system sleep)
-    #[cfg(not(target_os = "macos"))]
+    #[cfg(target_os = "linux")]
     TrayServiceClosed,
 
     // ==================== URI Scheme ====================

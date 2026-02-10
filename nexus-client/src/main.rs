@@ -1104,7 +1104,7 @@ impl NexusApp {
                 self.config.settings.minimize_to_tray = enabled;
                 Task::none()
             }
-            #[cfg(not(target_os = "macos"))]
+            #[cfg(target_os = "linux")]
             Message::TrayServiceClosed => {
                 // ksni service died (D-Bus connection dropped, e.g., after system sleep)
                 // Drop the dead manager and let update_tray_from_settings() recreate it
@@ -1485,7 +1485,7 @@ fn ipc_listener_stream() -> impl iced::futures::Stream<Item = Message> {
         {
             use interprocess::os::windows::named_pipe::{
                 PipeListenerOptions, PipeMode, pipe_mode,
-                tokio::{PipeListener, PipeListenerOptionsExt, PipeStream as TokioPipeStream},
+                tokio::{PipeListener, PipeStream as TokioPipeStream},
             };
             use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 

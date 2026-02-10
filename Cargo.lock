@@ -1790,7 +1790,7 @@ version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "330c60081dcc4c72131f8eb70510f1ac07223e5d4163db481a04a0befcffa412"
 dependencies = [
- "libloading 0.8.9",
+ "libloading 0.7.4",
 ]
 
 [[package]]
@@ -4035,7 +4035,7 @@ checksum = "d4a5ff6bcca6c4867b1c4fd4ef63e4db7436ef363e0ad7531d1558856bae64f4"
 [[package]]
 name = "linkify"
 version = "0.10.0"
-source = "git+https://github.com/zquestz/linkify#ecd745ee769c72ea03d06bab8251273388bd6d76"
+source = "git+https://github.com/zquestz/linkify#2de68c3fb969a80882309f4ef89cd4a859eef45b"
 dependencies = [
  "memchr",
 ]
@@ -4471,7 +4471,7 @@ checksum = "650eef8c711430f1a879fdd01d4745a7deea475becfb90269c06775983bbf086"
 
 [[package]]
 name = "nexus-client"
-version = "0.5.27"
+version = "0.5.28"
 dependencies = [
  "async-trait",
  "audioadapter-buffers",
@@ -4527,7 +4527,7 @@ dependencies = [
 
 [[package]]
 name = "nexus-common"
-version = "0.5.27"
+version = "0.5.28"
 dependencies = [
  "hex",
  "rand 0.10.0",
@@ -4542,7 +4542,7 @@ dependencies = [
 
 [[package]]
 name = "nexus-server"
-version = "0.5.27"
+version = "0.5.28"
 dependencies = [
  "argon2",
  "chrono",
@@ -8518,16 +8518,22 @@ dependencies = [
 
 [[package]]
 name = "webrtc-audio-processing"
-version = "0.5.0"
-source = "git+https://github.com/zquestz/webrtc-audio-processing#916a458ab318262ef1edd9c2c91684d04d5905ca"
+version = "2.0.0"
+source = "git+https://github.com/zquestz/webrtc-audio-processing#25df62b9d4160b0abbbc850a3d5e39b44d64d91d"
 dependencies = [
+ "webrtc-audio-processing-config",
  "webrtc-audio-processing-sys",
 ]
 
 [[package]]
+name = "webrtc-audio-processing-config"
+version = "2.0.0"
+source = "git+https://github.com/zquestz/webrtc-audio-processing#25df62b9d4160b0abbbc850a3d5e39b44d64d91d"
+
+[[package]]
 name = "webrtc-audio-processing-sys"
-version = "0.5.0"
-source = "git+https://github.com/zquestz/webrtc-audio-processing#916a458ab318262ef1edd9c2c91684d04d5905ca"
+version = "2.0.0"
+source = "git+https://github.com/zquestz/webrtc-audio-processing#25df62b9d4160b0abbbc850a3d5e39b44d64d91d"
 dependencies = [
  "anyhow",
  "autotools",

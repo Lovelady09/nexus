@@ -46,11 +46,15 @@ jobs:
           # Remove Microsoft repos that cause 403 errors on ARM runners
           sudo rm -f /etc/apt/sources.list.d/microsoft*.list
           sudo rm -f /etc/apt/sources.list.d/azure*.list
-          sudo apt-get update && sudo apt-get install -y libasound2-dev libayatana-appindicator3-dev autoconf automake libtool pkg-config
+          sudo apt-get update && sudo apt-get install -y libasound2-dev libayatana-appindicator3-dev meson ninja-build pkg-config
 
       - name: Install macOS dependencies
         if: runner.os == 'macOS'
-        run: brew install libtool autoconf automake pkg-config
+        run: brew install meson ninja pkg-config
+
+      - name: Enable long paths (Windows)
+        if: runner.os == 'Windows'
+        run: reg add HKLM\SYSTEM\CurrentControlSet\Control\FileSystem /v LongPathsEnabled /t REG_DWORD /d 1 /f
 
       - name: Install Windows dependencies
         if: runner.os == 'Windows'
@@ -80,9 +84,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: target
-          key: ${{ runner.os }}-${{ steps.arch.outputs.arch }}-cargo-build-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.os }}-${{ steps.arch.outputs.arch }}-cargo-build-v2-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
-            ${{ runner.os }}-${{ steps.arch.outputs.arch }}-cargo-build-
+            ${{ runner.os }}-${{ steps.arch.outputs.arch }}-cargo-build-v2-
 
       - name: Run tests
         run: cargo test --workspace --verbose
@@ -99,7 +103,7 @@ jobs:
           # Remove Microsoft repos that cause 403 errors on ARM runners
           sudo rm -f /etc/apt/sources.list.d/microsoft*.list
           sudo rm -f /etc/apt/sources.list.d/azure*.list
-          sudo apt-get update && sudo apt-get install -y libasound2-dev libayatana-appindicator3-dev autoconf automake libtool pkg-config
+          sudo apt-get update && sudo apt-get install -y libasound2-dev libayatana-appindicator3-dev meson ninja-build pkg-config
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
@@ -126,9 +130,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: target
-          key: clippy-cargo-build-${{ hashFiles('**/Cargo.lock') }}
+          key: clippy-cargo-build-v2-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
-            clippy-cargo-build-
+            clippy-cargo-build-v2-
 
       - name: Run clippy
         run: cargo clippy --all-targets --workspace -- -D warnings
@@ -160,7 +164,7 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
 
       - name: Install build dependencies
-        run: brew install opus libtool autoconf automake pkg-config
+        run: brew install opus meson ninja pkg-config
 
       - name: Cache cargo registry
         uses: actions/cache@v4
@@ -182,9 +186,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: target
-          key: macos-arm64-client-cargo-build-${{ hashFiles('**/Cargo.lock') }}
+          key: macos-arm64-client-cargo-build-v2-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
-            macos-arm64-client-cargo-build-
+            macos-arm64-client-cargo-build-v2-
 
       - name: Cache cargo-bundle
         id: cache-cargo-bundle
@@ -240,7 +244,7 @@ jobs:
           targets: x86_64-apple-darwin
 
       - name: Install build dependencies
-        run: brew install libtool autoconf automake pkg-config
+        run: brew install meson ninja pkg-config
 
       - name: Cache cargo registry
         uses: actions/cache@v4
@@ -262,9 +266,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: target
-          key: macos-x64-client-cargo-build-${{ hashFiles('**/Cargo.lock') }}
+          key: macos-x64-client-cargo-build-v2-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
-            macos-x64-client-cargo-build-
+            macos-x64-client-cargo-build-v2-
 
       - name: Build client (x64)
         run: cargo build --release --package nexus-client --target x86_64-apple-darwin
@@ -331,7 +335,7 @@ jobs:
           sudo rm -f /etc/apt/sources.list.d/microsoft*.list
           sudo rm -f /etc/apt/sources.list.d/azure*.list
           sudo apt-get update
-          sudo apt-get install -y libasound2-dev libayatana-appindicator3-dev autoconf automake libtool pkg-config
+          sudo apt-get install -y libasound2-dev libayatana-appindicator3-dev meson ninja-build pkg-config
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
@@ -356,9 +360,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: target
-          key: linux-${{ matrix.arch }}-client-cargo-build-${{ hashFiles('**/Cargo.lock') }}
+          key: linux-${{ matrix.arch }}-client-cargo-build-v2-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
-            linux-${{ matrix.arch }}-client-cargo-build-
+            linux-${{ matrix.arch }}-client-cargo-build-v2-
 
       - name: Cache cargo-bundle
         id: cache-cargo-bundle
@@ -386,6 +390,9 @@ jobs:
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
+
+      - name: Enable long paths
+        run: reg add HKLM\SYSTEM\CurrentControlSet\Control\FileSystem /v LongPathsEnabled /t REG_DWORD /d 1 /f
 
       - name: Install Windows dependencies
         run: pip install meson ninja

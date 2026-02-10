@@ -313,19 +313,19 @@ async fn run_voice_session(
 
                     // Check for packet loss and use PLC
                     if buffer.has_loss() {
-                        if let Ok(mut samples) = decoder_pool.decode_lost(sender) {
+                        if let Ok(samples) = decoder_pool.decode_lost(sender) {
                             // Apply audio processing to render path (for echo cancellation reference)
-                            if let Some(ref mut proc) = processor {
-                                let _ = proc.process_render_frame(&mut samples);
+                            if let Some(ref proc) = processor {
+                                let _ = proc.analyze_render_frame(&samples);
                             }
                             mixer.queue_audio(sender, &samples);
                         }
                         // Pop to advance the jitter buffer
                         let _ = buffer.pop();
-                    } else if let Some(mut samples) = buffer.pop() {
+                    } else if let Some(samples) = buffer.pop() {
                         // Apply audio processing to render path (for echo cancellation reference)
-                        if let Some(ref mut proc) = processor {
-                            let _ = proc.process_render_frame(&mut samples);
+                        if let Some(ref proc) = processor {
+                            let _ = proc.analyze_render_frame(&samples);
                         }
                         mixer.queue_audio(sender, &samples);
                     }
