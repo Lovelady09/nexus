@@ -1024,6 +1024,11 @@ audio-testing = 测试中…
 audio-stop-test = 停止测试
 # Audio processing
 audio-noise-suppression = 噪音抑制
+noise-level-off = 关闭
+noise-level-low = 低
+noise-level-moderate = 中等
+noise-level-high = 高
+noise-level-very-high = 最高
 audio-echo-cancellation = 回声消除
 audio-agc = 自动增益控制
 audio-transient-suppression = 键盘噪音消除

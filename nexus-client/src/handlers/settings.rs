@@ -749,9 +749,11 @@ impl NexusApp {
         if let Some(ref handle) = self.voice_session_handle {
             handle.set_processor_settings(crate::voice::processor::AudioProcessorSettings {
                 noise_suppression: self.config.settings.audio.noise_suppression,
+                noise_suppression_level: self.config.settings.audio.noise_suppression_level,
                 echo_cancellation: self.config.settings.audio.echo_cancellation,
                 agc: self.config.settings.audio.agc,
                 transient_suppression: self.config.settings.audio.transient_suppression,
+                mic_boost: self.config.settings.audio.mic_boost,
             });
         }
     }

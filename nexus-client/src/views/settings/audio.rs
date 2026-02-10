@@ -6,7 +6,9 @@ use iced::widget::button as btn;
 use iced::widget::{Column, Space, button, checkbox, pick_list, row};
 
 use super::AudioTabData;
-use crate::config::audio::{LocalizedVoiceQuality, PttMode, PttReleaseDelay};
+use crate::config::audio::{
+    LocalizedVoiceQuality, MicBoost, NoiseSuppressionLevel, PttMode, PttReleaseDelay,
+};
 use crate::i18n::t;
 use crate::style::{
     BUTTON_PADDING, ELEMENT_SPACING, INPUT_PADDING, SPACER_SIZE_MEDIUM, SPACER_SIZE_SMALL,
@@ -196,12 +198,35 @@ pub(super) fn audio_tab_content(data: AudioTabData<'_>) -> Element<'_, Message> 
 
     items.push(Space::new().height(SPACER_SIZE_MEDIUM).into());
 
-    // Noise suppression toggle
-    let noise_suppression_checkbox = checkbox(data.noise_suppression)
-        .label(t("audio-noise-suppression"))
-        .on_toggle(Message::AudioNoiseSuppression)
-        .text_size(TEXT_SIZE);
-    items.push(noise_suppression_checkbox.into());
+    // Microphone boost picker
+    let mic_boost_label = shaped_text(t("audio-mic-boost")).size(TEXT_SIZE);
+    let mic_boosts: Vec<MicBoost> = MicBoost::ALL.to_vec();
+    let mic_boost_picker =
+        pick_list(mic_boosts, Some(data.mic_boost), Message::AudioMicBoost).text_size(TEXT_SIZE);
+
+    let mic_boost_row = row![
+        mic_boost_label,
+        Space::new().width(ELEMENT_SPACING),
+        mic_boost_picker,
+    ]
+    .align_y(iced::Alignment::Center);
+    items.push(mic_boost_row.into());
+
+    items.push(Space::new().height(SPACER_SIZE_MEDIUM).into());
+
+    // Noise suppression picker (Off / Low / Moderate / High / Very High)
+    let ns_label = shaped_text(t("audio-noise-suppression")).size(TEXT_SIZE);
+    let ns_levels: Vec<NoiseSuppressionLevel> = NoiseSuppressionLevel::ALL.to_vec();
+    let ns_picker = pick_list(
+        ns_levels,
+        Some(data.noise_suppression_level),
+        Message::AudioNoiseSuppressionLevel,
+    )
+    .text_size(TEXT_SIZE);
+
+    let ns_row = row![ns_label, Space::new().width(ELEMENT_SPACING), ns_picker,]
+        .align_y(iced::Alignment::Center);
+    items.push(ns_row.into());
 
     items.push(Space::new().height(SPACER_SIZE_SMALL).into());
 

@@ -232,12 +232,17 @@ Higher quality sounds better but uses more bandwidth.
 
 Nexus uses WebRTC AudioProcessing 2.0 (the same technology as Discord, Google Meet, and Chrome) to improve voice quality:
 
-| Setting                      | Default | Description                                                       |
-| ---------------------------- | ------- | ----------------------------------------------------------------- |
-| **Noise Suppression**        | On      | Filters out background noise (fans, AC, ambient noise)            |
-| **Echo Cancellation**        | Off     | Removes speaker audio picked up by your microphone                |
-| **Automatic Gain Control**   | On      | Normalizes your volume automatically                              |
-| **Keyboard Noise Reduction** | Off     | Suppresses transient sounds like keyboard clicks and mouse clicks |
+| Setting                      | Default  | Description                                                       |
+| ---------------------------- | -------- | ----------------------------------------------------------------- |
+| **Microphone Boost**         | Off      | Pre-gain for quiet mics: Off, +6 dB, +12 dB, or +18 dB          |
+| **Noise Suppression**        | Moderate | Off, Low, Moderate, High, or Very High background noise filtering |
+| **Echo Cancellation**        | Off      | Removes speaker audio picked up by your microphone                |
+| **Automatic Gain Control**   | On       | Normalizes your volume automatically                              |
+| **Keyboard Noise Reduction** | Off      | Suppresses transient sounds like keyboard clicks and mouse clicks |
+
+**Microphone Boost** amplifies your mic signal before any processing. Use it if your microphone is too quiet for Automatic Gain Control to bring to usable levels. Each step doubles the amplification (+6 dB = 2×, +12 dB = 4×, +18 dB = 8×).
+
+**Noise Suppression** has five levels. Higher levels remove more background noise but may introduce slight speech distortion. Moderate is a good balance for most environments. Use High or Very High in noisy locations like cafes or open offices.
 
 **Why is echo cancellation off by default?** Most users wear headphones, which don't cause echo. Echo cancellation adds processing overhead and is only needed when using speakers. Enable it if others hear themselves echoing back.
 
@@ -273,7 +278,7 @@ How the push-to-talk key behaves:
 | **Hold**   | Press and hold to talk; release to stop                                |
 | **Toggle** | Press once to enable voice-activated transmission; press again to stop |
 
-**Toggle mode with VAD:** When toggled on, your microphone is "hot" but only transmits when you're speaking. Background noise and silence are automatically filtered using Voice Activity Detection. Toggle off to fully mute.
+**Toggle mode with silence detection:** When toggled on, your microphone is "hot" but only transmits when you're speaking. Background noise and silence are automatically filtered using audio level detection on the processed signal. A brief holdover period after speech prevents clipping word endings. Toggle off to fully mute.
 
 ### PTT Release Delay
 

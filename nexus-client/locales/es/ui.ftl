@@ -1064,9 +1064,19 @@ audio-testing = Probando…
 audio-stop-test = Detener prueba
 # Audio processing
 audio-noise-suppression = Supresión de ruido
+noise-level-off = Desactivado
+noise-level-low = Bajo
+noise-level-moderate = Moderado
+noise-level-high = Alto
+noise-level-very-high = Muy alto
 audio-echo-cancellation = Cancelación de eco
 audio-agc = Control automático de ganancia
 audio-transient-suppression = Reducción de ruido del teclado
+audio-mic-boost = Amplificación del micrófono
+mic-boost-off = Desactivado
+mic-boost-6db = +6 dB
+mic-boost-12db = +12 dB
+mic-boost-18db = +18 dB
 
 # =============================================================================
 # System Tray (Windows/Linux only)

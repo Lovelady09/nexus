@@ -100,7 +100,7 @@ Configure in **Settings > Audio**:
 | **Hold**   | Press and hold the key to talk; release to stop                        |
 | **Toggle** | Press once to enable voice-activated transmission; press again to stop |
 
-**Toggle mode with Voice Activity Detection (VAD):** When you toggle on, your microphone becomes "hot" but only transmits when you're actually speaking. Background noise and silence are automatically filtered out. This gives you hands-free operation while preventing constant transmission of ambient sound. Toggle off to fully mute.
+**Toggle mode with silence detection:** When you toggle on, your microphone becomes "hot" but only transmits when you're actually speaking. Background noise and silence are automatically filtered using audio level detection on the processed signal. A brief holdover period after speech prevents clipping word endings. This gives you hands-free operation while preventing constant transmission of ambient sound. Toggle off to fully mute.
 
 ### PTT Release Delay
 
@@ -255,12 +255,17 @@ Higher quality uses more bandwidth but sounds better.
 
 Nexus uses the same audio processing technology as Discord, Google Meet, and other professional voice applications (WebRTC AudioProcessing).
 
-| Feature                      | Default | Description                                                       |
-| ---------------------------- | ------- | ----------------------------------------------------------------- |
-| **Noise Suppression**        | On      | Filters out background noise (fans, AC, ambient noise)            |
-| **Echo Cancellation**        | Off     | Removes speaker audio picked up by your microphone                |
-| **Automatic Gain Control**   | On      | Normalizes your volume so you're not too quiet or too loud        |
-| **Keyboard Noise Reduction** | Off     | Suppresses transient sounds like keyboard clicks and mouse clicks |
+| Feature                      | Default  | Description                                                       |
+| ---------------------------- | -------- | ----------------------------------------------------------------- |
+| **Microphone Boost**         | Off      | Pre-gain for quiet mics: Off, +6 dB, +12 dB, or +18 dB          |
+| **Noise Suppression**        | Moderate | Off, Low, Moderate, High, or Very High background noise filtering |
+| **Echo Cancellation**        | Off      | Removes speaker audio picked up by your microphone                |
+| **Automatic Gain Control**   | On       | Normalizes your volume so you're not too quiet or too loud        |
+| **Keyboard Noise Reduction** | Off      | Suppresses transient sounds like keyboard clicks and mouse clicks |
+
+**Microphone Boost** amplifies your mic signal before any processing. Use it if your microphone is too quiet for Automatic Gain Control to bring to usable levels. Each step doubles the amplification (+6 dB = 2×, +12 dB = 4×, +18 dB = 8×).
+
+**Noise Suppression** has five levels. Higher levels remove more background noise but may introduce slight speech distortion. Moderate is a good balance for most environments. Use High or Very High in noisy locations like cafes or open offices.
 
 **Why is echo cancellation off by default?** Most users wear headphones, which don't cause echo. Echo cancellation adds processing overhead and is only needed when using speakers. Enable it if others hear themselves echoing back.
 
@@ -268,7 +273,7 @@ Nexus uses the same audio processing technology as Discord, Google Meet, and oth
 
 All audio processing settings apply immediately—you don't need to leave and rejoin voice.
 
-**Toggle PTT mode:** In Toggle mode, the microphone stays open after pressing the PTT key. Audio processing (noise suppression, AGC) still applies to keep transmitted audio clean.
+**Toggle PTT mode:** In Toggle mode, the microphone stays open after pressing the PTT key. Audio processing (noise suppression, AGC) still applies to keep transmitted audio clean, and silence detection automatically suppresses transmission when you're not speaking.
 
 ### Testing Your Microphone
 

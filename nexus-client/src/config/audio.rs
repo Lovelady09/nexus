@@ -148,6 +148,119 @@ impl std::fmt::Display for PttReleaseDelay {
 }
 
 // =============================================================================
+// Noise Suppression Level
+// =============================================================================
+
+/// Noise suppression aggressiveness level
+///
+/// Higher levels remove more noise but may introduce speech distortion.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+pub enum NoiseSuppressionLevel {
+    /// Disabled
+    Off,
+    /// Minimal suppression, least distortion
+    Low,
+    /// Balanced suppression and quality (default)
+    #[default]
+    Moderate,
+    /// Aggressive suppression, some distortion possible
+    High,
+    /// Maximum suppression, most distortion risk
+    VeryHigh,
+}
+
+impl NoiseSuppressionLevel {
+    /// All levels for the picker
+    pub const ALL: &'static [NoiseSuppressionLevel] = &[
+        NoiseSuppressionLevel::Off,
+        NoiseSuppressionLevel::Low,
+        NoiseSuppressionLevel::Moderate,
+        NoiseSuppressionLevel::High,
+        NoiseSuppressionLevel::VeryHigh,
+    ];
+
+    /// Whether noise suppression is enabled at this level
+    pub fn is_enabled(self) -> bool {
+        self != NoiseSuppressionLevel::Off
+    }
+
+    /// Get the translation key for this level
+    pub fn translation_key(self) -> &'static str {
+        match self {
+            NoiseSuppressionLevel::Off => "noise-level-off",
+            NoiseSuppressionLevel::Low => "noise-level-low",
+            NoiseSuppressionLevel::Moderate => "noise-level-moderate",
+            NoiseSuppressionLevel::High => "noise-level-high",
+            NoiseSuppressionLevel::VeryHigh => "noise-level-very-high",
+        }
+    }
+}
+
+impl std::fmt::Display for NoiseSuppressionLevel {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", crate::i18n::t(self.translation_key()))
+    }
+}
+
+// =============================================================================
+// Microphone Boost
+// =============================================================================
+
+/// Microphone pre-gain boost level
+///
+/// Applies a fixed gain multiplier to the mic signal before any processing.
+/// Useful for quiet microphones that AGC alone can't bring to usable levels.
+/// Each step is +6 dB (2x amplification).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+pub enum MicBoost {
+    /// No boost (1.0x)
+    #[default]
+    Off,
+    /// +6 dB (2.0x)
+    Plus6dB,
+    /// +12 dB (4.0x)
+    Plus12dB,
+    /// +18 dB (8.0x)
+    Plus18dB,
+}
+
+impl MicBoost {
+    /// All boost levels for the picker
+    pub const ALL: &'static [MicBoost] = &[
+        MicBoost::Off,
+        MicBoost::Plus6dB,
+        MicBoost::Plus12dB,
+        MicBoost::Plus18dB,
+    ];
+
+    /// Get the translation key for this level
+    pub fn translation_key(self) -> &'static str {
+        match self {
+            MicBoost::Off => "mic-boost-off",
+            MicBoost::Plus6dB => "mic-boost-6db",
+            MicBoost::Plus12dB => "mic-boost-12db",
+            MicBoost::Plus18dB => "mic-boost-18db",
+        }
+    }
+
+    /// Get the linear gain factor
+    pub fn gain_factor(self) -> f32 {
+        match self {
+            MicBoost::Off => 1.0,
+            MicBoost::Plus6dB => 2.0,
+            MicBoost::Plus12dB => 4.0,
+            MicBoost::Plus18dB => 8.0,
+        }
+    }
+}
+
+impl std::fmt::Display for MicBoost {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", crate::i18n::t(self.translation_key()))
+    }
+}
+
+// =============================================================================
 // Audio Settings
 // =============================================================================
 
@@ -182,6 +295,10 @@ pub struct AudioSettings {
     #[serde(default = "default_true")]
     pub noise_suppression: bool,
 
+    /// Noise suppression aggressiveness level (default: Moderate)
+    #[serde(default)]
+    pub noise_suppression_level: NoiseSuppressionLevel,
+
     /// Enable echo cancellation (default: false, for headphone users)
     #[serde(default)]
     pub echo_cancellation: bool,
@@ -194,6 +311,11 @@ pub struct AudioSettings {
     /// Reduces keyboard clicks, mouse clicks, and other sudden noises
     #[serde(default)]
     pub transient_suppression: bool,
+
+    /// Microphone boost level (default: Off)
+    /// Pre-gain applied before all processing for quiet microphones
+    #[serde(default)]
+    pub mic_boost: MicBoost,
 }
 
 fn default_true() -> bool {
@@ -210,9 +332,11 @@ impl Default for AudioSettings {
             ptt_mode: PttMode::default(),
             ptt_release_delay: PttReleaseDelay::default(),
             noise_suppression: true,
+            noise_suppression_level: NoiseSuppressionLevel::default(),
             echo_cancellation: false,
             agc: true,
             transient_suppression: false,
+            mic_boost: MicBoost::default(),
         }
     }
 }
@@ -253,9 +377,14 @@ mod tests {
         assert_eq!(settings.ptt_mode, PttMode::Hold);
         assert_eq!(settings.ptt_release_delay, PttReleaseDelay::Off);
         assert!(settings.noise_suppression);
+        assert_eq!(
+            settings.noise_suppression_level,
+            NoiseSuppressionLevel::Moderate
+        );
         assert!(!settings.echo_cancellation);
         assert!(settings.agc);
         assert!(!settings.transient_suppression);
+        assert_eq!(settings.mic_boost, MicBoost::Off);
     }
 
     #[test]
@@ -268,9 +397,11 @@ mod tests {
             ptt_mode: PttMode::Toggle,
             ptt_release_delay: PttReleaseDelay::Ms300,
             noise_suppression: false,
+            noise_suppression_level: NoiseSuppressionLevel::High,
             echo_cancellation: true,
             agc: false,
             transient_suppression: true,
+            mic_boost: MicBoost::Plus12dB,
         };
 
         let json = serde_json::to_string(&settings).expect("serialize");
@@ -283,12 +414,17 @@ mod tests {
         assert_eq!(settings.ptt_mode, deserialized.ptt_mode);
         assert_eq!(settings.ptt_release_delay, deserialized.ptt_release_delay);
         assert_eq!(settings.noise_suppression, deserialized.noise_suppression);
+        assert_eq!(
+            settings.noise_suppression_level,
+            deserialized.noise_suppression_level
+        );
         assert_eq!(settings.echo_cancellation, deserialized.echo_cancellation);
         assert_eq!(settings.agc, deserialized.agc);
         assert_eq!(
             settings.transient_suppression,
             deserialized.transient_suppression
         );
+        assert_eq!(settings.mic_boost, deserialized.mic_boost);
     }
 
     #[test]

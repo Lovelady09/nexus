@@ -1075,6 +1075,11 @@ audio-testing = Тестирование…
 audio-stop-test = Остановить тест
 # Audio processing
 audio-noise-suppression = Подавление шума
+noise-level-off = Выключено
+noise-level-low = Низкий
+noise-level-moderate = Умеренный
+noise-level-high = Высокий
+noise-level-very-high = Очень высокий
 audio-echo-cancellation = Эхоподавление
 audio-agc = Автоматическая регулировка усиления
 audio-transient-suppression = Подавление шума клавиатуры

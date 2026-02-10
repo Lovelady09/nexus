@@ -56,14 +56,16 @@ pub struct AudioTabData<'a> {
     pub mic_level: f32,
     /// Microphone test error message
     pub mic_error: Option<&'a str>,
-    /// Noise suppression enabled
-    pub noise_suppression: bool,
+    /// Noise suppression level
+    pub noise_suppression_level: crate::config::audio::NoiseSuppressionLevel,
     /// Echo cancellation enabled
     pub echo_cancellation: bool,
     /// Automatic gain control enabled
     pub agc: bool,
     /// Transient suppression (keyboard noise reduction) enabled
     pub transient_suppression: bool,
+    /// Microphone boost level
+    pub mic_boost: crate::config::audio::MicBoost,
     /// Current theme (for VU meter rendering)
     pub theme: Theme,
 }
@@ -132,14 +134,16 @@ pub struct SettingsViewData<'a> {
     pub mic_level: f32,
     /// Microphone test error message
     pub mic_error: Option<&'a str>,
-    /// Noise suppression enabled
-    pub noise_suppression: bool,
+    /// Noise suppression level
+    pub noise_suppression_level: crate::config::audio::NoiseSuppressionLevel,
     /// Echo cancellation enabled
     pub echo_cancellation: bool,
     /// Automatic gain control enabled
     pub agc: bool,
     /// Transient suppression (keyboard noise reduction) enabled
     pub transient_suppression: bool,
+    /// Microphone boost level
+    pub mic_boost: crate::config::audio::MicBoost,
     /// Whether to show tray icon setting (Windows/Linux only)
     pub show_tray_icon: bool,
     /// Whether to minimize to tray setting (Windows/Linux only)
@@ -228,10 +232,11 @@ pub fn settings_view<'a>(data: SettingsViewData<'a>) -> Element<'a, Message> {
         mic_testing: data.mic_testing,
         mic_level: data.mic_level,
         mic_error: data.mic_error,
-        noise_suppression: data.noise_suppression,
+        noise_suppression_level: data.noise_suppression_level,
         echo_cancellation: data.echo_cancellation,
         agc: data.agc,
         transient_suppression: data.transient_suppression,
+        mic_boost: data.mic_boost,
         theme,
     });
 

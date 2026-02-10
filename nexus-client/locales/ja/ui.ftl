@@ -1023,9 +1023,19 @@ audio-testing = テスト中…
 audio-stop-test = テストを停止
 # Audio processing
 audio-noise-suppression = ノイズ抑制
+noise-level-off = オフ
+noise-level-low = 低
+noise-level-moderate = 中
+noise-level-high = 高
+noise-level-very-high = 最高
 audio-echo-cancellation = エコーキャンセル
 audio-agc = 自動ゲイン制御
 audio-transient-suppression = キーボードノイズ低減
+audio-mic-boost = マイクブースト
+mic-boost-off = オフ
+mic-boost-6db = +6 dB
+mic-boost-12db = +12 dB
+mic-boost-18db = +18 dB
 
 # =============================================================================
 # System Tray (Windows/Linux only)

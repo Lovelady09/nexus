@@ -1062,9 +1062,19 @@ audio-testing = Testen…
 audio-stop-test = Test stoppen
 # Audio processing
 audio-noise-suppression = Ruisonderdrukking
+noise-level-off = Uit
+noise-level-low = Laag
+noise-level-moderate = Gemiddeld
+noise-level-high = Hoog
+noise-level-very-high = Zeer hoog
 audio-echo-cancellation = Echo-onderdrukking
 audio-agc = Automatische versterkingsregeling
 audio-transient-suppression = Toetsenbordruisonderdrukking
+audio-mic-boost = Microfoonversterking
+mic-boost-off = Uit
+mic-boost-6db = +6 dB
+mic-boost-12db = +12 dB
+mic-boost-18db = +18 dB
 
 # =============================================================================
 # System Tray (Windows/Linux only)

@@ -1024,8 +1024,9 @@ impl NexusApp {
             Message::AudioTestMicStop => self.handle_audio_test_mic_stop(),
             Message::AudioMicLevel(level) => self.handle_audio_mic_level(level),
             Message::AudioMicError(error) => self.handle_audio_mic_error(error),
-            Message::AudioNoiseSuppression(enabled) => {
-                self.config.settings.audio.noise_suppression = enabled;
+            Message::AudioNoiseSuppressionLevel(level) => {
+                self.config.settings.audio.noise_suppression_level = level;
+                self.config.settings.audio.noise_suppression = level.is_enabled();
                 let _ = self.config.save();
                 self.update_voice_processor_settings();
                 Task::none()
@@ -1044,6 +1045,12 @@ impl NexusApp {
             }
             Message::AudioTransientSuppression(enabled) => {
                 self.config.settings.audio.transient_suppression = enabled;
+                let _ = self.config.save();
+                self.update_voice_processor_settings();
+                Task::none()
+            }
+            Message::AudioMicBoost(level) => {
+                self.config.settings.audio.mic_boost = level;
                 let _ = self.config.save();
                 self.update_voice_processor_settings();
                 Task::none()
@@ -1391,10 +1398,11 @@ impl NexusApp {
             mic_testing,
             mic_level,
             mic_error,
-            noise_suppression: self.config.settings.audio.noise_suppression,
+            noise_suppression_level: self.config.settings.audio.noise_suppression_level,
             echo_cancellation: self.config.settings.audio.echo_cancellation,
             agc: self.config.settings.audio.agc,
             transient_suppression: self.config.settings.audio.transient_suppression,
+            mic_boost: self.config.settings.audio.mic_boost,
             is_local_speaking: self.is_local_speaking,
             is_deafened: self.is_deafened,
             // System Tray settings

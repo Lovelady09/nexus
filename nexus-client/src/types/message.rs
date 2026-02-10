@@ -603,14 +603,16 @@ pub enum Message {
     /// Audio: Microphone test error
     #[allow(dead_code)] // Will be emitted by mic test subscription
     AudioMicError(String),
-    /// Audio: Toggle noise suppression
-    AudioNoiseSuppression(bool),
+    /// Audio: Change noise suppression level
+    AudioNoiseSuppressionLevel(crate::config::audio::NoiseSuppressionLevel),
     /// Audio: Toggle echo cancellation
     AudioEchoCancellation(bool),
     /// Audio: Toggle automatic gain control
     AudioAgc(bool),
     /// Audio: Toggle transient suppression (keyboard/click noise reduction)
     AudioTransientSuppression(bool),
+    /// Audio: Change microphone boost level
+    AudioMicBoost(crate::config::audio::MicBoost),
 
     // ==================== Toasts ====================
     /// Toast: Dismiss a toast notification

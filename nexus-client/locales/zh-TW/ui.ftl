@@ -1023,6 +1023,11 @@ audio-testing = 測試中…
 audio-stop-test = 停止測試
 # Audio processing
 audio-noise-suppression = 噪音抑制
+noise-level-off = 關閉
+noise-level-low = 低
+noise-level-moderate = 中等
+noise-level-high = 高
+noise-level-very-high = 最高
 audio-echo-cancellation = 回聲消除
 audio-agc = 自動增益控制
 audio-transient-suppression = 鍵盤噪音消除

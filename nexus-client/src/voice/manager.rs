@@ -292,7 +292,7 @@ async fn run_voice_session(
 
                         // In toggle mode, use VAD to gate transmission
                         // This prevents sending silence/noise when mic is "open"
-                        if ptt_mode == PttMode::Toggle && !proc.has_voice() {
+                        if ptt_mode == PttMode::Toggle && !proc.has_voice(&samples) {
                             continue;
                         }
                     }
@@ -344,10 +344,10 @@ async fn run_voice_session(
                 // Feed the mixed render output to the AEC so it can
                 // subtract speaker echo from the microphone signal.
                 // Skip when deafened (no speaker output means no echo).
-                if has_render_audio && !deafened {
-                    if let Some(ref proc) = processor {
-                        let _ = proc.analyze_render_frame(&render_mix);
-                    }
+                if has_render_audio && !deafened
+                    && let Some(ref proc) = processor
+                {
+                    let _ = proc.analyze_render_frame(&render_mix);
                 }
             }
 

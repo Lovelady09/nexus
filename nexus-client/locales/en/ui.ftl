@@ -1082,9 +1082,19 @@ audio-stop-test = Stop Test
 
 # Audio processing
 audio-noise-suppression = Noise Suppression
+noise-level-off = Off
+noise-level-low = Low
+noise-level-moderate = Moderate
+noise-level-high = High
+noise-level-very-high = Very High
 audio-echo-cancellation = Echo Cancellation
 audio-agc = Automatic Gain Control
 audio-transient-suppression = Keyboard Noise Reduction
+audio-mic-boost = Microphone Boost
+mic-boost-off = Off
+mic-boost-6db = +6 dB
+mic-boost-12db = +12 dB
+mic-boost-18db = +18 dB
 
 # =============================================================================
 # System Tray (Windows/Linux only)
