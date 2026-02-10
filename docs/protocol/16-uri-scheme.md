@@ -108,11 +108,11 @@ News posts render links via Markdown syntax.
 
 On macOS, the OS handles single-instance routing natively for URL scheme clicks. When a user clicks a `nexus://` link in a browser or Finder:
 
-1. macOS delivers the URL via Apple Events (`application:openURLs:`)
+1. macOS delivers the URL via Apple Events (`kInternetEventClass` / `kAEGetURL`)
 2. If the app is not running, macOS launches it and delivers the event after initialization
 3. If the app is already running, macOS activates it and delivers the event immediately
 
-The client registers a custom `NSApplicationDelegate` to receive these events and forwards URLs to the Iced event loop via a channel.
+The client registers a handler with `NSAppleEventManager` to receive these events and forwards URLs to the Iced event loop via a crossbeam channel.
 
 IPC (below) is still used on macOS for CLI invocations (e.g., `nexus "nexus://..."`).
 
