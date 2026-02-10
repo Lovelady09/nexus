@@ -13,6 +13,8 @@
 //! chain and causes crashes. `NSAppleEventManager` hooks into URL delivery
 //! at a lower level without touching the delegate.
 
+use std::time::Duration;
+
 use crossbeam_channel::{Receiver, Sender};
 use objc2::rc::Retained;
 use objc2::runtime::AnyObject;
@@ -142,17 +144,24 @@ pub fn install() {
 
 /// Async stream that yields URLs received via Apple Events.
 ///
-/// Blocks on `crossbeam_channel::Receiver::recv()` inside `spawn_blocking`,
-/// so it consumes no CPU while waiting. Each received URL is emitted as a
-/// `UriReceivedFromIpc` message, reusing the same handler path as the
-/// Unix/Windows IPC mechanism.
+/// Uses `recv_timeout` inside `spawn_blocking` so the blocking thread
+/// wakes periodically and can exit when the tokio runtime shuts down
+/// (e.g., on app quit). Without this, `recv()` blocks indefinitely and
+/// causes a hang on macOS during quit.
 pub fn url_stream() -> impl iced::futures::Stream<Item = crate::types::Message> {
     iced::futures::stream::unfold((), |()| async {
-        // Block in a tokio worker thread until a URL arrives.
-        let url = tokio::task::spawn_blocking(|| URL_CHANNEL.1.recv().ok())
-            .await
-            .ok()
-            .flatten()?;
+        let url = tokio::task::spawn_blocking(|| {
+            loop {
+                match URL_CHANNEL.1.recv_timeout(Duration::from_millis(500)) {
+                    Ok(url) => return Some(url),
+                    Err(crossbeam_channel::RecvTimeoutError::Timeout) => continue,
+                    Err(crossbeam_channel::RecvTimeoutError::Disconnected) => return None,
+                }
+            }
+        })
+        .await
+        .ok()
+        .flatten()?;
 
         Some((crate::types::Message::UriReceivedFromIpc(url), ()))
     })
