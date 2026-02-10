@@ -537,6 +537,10 @@ impl NexusApp {
                     let _ = std::fs::remove_file(get_ipc_socket_path());
                 }
 
+                // Signal macOS URL stream to stop so tokio runtime can shut down cleanly
+                #[cfg(target_os = "macos")]
+                macos_url::shutdown();
+
                 iced::window::close(id)
             }
 

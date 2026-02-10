@@ -13,6 +13,7 @@
 //! chain and causes crashes. `NSAppleEventManager` hooks into URL delivery
 //! at a lower level without touching the delegate.
 
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 
 use crossbeam_channel::{Receiver, Sender};
@@ -29,6 +30,9 @@ use once_cell::sync::Lazy;
 /// library's `mpsc::Receiver` is not `Sync` and would fail to compile.
 static URL_CHANNEL: Lazy<(Sender<String>, Receiver<String>)> =
     Lazy::new(crossbeam_channel::unbounded);
+
+/// Flag set during app shutdown so the `spawn_blocking` recv loop can exit.
+static SHUTTING_DOWN: AtomicBool = AtomicBool::new(false);
 
 /// Apple Event FourCharCode for `kInternetEventClass` and `kAEGetURL` (both `'GURL'`).
 const K_AE_GET_URL: u32 = u32::from_be_bytes(*b"GURL");
@@ -142,6 +146,14 @@ pub fn install() {
     std::mem::forget(handler);
 }
 
+/// Signal the URL stream to stop so the `spawn_blocking` task can exit
+/// and tokio's runtime drop won't hang.
+///
+/// Must be called before `iced::window::close()` on macOS.
+pub fn shutdown() {
+    SHUTTING_DOWN.store(true, Ordering::Relaxed);
+}
+
 /// Async stream that yields URLs received via Apple Events.
 ///
 /// Uses `recv_timeout` inside `spawn_blocking` so the blocking thread
@@ -152,6 +164,9 @@ pub fn url_stream() -> impl iced::futures::Stream<Item = crate::types::Message> 
     iced::futures::stream::unfold((), |()| async {
         let url = tokio::task::spawn_blocking(|| {
             loop {
+                if SHUTTING_DOWN.load(Ordering::Relaxed) {
+                    return None;
+                }
                 match URL_CHANNEL.1.recv_timeout(Duration::from_millis(500)) {
                     Ok(url) => return Some(url),
                     Err(crossbeam_channel::RecvTimeoutError::Timeout) => continue,
