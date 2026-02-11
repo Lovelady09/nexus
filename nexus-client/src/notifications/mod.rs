@@ -9,8 +9,6 @@ mod linux;
 #[cfg(target_os = "windows")]
 mod windows;
 
-use crate::constants::APP_NAME;
-
 /// Show a desktop notification with optional click-to-navigate URI
 ///
 /// When the user clicks the notification, it will open the provided URI,
@@ -36,6 +34,7 @@ pub fn show(summary: &str, body: Option<&str>, uri: Option<String>) {
 /// Basic notification without click handling (fallback for macOS)
 #[cfg(target_os = "macos")]
 fn show_basic(summary: &str, body: Option<&str>) {
+    use crate::constants::APP_NAME;
     use notify_rust::Notification;
 
     let _ = Notification::new()

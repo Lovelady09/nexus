@@ -8,7 +8,6 @@ use std::sync::Mutex;
 #[cfg(all(unix, not(target_os = "macos")))]
 use std::time::{Duration, Instant};
 
-use notify_rust::Notification;
 #[cfg(all(unix, not(target_os = "macos")))]
 use notify_rust::NotificationHandle;
 
@@ -214,6 +213,45 @@ pub fn emit_event(app: &mut NexusApp, event_type: EventType, context: EventConte
             &app.config.settings.audio.output_device,
         );
     }
+}
+
+/// Build a nexus:// URI for navigating to the event's context
+///
+/// Returns a URI that, when opened, will navigate the app to the relevant
+/// location (channel, DM, news, etc.) based on the event type and context.
+fn build_navigation_uri(
+    app: &NexusApp,
+    event_type: EventType,
+    context: &EventContext,
+) -> Option<String> {
+    // Get the server address from the connection
+    let server_addr = context.connection_id.and_then(|conn_id| {
+        app.connections.get(&conn_id).map(|conn| {
+            let info = &conn.connection_info;
+
+            // IPv6 addresses need brackets in URIs
+            let host = if info.address.parse::<std::net::Ipv6Addr>().is_ok() {
+                format!("[{}]", info.address)
+            } else {
+                info.address.clone()
+            };
+
+            // Omit port if it's the default
+            if info.port == nexus_common::DEFAULT_PORT {
+                host
+            } else {
+                format!("{}:{}", host, info.port)
+            }
+        })
+    })?;
+
+    // Special case for news posts
+    if event_type == EventType::NewsPost {
+        return Some(format!("nexus://{}/news", server_addr));
+    }
+
+    // Use the context's URI builder for other events
+    context.to_navigation_uri(&server_addr)
 }
 
 /// Build event content for a test notification or toast
