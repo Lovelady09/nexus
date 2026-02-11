@@ -31,6 +31,10 @@ pub fn show(summary: &str, body: Option<&str>, uri: Option<String>) {
     show_basic(summary, body);
 }
 
+/// Notification display duration in milliseconds
+#[cfg(target_os = "macos")]
+const NOTIFICATION_TIMEOUT_MS: u32 = 5000;
+
 /// Basic notification without click handling (fallback for macOS)
 #[cfg(target_os = "macos")]
 fn show_basic(summary: &str, body: Option<&str>) {
@@ -42,6 +46,6 @@ fn show_basic(summary: &str, body: Option<&str>) {
         .summary(summary)
         .body(body.unwrap_or(""))
         .auto_icon()
-        .timeout(notify_rust::Timeout::Milliseconds(5000))
+        .timeout(notify_rust::Timeout::Milliseconds(NOTIFICATION_TIMEOUT_MS))
         .show();
 }

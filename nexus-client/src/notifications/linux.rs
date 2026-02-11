@@ -9,8 +9,17 @@ use notify_rust::{Notification, NotificationHandle};
 
 use crate::constants::APP_NAME;
 
+/// Notification display duration in milliseconds
+const NOTIFICATION_TIMEOUT_MS: u32 = 5000;
+
 /// How long to keep notification handles alive (slightly longer than the notification timeout)
 const HANDLE_LIFETIME: Duration = Duration::from_secs(6);
+
+/// D-Bus action identifier for clicking the notification body
+const DBUS_ACTION_DEFAULT: &str = "default";
+
+/// Label for the default action (typically not displayed to users)
+const DBUS_ACTION_LABEL: &str = "Open";
 
 /// Keep notification handles alive to prevent GNOME/Cinnamon from dismissing them.
 /// These desktop environments close notifications when the D-Bus connection drops,
@@ -26,11 +35,11 @@ pub fn show(summary: &str, body: Option<&str>, uri: Option<String>) {
         .summary(summary)
         .body(body.unwrap_or(""))
         .auto_icon()
-        .timeout(notify_rust::Timeout::Milliseconds(5000));
+        .timeout(notify_rust::Timeout::Milliseconds(NOTIFICATION_TIMEOUT_MS));
 
     // Add a default action for clicking the notification body
     if uri.is_some() {
-        notification.action("default", "Open");
+        notification.action(DBUS_ACTION_DEFAULT, DBUS_ACTION_LABEL);
     }
 
     match notification.show() {
@@ -48,7 +57,7 @@ pub fn show(summary: &str, body: Option<&str>, uri: Option<String>) {
                 // which keeps the D-Bus connection alive for the notification's lifetime.
                 std::thread::spawn(move || {
                     handle.wait_for_action(|action| {
-                        if action == "default" {
+                        if action == DBUS_ACTION_DEFAULT {
                             let _ = open::that(&uri);
                         }
                     });
