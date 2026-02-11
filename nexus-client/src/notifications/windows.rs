@@ -2,7 +2,7 @@
 //!
 //! Uses tauri-winrt-notification for Windows Toast notifications with activation callbacks.
 
-use tauri_winrt_notification::Toast;
+use tauri_winrt_notification::{Result, Toast};
 
 /// Show a notification with optional click-to-navigate URI
 pub fn show(summary: &str, body: Option<&str>, uri: Option<String>) {
@@ -17,7 +17,7 @@ pub fn show(summary: &str, body: Option<&str>, uri: Option<String>) {
 
     // Set up click handler if URI is provided
     if let Some(uri) = uri {
-        toast = toast.on_activated(move |_| {
+        toast = toast.on_activated(move |_| -> Result<()> {
             let _ = open::that(&uri);
             Ok(())
         });
