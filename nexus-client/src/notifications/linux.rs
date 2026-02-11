@@ -12,8 +12,13 @@ use crate::constants::APP_NAME;
 /// Notification display duration in milliseconds
 const NOTIFICATION_TIMEOUT_MS: u32 = 5000;
 
-/// How long to keep notification handles alive (slightly longer than the notification timeout)
-const HANDLE_LIFETIME: Duration = Duration::from_secs(6);
+/// How long to keep notification handles alive in seconds.
+/// This must be slightly longer than NOTIFICATION_TIMEOUT_MS to ensure handles
+/// outlive their notifications.
+const HANDLE_LIFETIME_SECS: u64 = 6;
+
+/// Duration for handle lifetime
+const HANDLE_LIFETIME: Duration = Duration::from_secs(HANDLE_LIFETIME_SECS);
 
 /// D-Bus action identifier for clicking the notification body
 const DBUS_ACTION_DEFAULT: &str = "default";
@@ -53,7 +58,7 @@ pub fn show(summary: &str, body: Option<&str>, uri: Option<String>) {
             if let Some(uri) = uri {
                 // Spawn a short-lived thread to wait for the action callback.
                 // This blocks until the notification is dismissed or clicked (bounded by
-                // the 5-second notification timeout). The handle is moved into the thread
+                // NOTIFICATION_TIMEOUT_MS). The handle is moved into the thread
                 // which keeps the D-Bus connection alive for the notification's lifetime.
                 std::thread::spawn(move || {
                     handle.wait_for_action(|action| {
